@@ -73,6 +73,7 @@ import com.example.data.db.AppDatabase
 import com.example.data.model.HorseInspection
 import com.example.ui.components.AppUpdateDialog
 import com.example.ui.components.InstitutionalNoticeDialog
+import com.example.ui.components.UpdateFeedbackDialog
 import com.example.ui.screens.DfSafetyInfoDialog
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
@@ -223,7 +224,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
 
     // Verificação de atualizações no GitHub ao iniciar o aplicativo
     LaunchedEffect(Unit) {
-        viewModel.checkForUpdates()
+        viewModel.checkForUpdates(isManualCheck = false)
     }
 
     when (viewModel.activeScreenName) {
@@ -325,7 +326,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
 
                             // Botão para verificar atualizações no GitHub
                             IconButton(
-                                onClick = { viewModel.checkForUpdates() },
+                                onClick = { viewModel.checkForUpdates(isManualCheck = true) },
                                 modifier = Modifier.testTag("action_check_updates")
                             ) {
                                 Surface(
@@ -334,12 +335,20 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                     modifier = Modifier.size(34.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.SystemUpdate,
-                                            contentDescription = "Verificar Atualizações no GitHub",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(19.dp)
-                                        )
+                                        if (viewModel.isCheckingUpdate) {
+                                            androidx.compose.material3.CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.SystemUpdate,
+                                                contentDescription = "Verificar Atualizações no GitHub",
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -478,6 +487,19 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                     updateInfo = updateInfo,
                     onDismiss = { viewModel.dismissUpdateDialog() }
                 )
+            }
+
+            // Diálogo de Feedback / Diagnóstico de Atualização (ao verificar manualmente ou em caso de erro 404/rede)
+            if (viewModel.showUpdateFeedbackDialog) {
+                viewModel.updateCheckResult?.let { result ->
+                    UpdateFeedbackDialog(
+                        result = result,
+                        onDismiss = { viewModel.dismissUpdateFeedbackDialog() },
+                        onRetryWithUrl = { customUrl -> viewModel.saveCustomUpdateUrl(customUrl) },
+                        onResetDefaultUrl = { viewModel.resetUpdateUrlToDefault() },
+                        onSimulateUpdate = { viewModel.simulateUpdateCheck() }
+                    )
+                }
             }
         }
     }

@@ -21,6 +21,7 @@ import com.example.util.AppVersionInfo
 import com.example.util.CpfValidator
 import com.example.util.LocationHelper
 import com.example.util.PdfReportGenerator
+import com.example.util.UpdateCheckResult
 import com.example.util.UpdateChecker
 import com.example.util.WatermarkUtils
 import kotlinx.coroutines.Dispatchers
@@ -132,21 +133,59 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         private set
     var isCheckingUpdate by mutableStateOf(false)
         private set
+    var updateCheckResult by mutableStateOf<UpdateCheckResult?>(null)
+        private set
+    var showUpdateFeedbackDialog by mutableStateOf(false)
 
     fun dismissUpdateDialog() {
         availableUpdate = null
     }
 
-    fun checkForUpdates(customUrl: String? = null) {
+    fun dismissUpdateFeedbackDialog() {
+        showUpdateFeedbackDialog = false
+    }
+
+    fun checkForUpdates(isManualCheck: Boolean = false, customUrl: String? = null) {
         viewModelScope.launch {
             isCheckingUpdate = true
             try {
-                val update = UpdateChecker.checkForUpdate(getApplication(), customUrl)
-                availableUpdate = update
+                val result = UpdateChecker.checkUpdateWithResult(getApplication(), customUrl)
+                updateCheckResult = result
+                when (result) {
+                    is UpdateCheckResult.UpdateAvailable -> {
+                        availableUpdate = result.info
+                    }
+                    is UpdateCheckResult.AlreadyUpToDate -> {
+                        if (isManualCheck) {
+                            showUpdateFeedbackDialog = true
+                        }
+                    }
+                    is UpdateCheckResult.Error -> {
+                        if (isManualCheck) {
+                            showUpdateFeedbackDialog = true
+                        }
+                    }
+                }
             } finally {
                 isCheckingUpdate = false
             }
         }
+    }
+
+    fun saveCustomUpdateUrl(url: String) {
+        UpdateChecker.setVersionUrl(getApplication(), url)
+        checkForUpdates(isManualCheck = true, customUrl = url)
+    }
+
+    fun resetUpdateUrlToDefault() {
+        UpdateChecker.resetVersionUrl(getApplication())
+        checkForUpdates(isManualCheck = true)
+    }
+
+    fun simulateUpdateCheck() {
+        val sample = UpdateChecker.getSampleVersionInfo(getApplication())
+        availableUpdate = sample
+        showUpdateFeedbackDialog = false
     }
 
     val searchQuery = MutableStateFlow("")

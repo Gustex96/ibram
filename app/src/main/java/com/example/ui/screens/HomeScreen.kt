@@ -75,6 +75,8 @@ import com.example.data.model.AnexoFGuideCategory
 import com.example.data.model.AnexoFGuideItem
 import com.example.data.model.DfConstants
 import com.example.data.model.HorseInspection
+import com.example.ui.components.AnimalSpecies
+import com.example.ui.components.SpeciesSelectorTabs
 import com.example.ui.viewmodel.InspectionViewModel
 import java.io.File
 
@@ -90,6 +92,7 @@ fun HomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     var showInfoDialog by remember { mutableStateOf(false) }
+    var selectedSpecies by remember { mutableStateOf(AnimalSpecies.HORSE) }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -98,6 +101,12 @@ fun HomeScreen(
         if (allInspections.isNotEmpty()) {
             StatsSummaryCard(allInspections = allInspections)
         }
+
+        // Species Selector Tabs (Cachorro, Gato, Cavalo, Galo)
+        SpeciesSelectorTabs(
+            selectedSpecies = selectedSpecies,
+            onSpeciesSelected = { selectedSpecies = it }
+        )
 
         // Search Bar with Anexo F guide button
         Row(
