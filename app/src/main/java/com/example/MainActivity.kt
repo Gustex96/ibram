@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
                     textSize = 32f
                     isAntiAlias = true
                 }
-                canvas.drawText("BRASÍLIA AMBIENTAL • REGISTRO DE CAMPO", 60f, 260f, tp)
+                canvas.drawText("LEVANTAMENTO DE CAMPO • APOIO À FISCALIZAÇÃO", 60f, 260f, tp)
                 tp.textSize = 24f
                 tp.color = AndroidColor.rgb(203, 213, 225)
                 canvas.drawText("Animais avistados nas margens da DF-001 / EPTG", 60f, 320f, tp)
@@ -170,7 +170,7 @@ class MainActivity : ComponentActivity() {
                 val c2 = Canvas(bmp2)
                 p.color = AndroidColor.rgb(38, 50, 56)
                 c2.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
-                c2.drawText("BRASÍLIA AMBIENTAL • MONITORAMENTO EQUINO", 60f, 260f, tp)
+                c2.drawText("MONITORAMENTO ANIMAL • APOIO À FISCALIZAÇÃO", 60f, 260f, tp)
                 c2.drawText("Área residencial com pastoreio delimitado", 60f, 320f, tp)
 
                 val file2 = WatermarkUtils.applyWatermarkToBitmap(
@@ -251,8 +251,8 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                         title = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.logo_brasilia_ambiental),
-                                    contentDescription = "Logo Brasília Ambiental",
+                                    painter = painterResource(id = R.drawable.logo_meio_ambiente),
+                                    contentDescription = "Logo Meio Ambiente",
                                     modifier = Modifier
                                         .size(38.dp)
                                         .clip(RoundedCornerShape(6.dp)),
@@ -272,7 +272,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = "BRASÍLIA AMBIENTAL",
+                                                text = "APOIO FISCAL",
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -281,7 +281,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                         }
                                     }
                                     Text(
-                                        text = "Fiscalização & Monitoramento Equino DF",
+                                        text = "Apoio em Fiscalização & Monitoramento Animal",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp

@@ -410,6 +410,19 @@ fun HistoryScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "ℹ️ Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+
                     Text(
                         text = "Foram selecionados ${targetList.size} relatório(s) para exportação. Escolha o formato desejado:",
                         style = MaterialTheme.typography.bodyMedium
@@ -448,7 +461,7 @@ fun HistoryScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "Reúne todos os ${targetList.size} relatórios em um único documento oficial com capa e sumário.",
+                                    text = "Reúne todos os ${targetList.size} relatórios em um único documento consolidado com capa e sumário.",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

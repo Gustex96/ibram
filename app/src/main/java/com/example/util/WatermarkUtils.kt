@@ -127,16 +127,15 @@ object WatermarkUtils {
 
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
         val dateString = sdf.format(Date(captureTimeMillis))
-        val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f° (DF)", latitude, longitude)
+        val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f° (GPS)", latitude, longitude)
         val raString = "RA: $administrativeRegion"
-        val protocolString = "PROTOCOLO: $protocol | AUDITORIA FISCAL DF"
+        val protocolString = "PROTOCOLO: $protocol | APOIO À FISCALIZAÇÃO"
 
         val lines = listOf(
             "🐴 ANIMAL FOTOGRAFADO: Ex $exemplarIndex (Exemplar nº $exemplarIndex)",
             "📍 COORDENADAS: $coordsString",
             "📅 DATA/HORA: $dateString",
-            "🏛 REGIÃO: $raString",
-            "🛡 REGISTRO OFICIAL • FISCALIZAÇÃO AMBIENTAL DF"
+            "🏛 REGIÃO: $raString"
         )
 
         val bannerHeight = (lines.size * lineHeight) + titleTextSize + (bannerPadding * 2.4f)
@@ -167,7 +166,7 @@ object WatermarkUtils {
         }
 
         var currentY = bannerTop + bannerPadding + titleTextSize
-        canvas.drawText("★ LEVANTAMENTO OPERACIONAL | FISCALIZAÇÃO AMBIENTAL", bannerPadding, currentY, titlePaint)
+        canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, currentY, titlePaint)
 
         // Draw protocol on the right side if space allows
         val protoPaint = Paint().apply {

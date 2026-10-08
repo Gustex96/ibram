@@ -66,7 +66,7 @@ object PdfReportGenerator {
 
         val allPhotos = inspection.allPhotoPaths
 
-        // PAGE 1: DADOS TÉCNICOS & BOLETIM OFICIAL
+        // PAGE 1: DADOS TÉCNICOS & LEVANTAMENTO OPERACIONAL
         val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
         val page = document.startPage(pageInfo)
         val canvas = page.canvas
@@ -80,11 +80,11 @@ object PdfReportGenerator {
 
         var y = 32f
 
-        // Logo Brasília Ambiental
+        // Logo Meio Ambiente
         val logoWidth = 48f
         val logoHeight = 48f
         try {
-            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_brasilia_ambiental)
+            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_meio_ambiente)
             if (logoBitmap != null) {
                 val logoRect = RectF(margin, y, margin + logoWidth, y + logoHeight)
                 canvas.drawBitmap(logoBitmap, null, logoRect, null)
@@ -94,28 +94,28 @@ object PdfReportGenerator {
         // Header text
         val textStartX = margin + logoWidth + 12f
         val headerTitlePaint = Paint().apply {
-            color = Color.rgb(15, 23, 42)
-            textSize = 12f
+            color = Color.rgb(0, 104, 74)
+            textSize = 12.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("GOVERNO DO DISTRITO FEDERAL", textStartX, y + 13f, headerTitlePaint)
+        canvas.drawText("RELATÓRIO PARA APOIO EM FISCALIZAÇÃO", textStartX, y + 14f, headerTitlePaint)
 
         val headerSubPaint = Paint().apply {
-            color = Color.rgb(0, 104, 74)
-            textSize = 10.5f
+            color = Color.rgb(15, 23, 42)
+            textSize = 9.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("INSTITUTO BRASÍLIA AMBIENTAL • FISCALIZAÇÃO AMBIENTAL", textStartX, y + 27f, headerSubPaint)
+        canvas.drawText("LEVANTAMENTO OPERACIONAL E MONITORAMENTO DE CAMPO", textStartX, y + 27f, headerSubPaint)
 
         val headerSmallPaint = Paint().apply {
             color = Color.rgb(100, 116, 139)
-            textSize = 8f
+            textSize = 7.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
         }
-        canvas.drawText("LEVANTAMENTO OPERACIONAL E MONITORAMENTO DE CAMPO", textStartX, y + 39f, headerSmallPaint)
+        canvas.drawText("DOCUMENTO INDEPENDENTE PARA FINS DE APOIO • SEM VÍNCULO OFICIAL COM O GDF", textStartX, y + 39f, headerSmallPaint)
 
         y += 52f
 
@@ -182,8 +182,8 @@ object PdfReportGenerator {
         }
         canvas.drawText(fullAddrText, col1X, y + 11f, valuePaint)
 
-        canvas.drawText("ÓRGÃO FISCALIZADOR:", col2X, y, labelPaint)
-        canvas.drawText("Brasília Ambiental / Fiscalização Ambiental DF", col2X, y + 11f, valuePaint)
+        canvas.drawText("FINALIDADE DO DOCUMENTO:", col2X, y, labelPaint)
+        canvas.drawText("Apoio em Fiscalização / Bem-Estar Animal", col2X, y + 11f, valuePaint)
         y += 26f
 
         canvas.drawText("COORDENADAS GEOGRÁFICAS (GPS):", col1X, y, labelPaint)
@@ -348,9 +348,9 @@ object PdfReportGenerator {
         }
 
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
-        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | DIFIS-IV • Brasília Ambiental"
+        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório para Apoio em Fiscalização"
         canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
-        val legalNote = "Nota: Subsidia a DIFIS-IV; não substitui o Relatório de Auditoria e Fiscalização (RAF/IBRAM)."
+        val legalNote = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
         canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
 
         val signLineX = margin + contentWidth - 180f
@@ -430,15 +430,15 @@ object PdfReportGenerator {
                 py += targetBoxSize + 16f
 
                 // Caption details below the 500x500 image
-                pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f° (Distrito Federal)", inspection.latitude, inspection.longitude)}", photoX, py, captionTitlePaint)
+                pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f°", inspection.latitude, inspection.longitude)}", photoX, py, captionTitlePaint)
                 py += 13f
                 pCanvas.drawText("🏛️ Região Administrativa: ${inspection.administrativeRegion} • Data/Hora: ${inspection.formattedCaptureDate}", photoX, py, captionSubPaint)
                 py += 12f
-                pCanvas.drawText("🛡️ Carimbo Fiscalizatório Oficial de Campo • Fiscalização Ambiental DF", photoX, py, captionSubPaint)
+                pCanvas.drawText("Registro Fotográfico Georreferenciado • Apoio à Fiscalização", photoX, py, captionSubPaint)
 
                 // Footer for photo page
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
-                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico em Proporção 500x500 | Brasília Ambiental"
+                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico • Relatório para Apoio em Fiscalização"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)
@@ -499,7 +499,7 @@ object PdfReportGenerator {
 
         // Logo
         try {
-            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_brasilia_ambiental)
+            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_meio_ambiente)
             if (logoBitmap != null) {
                 val logoWidth = 60f
                 val logoHeight = 60f
@@ -509,19 +509,19 @@ object PdfReportGenerator {
         } catch (_: Exception) {}
 
         val titlePaint = Paint().apply {
-            color = Color.rgb(15, 23, 42)
-            textSize = 15f
+            color = Color.rgb(0, 104, 74)
+            textSize = 14f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
         val subPaint = Paint().apply {
-            color = Color.rgb(0, 104, 74)
-            textSize = 12f
+            color = Color.rgb(15, 23, 42)
+            textSize = 11f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        coverCanvas.drawText("GOVERNO DO DISTRITO FEDERAL", margin + 70f, y + 20f, titlePaint)
-        coverCanvas.drawText("INSTITUTO BRASÍLIA AMBIENTAL", margin + 70f, y + 36f, subPaint)
+        coverCanvas.drawText("RELATÓRIO PARA APOIO EM FISCALIZAÇÃO", margin + 70f, y + 20f, titlePaint)
+        coverCanvas.drawText("LEVANTAMENTO DE CAMPO E BEM-ESTAR ANIMAL", margin + 70f, y + 36f, subPaint)
 
         y += 75f
 
@@ -546,7 +546,7 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
         }
-        coverCanvas.drawText("Dossiê Oficial de Vistorias e Monitoramento com Marca D'Água Georreferenciada", margin + 14f, y + 38f, reportSubPaint)
+        coverCanvas.drawText("Dossiê de Vistorias e Monitoramento com Registro Georreferenciado", margin + 14f, y + 38f, reportSubPaint)
 
         y += 65f
 
@@ -612,7 +612,7 @@ object PdfReportGenerator {
         coverCanvas.drawLine(margin, pageHeight - 50f, margin + contentWidth, pageHeight - 50f, linePaint)
         val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 8f; isAntiAlias = true }
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
-        coverCanvas.drawText("Relatório gerado em ${sdfGen.format(Date())} | Brasília Ambiental", margin, pageHeight - 36f, footerTextPaint)
+        coverCanvas.drawText("Relatório gerado em ${sdfGen.format(Date())} | Apoio em Fiscalização", margin, pageHeight - 36f, footerTextPaint)
         coverCanvas.drawText("Página 1 de ${inspections.size + 1}", margin + contentWidth - 80f, pageHeight - 36f, footerTextPaint)
 
         document.finishPage(coverPage)
@@ -700,7 +700,7 @@ object PdfReportGenerator {
             // Footer
             val dFooterY = pageHeight - 45f
             dCanvas.drawLine(margin, dFooterY, margin + contentWidth, dFooterY, linePaint)
-            dCanvas.drawText("Brasília Ambiental • Dossiê Consolidado • Página $pageNumber de ${inspections.size + 1}", margin, dFooterY + 14f, footerTextPaint)
+            dCanvas.drawText("Relatório para Apoio em Fiscalização • Página $pageNumber de ${inspections.size + 1}", margin, dFooterY + 14f, footerTextPaint)
 
             document.finishPage(detailPage)
         }
@@ -789,7 +789,7 @@ object PdfReportGenerator {
                 context = context,
                 file = file,
                 subject = "Relatório Consolidado - Levantamento Operacional",
-                message = "Segue em anexo o Dossiê Oficial Consolidado de Levantamento Operacional."
+                message = "Segue em anexo o Relatório Consolidado para Apoio em Fiscalização."
             )
         } else {
             Toast.makeText(context, "Erro ao gerar relatório consolidado", Toast.LENGTH_SHORT).show()
@@ -817,29 +817,34 @@ object PdfReportGenerator {
                 context = context,
                 file = generatedFiles[0],
                 subject = "Relatório ${inspections[0].protocolNumber} - Levantamento Operacional",
-                message = "Segue em anexo o relatório oficial em PDF."
+                message = "Segue em anexo o Relatório para Apoio em Fiscalização (PDF)."
             )
         } else {
             shareMultiplePdfs(
                 context = context,
                 files = generatedFiles,
-                subject = "Exportação de ${generatedFiles.size} Relatórios PDF - Levantamento Operacional",
-                message = "Seguem em anexo os ${generatedFiles.size} relatórios oficiais em formato PDF gerados pelo Levantamento Operacional (Brasília Ambiental)."
+                subject = "Exportação de ${generatedFiles.size} Relatórios PDF - Apoio em Fiscalização",
+                message = "Seguem em anexo os ${generatedFiles.size} relatórios em formato PDF (Relatório para Apoio em Fiscalização)."
             )
         }
     }
 
+    const val DISCLAIMER_TEXT = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
+
     fun shareMultiplePdfs(context: Context, files: List<File>, subject: String, message: String) {
         try {
+            Toast.makeText(context, DISCLAIMER_TEXT, Toast.LENGTH_LONG).show()
+
             val uris = ArrayList<android.net.Uri>()
             for (file in files) {
                 uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
             }
+            val fullMessage = "$message\n\n$DISCLAIMER_TEXT"
             val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                 type = "application/pdf"
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                 putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, message)
+                putExtra(Intent.EXTRA_TEXT, fullMessage)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -854,12 +859,15 @@ object PdfReportGenerator {
 
     fun sharePdf(context: Context, file: File, subject: String, message: String) {
         try {
+            Toast.makeText(context, DISCLAIMER_TEXT, Toast.LENGTH_LONG).show()
+
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val fullMessage = "$message\n\n$DISCLAIMER_TEXT"
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, message)
+                putExtra(Intent.EXTRA_TEXT, fullMessage)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }

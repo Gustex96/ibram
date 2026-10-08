@@ -82,7 +82,7 @@ fun ReportsHubScreen(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Brasília Ambiental Header Card
+        // 1. Header Card - Apoio em Fiscalização
         item {
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -98,8 +98,8 @@ fun ReportsHubScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model = R.drawable.logo_brasilia_ambiental,
-                        contentDescription = "Logo Brasília Ambiental",
+                        model = R.drawable.logo_meio_ambiente,
+                        contentDescription = "Logo Meio Ambiente",
                         modifier = Modifier
                             .size(54.dp)
                             .clip(RoundedCornerShape(8.dp)),
@@ -108,13 +108,13 @@ fun ReportsHubScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Emissão de Relatórios Oficiais",
+                            text = "Relatório para Apoio em Fiscalização",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Brasília Ambiental • Dossiê Fiscalizatório com Marca D'Água Georreferenciada",
+                            text = "Levantamento Operacional com Registro Georreferenciado",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -334,7 +334,22 @@ fun ReportsHubScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "ℹ️ Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Button(
                         onClick = { viewModel.exportConsolidatedPdf() },

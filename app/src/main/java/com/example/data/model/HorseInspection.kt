@@ -47,12 +47,12 @@ data class HorseInspection(
     val tutorCpf: String = "",
     // Tutores e CPFs adicionais no formato Nome|CPF separados por ;;
     val additionalTutors: String = "",
-    // Equipe Fiscalizatória responsável pela diligência
-    val inspectionTeam: String = "Brasília Ambiental / Fiscalização DF",
+    // Equipe responsável pela diligência
+    val inspectionTeam: String = "Equipe de Apoio em Fiscalização",
     val createdAt: Long = System.currentTimeMillis()
 ) {
     val teamDisplay: String
-        get() = if (inspectionTeam.isNotBlank()) inspectionTeam else "Brasília Ambiental / Fiscalização DF"
+        get() = if (inspectionTeam.isNotBlank()) inspectionTeam else "Equipe de Apoio em Fiscalização"
 
     val formattedAddress: String
         get() {

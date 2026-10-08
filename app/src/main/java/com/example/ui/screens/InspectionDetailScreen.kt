@@ -666,6 +666,21 @@ fun InspectionDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            ) {
+                Text(
+                    text = "ℹ️ Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF.",
+                    fontSize = 11.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(10.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             // Action: Export PDF
             Button(
                 onClick = { viewModel.exportSinglePdf(inspection) },

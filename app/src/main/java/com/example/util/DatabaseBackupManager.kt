@@ -145,7 +145,7 @@ object DatabaseBackupManager {
                     tutorName = obj.optString("tutorName", ""),
                     tutorCpf = obj.optString("tutorCpf", ""),
                     additionalTutors = obj.optString("additionalTutors", ""),
-                    inspectionTeam = obj.optString("inspectionTeam", "Brasília Ambiental / Fiscalização DF"),
+                    inspectionTeam = obj.optString("inspectionTeam", "Equipe de Apoio em Fiscalização"),
                     createdAt = obj.optLong("createdAt", System.currentTimeMillis())
                 )
                 list.add(inspection)

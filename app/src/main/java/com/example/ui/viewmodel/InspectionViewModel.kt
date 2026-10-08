@@ -666,7 +666,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 textSize = 36f
                 isAntiAlias = true
             }
-            canvas.drawText("BRASÍLIA AMBIENTAL • LEVANTAMENTO OPERACIONAL", 80f, 300f, textPaint)
+            canvas.drawText("LEVANTAMENTO DE CAMPO • APOIO À FISCALIZAÇÃO", 80f, 300f, textPaint)
             textPaint.textSize = 28f
             canvas.drawText("Área de pastoreio / Contenção de equinos", 80f, 360f, textPaint)
             canvas.drawText("RA: ${current.administrativeRegion}", 80f, 420f, textPaint)
@@ -810,10 +810,20 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun exportSinglePdf(inspection: HorseInspection) {
+        android.widget.Toast.makeText(
+            getApplication(),
+            PdfReportGenerator.DISCLAIMER_TEXT,
+            android.widget.Toast.LENGTH_LONG
+        ).show()
         PdfReportGenerator.generateAndShareSinglePdf(getApplication(), inspection)
     }
 
     fun exportMultipleConsolidatedPdf(inspections: List<HorseInspection>) {
+        android.widget.Toast.makeText(
+            getApplication(),
+            PdfReportGenerator.DISCLAIMER_TEXT,
+            android.widget.Toast.LENGTH_LONG
+        ).show()
         PdfReportGenerator.generateAndShareConsolidatedPdf(
             context = getApplication(),
             inspections = inspections,
@@ -824,6 +834,11 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun exportMultipleIndividualPdfs(inspections: List<HorseInspection>) {
+        android.widget.Toast.makeText(
+            getApplication(),
+            PdfReportGenerator.DISCLAIMER_TEXT,
+            android.widget.Toast.LENGTH_LONG
+        ).show()
         PdfReportGenerator.generateAndShareMultipleIndividualPdfs(
             context = getApplication(),
             inspections = inspections
@@ -870,6 +885,11 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun exportConsolidatedPdf() {
+        android.widget.Toast.makeText(
+            getApplication(),
+            PdfReportGenerator.DISCLAIMER_TEXT,
+            android.widget.Toast.LENGTH_LONG
+        ).show()
         val inspections = reportPreviewInspections.value
         val start = reportStartDate.value
         val end = reportEndDate.value

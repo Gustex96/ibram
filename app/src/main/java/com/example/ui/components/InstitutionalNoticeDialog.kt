@@ -85,8 +85,8 @@ fun InstitutionalNoticeDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.logo_brasilia_ambiental),
-                    contentDescription = "Logo Brasília Ambiental",
+                    painter = painterResource(id = R.drawable.logo_meio_ambiente),
+                    contentDescription = "Logo Meio Ambiente",
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(8.dp)),
@@ -100,7 +100,7 @@ fun InstitutionalNoticeDialog(
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = "DIFIS-IV • IBRAM",
+                                text = "Apoio em Fiscalização",
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -125,6 +125,32 @@ fun InstitutionalNoticeDialog(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Card de Aviso Independente
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF.",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
                 // Card 1: Propósito Institucional e Relação com o RAF
                 Surface(
                     modifier = Modifier.fillMaxWidth(),

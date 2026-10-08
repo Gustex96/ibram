@@ -529,7 +529,7 @@ private fun createFallbackFieldPhoto(
         typeface = Typeface.DEFAULT_BOLD
         isAntiAlias = true
     }
-    canvas.drawText("BRASÍLIA AMBIENTAL • REGISTRO OPERACIONAL", 60f, 200f, textPaint)
+    canvas.drawText("LEVANTAMENTO DE CAMPO • APOIO À FISCALIZAÇÃO", 60f, 200f, textPaint)
 
     textPaint.textSize = 28f
     textPaint.typeface = Typeface.DEFAULT

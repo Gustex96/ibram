@@ -486,7 +486,7 @@ fun NewInspectionScreen(
                                 fontSize = 15.sp
                             )
                             Text(
-                                text = "Tire ou anexe múltiplas fotos. Cada imagem terá carimbo fiscalizatório automático com coordenadas GPS, RA e data/hora.",
+                                text = "Tire ou anexe múltiplas fotos. Cada imagem terá registro georreferenciado automático com coordenadas GPS, RA e data/hora.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,

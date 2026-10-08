@@ -98,7 +98,7 @@ object CsvExportUtils {
                 type = "text/csv"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, "Exportação de Registros - Levantamento Operacional")
-                putExtra(Intent.EXTRA_TEXT, "Segue em anexo a planilha de registros do Levantamento Operacional (Brasília Ambiental).")
+                putExtra(Intent.EXTRA_TEXT, "Segue em anexo a planilha de registros do Levantamento Operacional (Relatório para Apoio em Fiscalização).")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
