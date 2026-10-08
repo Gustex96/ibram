@@ -1,6 +1,6 @@
 {
-  "versionCode": 3,
-  "versionName": "3.0.1",
+  "versionCode": 1,
+  "versionName": "1",
   "releaseNotes": "• Atualização oficial DIFIS-IV / Instituto Brasília Ambiental (IBRAM)\n• Padronização da Avaliação Preliminar de Bem-Estar Animal baseada no PPBEA/CRMV\n• Inclusão dos módulos de espécies: Cachorro, Gato, Cavalo e Galo\n• Ficha de cadastro unificada dos tutores e CPFs na ação fiscal\n• Melhorias na geolocalização e geração de relatórios oficiais em PDF",
   "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
   "minRequiredVersion": 1
