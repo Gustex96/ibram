@@ -125,28 +125,30 @@ fun InstitutionalNoticeDialog(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Card de Aviso Independente
+                // Card de Aviso Independente (Destaque Maior)
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.tertiary)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(28.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF.",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 21.sp,
                             color = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                     }
@@ -313,9 +315,9 @@ fun InstitutionalNoticeDialog(
                 )
             ) {
                 Text(
-                    text = "Estou ciente e de acordo",
+                    text = "OK",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.5.sp
+                    fontSize = 15.sp
                 )
             }
         }

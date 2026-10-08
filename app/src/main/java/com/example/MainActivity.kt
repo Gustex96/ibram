@@ -227,24 +227,25 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
         viewModel.checkForUpdates(isManualCheck = false)
     }
 
-    when (viewModel.activeScreenName) {
-        "NEW_INSPECTION" -> {
-            NewInspectionScreen(
-                viewModel = viewModel,
-                onNavigateBack = { viewModel.navigateTo("MAIN") },
-                onSavedSuccessfully = { newId ->
-                    viewModel.navigateTo("DETAIL", newId)
-                }
-            )
-        }
-        "DETAIL" -> {
-            InspectionDetailScreen(
-                inspectionId = viewModel.activeDetailId ?: 0L,
-                viewModel = viewModel,
-                onNavigateBack = { viewModel.navigateTo("MAIN") }
-            )
-        }
-        else -> {
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (viewModel.activeScreenName) {
+            "NEW_INSPECTION" -> {
+                NewInspectionScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { viewModel.navigateTo("MAIN") },
+                    onSavedSuccessfully = { newId ->
+                        viewModel.navigateTo("DETAIL", newId)
+                    }
+                )
+            }
+            "DETAIL" -> {
+                InspectionDetailScreen(
+                    inspectionId = viewModel.activeDetailId ?: 0L,
+                    viewModel = viewModel,
+                    onNavigateBack = { viewModel.navigateTo("MAIN") }
+                )
+            }
+            else -> {
             Scaffold(
                 topBar = {
                     TopAppBar(
@@ -503,6 +504,15 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
             }
         }
     }
+
+    // Diálogo global de aviso em destaque para exportação de PDF com botão OK
+    if (viewModel.pendingPdfAction != null) {
+        com.example.ui.components.PdfDisclaimerDialog(
+            onDismiss = { viewModel.dismissPdfDisclaimer() },
+            onConfirm = { viewModel.confirmPdfDisclaimer() }
+        )
+    }
+}
 }
 
 @Composable

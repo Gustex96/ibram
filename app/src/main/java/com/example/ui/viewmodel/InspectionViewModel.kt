@@ -809,40 +809,44 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    var pendingPdfAction by mutableStateOf<(() -> Unit)?>(null)
+        private set
+
+    fun dismissPdfDisclaimer() {
+        pendingPdfAction = null
+    }
+
+    fun confirmPdfDisclaimer() {
+        val action = pendingPdfAction
+        pendingPdfAction = null
+        action?.invoke()
+    }
+
     fun exportSinglePdf(inspection: HorseInspection) {
-        android.widget.Toast.makeText(
-            getApplication(),
-            PdfReportGenerator.DISCLAIMER_TEXT,
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-        PdfReportGenerator.generateAndShareSinglePdf(getApplication(), inspection)
+        pendingPdfAction = {
+            PdfReportGenerator.generateAndShareSinglePdf(getApplication(), inspection)
+        }
     }
 
     fun exportMultipleConsolidatedPdf(inspections: List<HorseInspection>) {
-        android.widget.Toast.makeText(
-            getApplication(),
-            PdfReportGenerator.DISCLAIMER_TEXT,
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-        PdfReportGenerator.generateAndShareConsolidatedPdf(
-            context = getApplication(),
-            inspections = inspections,
-            startDateMillis = null,
-            endDateMillis = null,
-            selectedRa = null
-        )
+        pendingPdfAction = {
+            PdfReportGenerator.generateAndShareConsolidatedPdf(
+                context = getApplication(),
+                inspections = inspections,
+                startDateMillis = null,
+                endDateMillis = null,
+                selectedRa = null
+            )
+        }
     }
 
     fun exportMultipleIndividualPdfs(inspections: List<HorseInspection>) {
-        android.widget.Toast.makeText(
-            getApplication(),
-            PdfReportGenerator.DISCLAIMER_TEXT,
-            android.widget.Toast.LENGTH_LONG
-        ).show()
-        PdfReportGenerator.generateAndShareMultipleIndividualPdfs(
-            context = getApplication(),
-            inspections = inspections
-        )
+        pendingPdfAction = {
+            PdfReportGenerator.generateAndShareMultipleIndividualPdfs(
+                context = getApplication(),
+                inspections = inspections
+            )
+        }
     }
 
     fun exportInspectionsCsv(inspections: List<HorseInspection>) {
@@ -885,15 +889,12 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun exportConsolidatedPdf() {
-        android.widget.Toast.makeText(
-            getApplication(),
-            PdfReportGenerator.DISCLAIMER_TEXT,
-            android.widget.Toast.LENGTH_LONG
-        ).show()
         val inspections = reportPreviewInspections.value
         val start = reportStartDate.value
         val end = reportEndDate.value
         val ra = reportSelectedRa.value
-        PdfReportGenerator.generateAndShareConsolidatedPdf(getApplication(), inspections, start, end, ra)
+        pendingPdfAction = {
+            PdfReportGenerator.generateAndShareConsolidatedPdf(getApplication(), inspections, start, end, ra)
+        }
     }
 }
