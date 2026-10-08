@@ -13,7 +13,6 @@ import android.graphics.pdf.PdfDocument
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.R
-import com.example.data.model.DfConstants
 import com.example.data.model.HorseInspection
 import java.io.File
 import java.io.FileOutputStream
@@ -30,7 +29,7 @@ object PdfReportGenerator {
      */
     private fun decodeOptimizedBitmap(filePath: String, targetMaxDimension: Int = 1200): Bitmap? {
         val file = File(filePath)
-        if (!file.exists() || file.length() == 0L) return null
+        if (!file.exists() || (file.length() == 0L)) return null
 
         return try {
             val options = BitmapFactory.Options().apply {
@@ -300,7 +299,7 @@ object PdfReportGenerator {
             y += 16f
         } else {
             for ((tIdx, tutor) in tutors.withIndex()) {
-                val tName = if (tutor.name.isNotBlank()) tutor.name else "Não informado"
+                val tName = tutor.name.ifBlank { "Não informado" }
                 val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
                 val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
                 canvas.drawText("TUTOR #${tIdx + 1}: $tName", col1X, y, valuePaint)
@@ -347,7 +346,7 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
+        val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
         val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório para Apoio em Fiscalização"
         canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
         val legalNote = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
@@ -611,7 +610,7 @@ object PdfReportGenerator {
         val linePaint = Paint().apply { color = Color.rgb(203, 213, 225); strokeWidth = 1f }
         coverCanvas.drawLine(margin, pageHeight - 50f, margin + contentWidth, pageHeight - 50f, linePaint)
         val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 8f; isAntiAlias = true }
-        val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
+        val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
         coverCanvas.drawText("Relatório gerado em ${sdfGen.format(Date())} | Apoio em Fiscalização", margin, pageHeight - 36f, footerTextPaint)
         coverCanvas.drawText("Página 1 de ${inspections.size + 1}", margin + contentWidth - 80f, pageHeight - 36f, footerTextPaint)
 
@@ -667,7 +666,10 @@ object PdfReportGenerator {
 
             if (item.horseDescription.isNotBlank() || item.imageNotes.isNotBlank()) {
                 dy = drawSectionHeader(dCanvas, "DESCRIÇÃO DOS ANIMAIS & NOTAS DE CAMPO", margin, dy, contentWidth)
-                val combinedNotes = listOf(item.horseDescription, item.imageNotes).filter { it.isNotBlank() }.joinToString(" • ")
+                val combinedNotes = listOf(item.horseDescription, item.imageNotes)
+                    .asSequence()
+                    .filter { it.isNotBlank() }
+                    .joinToString(" • ")
                 dy = drawWrappedText(dCanvas, combinedNotes, margin + 8f, dy, contentWidth - 16f, valPaint, 12f)
                 dy += 6f
             }

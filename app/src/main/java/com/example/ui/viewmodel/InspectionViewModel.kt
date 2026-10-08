@@ -62,7 +62,7 @@ data class InspectionDraftState(
     val tutors: List<TutorEntry> = listOf(TutorEntry("", "")),
     val isWatermarking: Boolean = false,
     val isSaving: Boolean = false,
-    val protocolNumber: String = generateProtocol()
+    val protocolNumber: String = generateProtocol(),
 ) {
     val tutorName: String
         get() = tutors.firstOrNull()?.name ?: ""
@@ -131,7 +131,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     // Gerenciamento de Atualização do App (GitHub raw version.json)
     var availableUpdate by mutableStateOf<AppVersionInfo?>(null)
         private set
-    var isCheckingUpdate by mutableStateOf(false)
+    var isCheckingUpdate by mutableStateOf(value = false)
         private set
     var updateCheckResult by mutableStateOf<UpdateCheckResult?>(null)
         private set
@@ -213,7 +213,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 item.safetyRiskAssessment.contains(query, ignoreCase = true) ||
                 item.tutorCpf.contains(query, ignoreCase = true)
 
-            val matchesRisk = risk == null || item.riskLevel == risk
+            val matchesRisk = (risk == null) || (item.riskLevel == risk)
             val matchesRa = ra == null || item.administrativeRegion == ra
 
             matchesQuery && matchesRisk && matchesRa

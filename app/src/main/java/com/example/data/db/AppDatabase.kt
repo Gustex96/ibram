@@ -35,10 +35,10 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "horse_inspection_database"
+                    "horse_inspection_database",
                 )
                     .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance

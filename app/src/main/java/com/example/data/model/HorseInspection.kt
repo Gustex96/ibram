@@ -49,10 +49,10 @@ data class HorseInspection(
     val additionalTutors: String = "",
     // Equipe responsável pela diligência
     val inspectionTeam: String = "Equipe de Apoio em Fiscalização",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 ) {
     val teamDisplay: String
-        get() = if (inspectionTeam.isNotBlank()) inspectionTeam else "Equipe de Apoio em Fiscalização"
+        get() = inspectionTeam.ifBlank { "Equipe de Apoio em Fiscalização" }
 
     val formattedAddress: String
         get() {
@@ -78,7 +78,7 @@ data class HorseInspection(
 
     val formattedCaptureDate: String
         get() {
-            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
+            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale("pt", "BR"))
             return sdf.format(Date(captureTimestamp))
         }
 
@@ -112,7 +112,7 @@ data class HorseInspection(
         get() = mistreatedHorseCount > 0
 
     val mistreatmentList: List<String>
-        get() = if (mistreatmentIndicators.isBlank()) emptyList() else mistreatmentIndicators.split(";;").map { it.trim() }.filter { it.isNotEmpty() }
+        get() = if (mistreatmentIndicators.isBlank()) emptyList() else mistreatmentIndicators.split(";;").asSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
 
     val adequateList: List<String>
         get() = if (adequateIndicators.isBlank()) emptyList() else adequateIndicators.split(";;").map { it.trim() }.filter { it.isNotEmpty() }
@@ -150,8 +150,8 @@ data class HorseInspection(
         get() {
             val tutors = allTutors
             if (tutors.isEmpty()) return "Não informado"
-            return tutors.joinToString(" • ") { t ->
-                if (t.cpf.isNotBlank()) "${t.name} (${t.cpf})" else t.name
+            return tutors.joinToString(" • ") { tutor ->
+                if (tutor.cpf.isNotBlank()) "${tutor.name} (${tutor.cpf})" else tutor.name
             }
         }
 }

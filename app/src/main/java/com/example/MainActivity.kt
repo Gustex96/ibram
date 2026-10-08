@@ -1,6 +1,7 @@
 package com.example
 
 import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
 import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.graphics.Paint
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -114,7 +114,7 @@ class MainActivity : ComponentActivity() {
                 // Generate initial demo record with photo so user immediately sees functional history and PDF export
                 val width = 1080
                 val height = 810
-                val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val bmp = createBitmap(width, height, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bmp)
                 val p = Paint().apply { color = AndroidColor.rgb(27, 59, 54) }
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
@@ -547,7 +547,7 @@ fun VisualComfortSelectorDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                VisualComfortMode.values().forEach { mode ->
+                VisualComfortMode.entries.forEach { mode ->
                     val isSelected = mode == currentMode
                     Surface(
                         modifier = Modifier

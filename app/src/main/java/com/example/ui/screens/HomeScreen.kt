@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,12 +79,11 @@ import com.example.ui.components.SpeciesSelectorTabs
 import com.example.ui.viewmodel.InspectionViewModel
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: InspectionViewModel,
     onNavigateToNewInspection: () -> Unit,
-    onNavigateToDetail: (Long) -> Unit
+    onNavigateToDetail: (Long) -> Unit,
 ) {
     val inspections by viewModel.filteredInspections.collectAsStateWithLifecycle()
     val allInspections by viewModel.allInspections.collectAsStateWithLifecycle()
@@ -165,12 +163,12 @@ fun HomeScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                itemsIndexed(inspections, key = { _, inspection -> inspection.id }) { index, inspection ->
+                itemsIndexed(inspections, key = { _, item -> item.id }) { index, inspection ->
                     InspectionItemCard(
                         inspection = inspection,
                         index = index,
                         onClick = { onNavigateToDetail(inspection.id) },
-                        onExportPdf = { viewModel.exportSinglePdf(inspection) }
+                        onExportPdf = { viewModel.exportSinglePdf(inspection) },
                     )
                 }
             }
@@ -355,7 +353,7 @@ fun InspectionItemCard(
                             modifier = Modifier.align(Alignment.BottomEnd)
                         ) {
                             Text(
-                                text = "${inspection.allPhotoPaths.size}",
+                                text = inspection.allPhotoPaths.size.toString(),
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
