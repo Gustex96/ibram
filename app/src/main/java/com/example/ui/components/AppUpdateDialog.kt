@@ -20,7 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -140,6 +142,38 @@ fun AppUpdateDialog(
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
+
+                // Link e Informações do APK
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "Link do Release / APK:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = updateInfo.apkUrl,
+                            fontSize = 10.5.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 2
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "ℹ️ Dica: Se o GitHub exibir erro 404, significa que a Release ou o arquivo .apk ainda não foi publicado com o tag 'ibram' ou que o repositório é privado.",
+                            fontSize = 10.5.sp,
+                            lineHeight = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Recomenda-se atualizar para manter a precisão dos registros e estabilidade das vistorias em campo.",
                     fontSize = 11.5.sp,

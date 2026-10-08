@@ -231,11 +231,10 @@ private fun SpeciesCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = species.iconRes),
-                        contentDescription = species.displayName,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
+                    Text(
+                        text = species.emoji,
+                        fontSize = 19.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
 
