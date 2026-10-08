@@ -1,0 +1,6 @@
+{
+  "name": "Levantamento Operacional",
+  "description": "Aplicativo de registro e fiscalização de equinos no Distrito Federal com fotos georreferenciadas, avaliação de risco de fiscalização ambiental e exportação de relatórios em PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
