@@ -231,7 +231,7 @@ fun UpdateFeedbackDialog(
                             singleLine = false,
                             maxLines = 3,
                             textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                            label = { Text("URL Raw do version.json no GitHub", fontSize = 11.sp) },
+                            label = { Text("URL do version.json no GitHub", fontSize = 11.sp) },
                             shape = RoundedCornerShape(8.dp)
                         )
 
@@ -241,7 +241,7 @@ fun UpdateFeedbackDialog(
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    urlInput = "https://raw.githubusercontent.com/Gustex96/ibram/main/version.json"
+                                    urlInput = "https://github.com/Gustex96/ibram/blob/main/version.json"
                                     onResetDefaultUrl()
                                 },
                                 modifier = Modifier.weight(1f),
