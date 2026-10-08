@@ -90,7 +90,7 @@ fun MistreatmentChecklistView(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Perícia de Bem-Estar Animal",
+                        text = "Avaliação Preliminar de Bem-Estar Animal",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = primaryAccent

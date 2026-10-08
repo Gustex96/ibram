@@ -598,7 +598,7 @@ fun InspectionDetailScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     val tutors = inspection.allTutors
                     Text(
-                        text = if (tutors.size > 1) "Tutores / Responsáveis (${tutors.size})" else "Possível Tutor / Responsável",
+                        text = if (tutors.size > 1) "Tutores / Responsáveis (${tutors.size})" else "Tutor / Responsável",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary

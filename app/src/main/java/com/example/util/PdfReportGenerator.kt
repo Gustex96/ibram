@@ -347,8 +347,10 @@ object PdfReportGenerator {
         }
 
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
-        val genText = "Boletim expedido em ${sdfGen.format(Date())} | Levantamento Operacional - Brasília Ambiental"
-        canvas.drawText(genText, margin, footerY + 12f, footerTextPaint)
+        val genText = "Boletim expedido em ${sdfGen.format(Date())} | DIFIS-IV • Brasília Ambiental"
+        canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
+        val legalNote = "Nota: Subsidia a DIFIS-IV; não substitui o Relatório de Auditoria e Fiscalização (RAF/IBRAM)."
+        canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
 
         val signLineX = margin + contentWidth - 180f
         canvas.drawLine(signLineX, footerY + 22f, margin + contentWidth, footerY + 22f, linePaint)

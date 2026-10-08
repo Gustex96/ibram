@@ -1240,9 +1240,9 @@ fun NewInspectionScreen(
                 }
             }
 
-            // 5. SECTION: NOTAS DE CAMPO & DESCRIÇÃO
+            // SECTION: NOTAS DE CAMPO & DESCRIÇÃO
             SectionHeader(
-                title = "5. Notas de Campo e Descrição da Imagem",
+                title = "Notas de Campo e Descrição da Imagem",
                 description = "Descreva as condições dos animais, perigos e cenário observado."
             )
 
@@ -1256,12 +1256,6 @@ fun NewInspectionScreen(
                 minLines = 3,
                 maxLines = 6,
                 shape = RoundedCornerShape(12.dp)
-            )
-
-            // 6. SECTION: DADOS DO POSSÍVEL TUTOR / RESPONSÁVEL
-            SectionHeader(
-                title = "6. Identificação do Possível Tutor",
-                description = "Preencha se houver proprietário ou responsável identificado no local."
             )
 
             // 5. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS

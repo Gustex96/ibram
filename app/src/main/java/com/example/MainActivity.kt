@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PriorityHigh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
@@ -71,6 +72,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.data.db.AppDatabase
 import com.example.data.model.HorseInspection
 import com.example.ui.components.AppUpdateDialog
+import com.example.ui.components.InstitutionalNoticeDialog
 import com.example.ui.screens.DfSafetyInfoDialog
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
@@ -217,6 +219,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showInfoDialog by rememberSaveable { mutableStateOf(false) }
     var showVisualModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showInstitutionalNoticeDialog by rememberSaveable { mutableStateOf(true) }
 
     // Verificação de atualizações no GitHub ao iniciar o aplicativo
     LaunchedEffect(Unit) {
@@ -360,6 +363,27 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                     }
                                 }
                             }
+
+                            // Botão do Aviso Institucional DIFIS-IV / IBRAM
+                            IconButton(
+                                onClick = { showInstitutionalNoticeDialog = true },
+                                modifier = Modifier.testTag("action_institutional_notice")
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(34.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Shield,
+                                            contentDescription = "Aviso Institucional DIFIS-IV • IBRAM",
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(19.dp)
+                                        )
+                                    }
+                                }
+                            }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface
@@ -441,6 +465,10 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
 
             if (showInfoDialog) {
                 DfSafetyInfoDialog(onDismiss = { showInfoDialog = false })
+            }
+
+            if (showInstitutionalNoticeDialog) {
+                InstitutionalNoticeDialog(onDismiss = { showInstitutionalNoticeDialog = false })
             }
 
             // Diálogo de Atualização Disponível (Alerta de nova versão detectada via version.json do GitHub)
