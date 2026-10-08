@@ -30,8 +30,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Edit
@@ -95,7 +93,6 @@ import com.example.data.model.HorseInspection
 import com.example.ui.components.MapPointThumbnail
 import com.example.ui.viewmodel.InspectionViewModel
 import com.example.util.CsvExportUtils
-import com.example.util.FirestoreSyncManager
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -116,15 +113,10 @@ fun HistoryScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var selectedRaFilter by remember { mutableStateOf<String?>(null) }
-    val isSyncing by viewModel.isSyncingCloud.collectAsStateWithLifecycle()
-
     // Multi-Selection state
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showMultiplePdfDialog by remember { mutableStateOf(false) }
-    var showCloudSyncDialog by remember { mutableStateOf(false) }
-
-    var showOfflineBackupDialog by remember { mutableStateOf(false) }
-    var cloudSyncFailReason by remember { mutableStateOf("") }
+    var showBackupDialog by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -348,57 +340,19 @@ fun HistoryScreen(
                         )
                     }
 
-                    // Sincronizar Nuvem (Firestore)
+                    // Backup & Restauração Local (Aparelho)
                     OutlinedButton(
-                        onClick = { showCloudSyncDialog = true },
+                        onClick = { showBackupDialog = true },
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         modifier = Modifier
                             .height(36.dp)
-                            .testTag("cloud_sync_button"),
-                        enabled = !isSyncing
+                            .testTag("backup_button")
                     ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(15.dp))
-                        }
+                        Icon(Icons.Default.SaveAlt, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (isSyncing) "Sincronizando..." else "Nuvem", fontSize = 11.sp)
+                        Text("Backup", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
-                }
-            }
-        }
-
-        // Indicador em tempo real de sincronização em segundo plano
-        if (isSyncing) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Conectando e sincronizando com o Firebase... Aguarde.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Medium
-                    )
                 }
             }
         }
@@ -553,41 +507,35 @@ fun HistoryScreen(
     }
 
     // Modal de Nuvem: Fazer Backup e Recuperar Registros
-    if (showCloudSyncDialog) {
+    // Modal de Cópia de Segurança Local (Exportar / Importar Backup no Celular)
+    if (showBackupDialog) {
         AlertDialog(
-            onDismissRequest = { showCloudSyncDialog = false },
+            onDismissRequest = { showBackupDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.CloudUpload,
+                        imageVector = Icons.Default.SaveAlt,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Nuvem & Sincronização")
+                    Text("Cópia de Segurança Local")
                 }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Gerencie o envio (backup) ou a recuperação (download) das suas fiscalizações com a nuvem do Firestore:",
+                        text = "Gerencie o backup das suas fiscalizações diretamente no aparelho:",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    // Opção 1: Fazer Backup na Nuvem (Enviar)
+                    // Opção 1: Salvar Cópia no Celular (Escolher Pasta)
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                showCloudSyncDialog = false
-                                viewModel.syncAllToCloud { success, message ->
-                                    if (success) {
-                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                    } else {
-                                        cloudSyncFailReason = message
-                                        showOfflineBackupDialog = true
-                                    }
-                                }
+                                showBackupDialog = false
+                                createBackupLauncher.launch(DatabaseBackupManager.generateBackupFilename())
                             },
                         shape = RoundedCornerShape(10.dp),
                         colors = CardDefaults.cardColors(
@@ -600,7 +548,7 @@ fun HistoryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.CloudUpload,
+                                imageVector = Icons.Default.SaveAlt,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
@@ -608,94 +556,10 @@ fun HistoryScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "Fazer Backup na Nuvem (Enviar)",
+                                    text = "Salvar Cópia no Celular (Exportar)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "Envia todos os ${allInspections.size} registros locais para o banco de dados remoto.",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    // Opção 2: Recuperar / Baixar Registros da Nuvem
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                showCloudSyncDialog = false
-                                viewModel.restoreAllFromCloud { _, message ->
-                                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                }
-                            },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CloudDownload,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Recuperar / Baixar da Nuvem",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                                Text(
-                                    text = "Baixa e restaura todas as fiscalizações salvas na nuvem para este aparelho.",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    // Opção 3: Salvar Cópia no Celular (Escolher Pasta)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                showCloudSyncDialog = false
-                                createBackupLauncher.launch(DatabaseBackupManager.generateBackupFilename())
-                            },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SaveAlt,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Salvar Cópia no Celular (Escolher Pasta)",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                                 Text(
                                     text = "Escolha onde salvar o arquivo de backup no seu celular (Downloads, Documentos, Pen Drive, etc.).",
@@ -706,12 +570,12 @@ fun HistoryScreen(
                         }
                     }
 
-                    // Opção 4: Restaurar Backup do Celular (Escolher Arquivo)
+                    // Opção 2: Restaurar Backup do Celular (Escolher Arquivo)
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                showCloudSyncDialog = false
+                                showBackupDialog = false
                                 restoreBackupLauncher.launch(arrayOf("application/json", "*/*"))
                             },
                         shape = RoundedCornerShape(10.dp),
@@ -733,7 +597,7 @@ fun HistoryScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "Restaurar Backup do Celular (Escolher Arquivo)",
+                                    text = "Restaurar Backup do Celular (Importar)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -747,84 +611,23 @@ fun HistoryScreen(
                         }
                     }
 
-                    Text(
-                        text = "Nota: Se estiver sem internet ou sem arquivo de credencial configurado, o app funciona 100% offline preservando tudo localmente.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.5.sp
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCloudSyncDialog = false }) {
-                    Text("Fechar")
-                }
-            }
-        )
-    }
-
-    // Modal emitido quando o envio para a nuvem não funcionar para o fiscal escolher o local no celular
-    if (showOfflineBackupDialog) {
-        AlertDialog(
-            onDismissRequest = { showOfflineBackupDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(36.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Envio para Nuvem Indisponível",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Não foi possível enviar os registros para a nuvem no momento (${cloudSyncFailReason.ifBlank { "Sem conexão ou serviço indisponível" }}).",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "Seus dados estão 100% seguros e preservados neste aparelho.",
+                            text = "Segurança & Privacidade: Todo o armazenamento é 100% local no próprio aparelho, funcionando completamente offline.",
                             modifier = Modifier.padding(10.dp),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
                         )
                     }
-                    Text(
-                        text = "Deseja escolher agora a pasta no seu celular (Downloads, Documentos, Pen Drive ou Cartão SD) onde salvar uma cópia de segurança do banco de dados?",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showOfflineBackupDialog = false
-                        createBackupLauncher.launch(DatabaseBackupManager.generateBackupFilename())
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Default.SaveAlt, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Escolher Local & Salvar no Celular")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showOfflineBackupDialog = false }) {
-                    Text("Manter apenas no App")
+                TextButton(onClick = { showBackupDialog = false }) {
+                    Text("Fechar")
                 }
             }
         )

@@ -636,11 +636,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 val insertedId = repository.insertInspection(inspection)
                 val savedInspection = inspection.copy(id = insertedId)
 
-                // Sincronização automática em segundo plano com o Firestore
-                viewModelScope.launch(Dispatchers.IO) {
-                    com.example.util.FirestoreSyncManager.syncInspection(getApplication(), savedInspection)
-                }
-
                 resetDraft()
                 onSuccess(savedInspection)
             } catch (e: Exception) {
@@ -730,9 +725,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     viewModelScope.launch {
                         val insertedId = repository.insertInspection(inspection)
                         val saved = inspection.copy(id = insertedId)
-                        viewModelScope.launch(Dispatchers.IO) {
-                            com.example.util.FirestoreSyncManager.syncInspection(getApplication(), saved)
-                        }
                         resetDraft()
                         onSuccess(saved)
                     }
@@ -797,9 +789,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             repository.updateInspection(updated)
-            viewModelScope.launch(Dispatchers.IO) {
-                com.example.util.FirestoreSyncManager.syncInspection(getApplication(), updated)
-            }
             onSuccess()
         }
     }
@@ -848,59 +837,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    val isSyncingCloud = MutableStateFlow(false)
-
-    fun syncAllToCloud(onComplete: (Boolean, String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            isSyncingCloud.value = true
-            val currentList = allInspections.value
-            if (currentList.isEmpty()) {
-                isSyncingCloud.value = false
-                withContext(Dispatchers.Main) {
-                    onComplete(false, "Nenhum relatório local disponível para envio ao Firebase.")
-                }
-                return@launch
-            }
-
-            val result = com.example.util.FirestoreSyncManager.syncAll(getApplication(), currentList)
-            isSyncingCloud.value = false
-
-            val (success, msg) = if (result.successCount > 0 && result.failCount == 0) {
-                Pair(true, "${result.successCount} relatório(s) sincronizado(s) com sucesso no Firebase Firestore!")
-            } else if (result.successCount > 0) {
-                Pair(true, "${result.successCount} sincronizados, ${result.failCount} falharam. Detalhe: ${result.errorMessage ?: "Erro desconhecido"}")
-            } else {
-                val reason = result.errorMessage ?: "Verifique a conexão ou as Regras de Segurança do Firestore."
-                Pair(false, "Falha ao enviar para o Firebase: $reason")
-            }
-
-            withContext(Dispatchers.Main) {
-                onComplete(success, msg)
-            }
-        }
-    }
-
-    fun restoreAllFromCloud(onComplete: (Boolean, String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            isSyncingCloud.value = true
-            val db = AppDatabase.getDatabase(getApplication())
-            val result = com.example.util.FirestoreSyncManager.fetchAndRestoreAll(getApplication(), db.horseInspectionDao())
-            isSyncingCloud.value = false
-
-            val (success, msg) = if (result.isSuccess) {
-                val count = result.getOrNull() ?: 0
-                Pair(true, "$count relatório(s) recuperado(s) com sucesso da nuvem Firebase!")
-            } else {
-                val reason = result.exceptionOrNull()?.message ?: "Erro desconhecido ao recuperar da nuvem."
-                Pair(false, "Falha ao recuperar do Firebase: $reason")
-            }
-
-            withContext(Dispatchers.Main) {
-                onComplete(success, msg)
-            }
-        }
-    }
-
     fun exportBackupToUri(uri: Uri, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val currentList = allInspections.value
@@ -930,17 +866,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             withContext(Dispatchers.Main) {
                 onResult(success, msg)
             }
-        }
-    }
-
-    suspend fun restoreFromCloud(): Pair<Boolean, String> {
-        val db = AppDatabase.getDatabase(getApplication())
-        val result = com.example.util.FirestoreSyncManager.fetchAndRestoreAll(getApplication(), db.horseInspectionDao())
-        return if (result.isSuccess) {
-            val count = result.getOrNull() ?: 0
-            Pair(true, "$count registro(s) recuperado(s) com sucesso da nuvem!")
-        } else {
-            Pair(false, result.exceptionOrNull()?.message ?: "Erro ao recuperar da nuvem.")
         }
     }
 

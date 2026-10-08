@@ -119,7 +119,7 @@ object PdfReportGenerator {
 
         y += 52f
 
-        // Document Badge - BOLETIM INDIVIDUAL DE FISCALIZAÇÃO DE MAUS-TRATOS
+        // Document Badge - LEVANTAMENTO E NÚMERO DO PROTOCOLO
         val badgeBgPaint = Paint().apply {
             color = Color.rgb(241, 245, 249)
             style = Paint.Style.FILL
@@ -133,7 +133,7 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("BOLETIM INDIVIDUAL DE FISCALIZAÇÃO DE MAUS-TRATOS", margin + 10f, y + 16f, docNamePaint)
+        canvas.drawText("LEVANTAMENTO E NÚMERO DO PROTOCOLO", margin + 10f, y + 16f, docNamePaint)
 
         val protocolPaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
@@ -302,8 +302,9 @@ object PdfReportGenerator {
             for ((tIdx, tutor) in tutors.withIndex()) {
                 val tName = if (tutor.name.isNotBlank()) tutor.name else "Não informado"
                 val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
+                val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
                 canvas.drawText("TUTOR #${tIdx + 1}: $tName", col1X, y, valuePaint)
-                canvas.drawText("CPF: $tCpf", col2X, y, valuePaint)
+                canvas.drawText("$docLabel: $tCpf", col2X, y, valuePaint)
                 y += 14f
             }
         }
@@ -347,7 +348,7 @@ object PdfReportGenerator {
         }
 
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
-        val genText = "Boletim expedido em ${sdfGen.format(Date())} | DIFIS-IV • Brasília Ambiental"
+        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | DIFIS-IV • Brasília Ambiental"
         canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
         val legalNote = "Nota: Subsidia a DIFIS-IV; não substitui o Relatório de Auditoria e Fiscalização (RAF/IBRAM)."
         canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
@@ -447,7 +448,7 @@ object PdfReportGenerator {
         val reportsDir = File(context.cacheDir, "reports").apply {
             if (!exists()) mkdirs()
         }
-        val outputFile = File(reportsDir, "Boletim_MausTratos_${inspection.protocolNumber}.pdf")
+        val outputFile = File(reportsDir, "Levantamento_Protocolo_${inspection.protocolNumber}.pdf")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -767,8 +768,8 @@ object PdfReportGenerator {
             sharePdf(
                 context = context,
                 file = file,
-                subject = "Boletim de Fiscalização - ${inspection.protocolNumber}",
-                message = "Segue em anexo o Boletim Individual de Fiscalização referente ao protocolo ${inspection.protocolNumber}."
+                subject = "Levantamento e número do protocolo - ${inspection.protocolNumber}",
+                message = "Segue em anexo o Levantamento referente ao protocolo ${inspection.protocolNumber}."
             )
         } else {
             Toast.makeText(context, "Erro ao gerar PDF", Toast.LENGTH_SHORT).show()

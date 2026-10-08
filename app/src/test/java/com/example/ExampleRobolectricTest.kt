@@ -55,6 +55,13 @@ class ExampleRobolectricTest {
         assertFalse(CpfValidator.isValid("11111111111"))
         assertFalse(CpfValidator.isValid("00000000000"))
         assertFalse(CpfValidator.isValid("123"))
+
+        // CNPJ dynamic support
+        val rawCnpj = "11222333000181"
+        val formattedCnpj = CpfValidator.format(rawCnpj)
+        assertEquals("11.222.333/0001-81", formattedCnpj)
+        assertTrue(CpfValidator.isCnpj(rawCnpj))
+        assertFalse(CpfValidator.isCnpj("12345678909"))
     }
 
     @Test

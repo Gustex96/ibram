@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -72,6 +73,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.data.model.DfConstants
 import com.example.ui.viewmodel.InspectionViewModel
+import com.example.util.CnpjConsultationHelper
+import com.example.util.CpfValidator
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -172,39 +175,22 @@ fun InspectionDetailScreen(
                         )
                     }
 
-                    // Top Left: Carimbo OK & Photo Counter
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    // Top Left: Photo Counter
+                    if (allPhotos.size > 1) {
                         Surface(
-                            color = Color.Black.copy(alpha = 0.7f),
-                            shape = RoundedCornerShape(6.dp)
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
                         ) {
                             Text(
-                                text = "Carimbo Fiscalizatório OK",
-                                color = Color(0xFF81C784),
+                                text = "📸 ${activeIndex + 1} de ${allPhotos.size}",
+                                color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                             )
-                        }
-
-                        if (allPhotos.size > 1) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "📸 ${activeIndex + 1} de ${allPhotos.size}",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
                         }
                     }
 
@@ -628,10 +614,28 @@ fun InspectionDetailScreen(
                                 text = "Nome: ${if (tutor.name.isNotBlank()) tutor.name else "Não informado"}",
                                 fontSize = 13.sp
                             )
-                            Text(
-                                text = "CPF: ${if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"}",
-                                fontSize = 13.sp
-                            )
+                            val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "$docLabel: ${if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"}",
+                                    fontSize = 13.sp
+                                )
+                                OutlinedButton(
+                                    onClick = {
+                                        CnpjConsultationHelper.abrirConsultaReceitaFederal(context, tutor.cpf)
+                                    },
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Consultar CNPJ", fontSize = 10.sp)
+                                }
+                            }
                         }
                     }
                 }

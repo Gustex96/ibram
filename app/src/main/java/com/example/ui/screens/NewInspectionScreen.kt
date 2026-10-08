@@ -20,6 +20,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +52,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -59,6 +61,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,6 +92,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -100,6 +104,7 @@ import coil.compose.AsyncImage
 import com.example.data.model.DfConstants
 import com.example.ui.components.MistreatmentChecklistView
 import com.example.ui.viewmodel.InspectionViewModel
+import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
 import java.io.File
 
@@ -316,32 +321,6 @@ fun NewInspectionScreen(
                                     .clickable { previewPhotoPath = activePhotoPath },
                                 contentScale = ContentScale.Fit
                             )
-
-                            // Top-left watermark badge
-                            Surface(
-                                color = Color(0xCC000000),
-                                shape = RoundedCornerShape(bottomEnd = 8.dp),
-                                modifier = Modifier.align(Alignment.TopStart)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = Color(0xFF81C784),
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Carimbo Fiscalizatório OK",
-                                        color = Color.White,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
 
                             // Top-right action icons (Fullscreen & Delete)
                             Row(
@@ -1274,8 +1253,10 @@ fun NewInspectionScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     draft.tutors.forEachIndexed { index, tutor ->
-                        val isCpfValid = CpfValidator.isValid(tutor.cpf)
-                        val isCpfFilled = tutor.cpf.isNotBlank()
+                        val isDocValid = CpfValidator.isValid(tutor.cpf)
+                        val isDocFilled = tutor.cpf.isNotBlank()
+                        val isCnpj = CpfValidator.isCnpj(tutor.cpf)
+                        val docType = CpfValidator.getDocumentType(tutor.cpf)
 
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
@@ -1319,52 +1300,89 @@ fun NewInspectionScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("tutor_name_field_$index"),
-                                    label = { Text("Nome do Tutor ${index + 1}") },
-                                    placeholder = { Text("Ex: João da Silva") },
+                                    label = { Text("Nome do Tutor / Empresa ${index + 1}") },
+                                    placeholder = { Text("Ex: João da Silva ou Agropecuária Ltda") },
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp)
                                 )
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                OutlinedTextField(
-                                    value = tutor.cpf,
-                                    onValueChange = { viewModel.updateTutor(index, tutor.name, it) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("tutor_cpf_field_$index"),
-                                    label = { Text("CPF do Tutor ${index + 1}") },
-                                    placeholder = { Text("000.000.000-00") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(10.dp),
-                                    trailingIcon = {
-                                        if (isCpfFilled) {
-                                            if (isCpfValid) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "CPF Válido",
-                                                    tint = Color(0xFF2E7D32)
-                                                )
-                                            } else {
-                                                Icon(
-                                                    imageVector = Icons.Default.Warning,
-                                                    contentDescription = "CPF Incompleto",
-                                                    tint = Color(0xFFE65100)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = tutor.cpf,
+                                        onValueChange = { viewModel.updateTutor(index, tutor.name, it) },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("tutor_cpf_field_$index"),
+                                        label = { Text("CPF / CNPJ do Tutor ${index + 1}") },
+                                        placeholder = { Text("000.000.000-00 ou CNPJ") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp),
+                                        trailingIcon = {
+                                            if (isDocFilled) {
+                                                if (isDocValid) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "$docType Válido",
+                                                        tint = Color(0xFF2E7D32)
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Warning,
+                                                        contentDescription = "Documento Incompleto",
+                                                        tint = Color(0xFFE65100)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        supportingText = {
+                                            if (isDocFilled && !isDocValid) {
+                                                Text(
+                                                    text = if (isCnpj) "CNPJ com 14 dígitos." else "CPF (11 dígitos) ou CNPJ (14 dígitos).",
+                                                    color = Color(0xFFE65100),
+                                                    fontSize = 11.sp
                                                 )
                                             }
                                         }
-                                    },
-                                    supportingText = {
-                                        if (isCpfFilled && !isCpfValid) {
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    FilledTonalButton(
+                                        onClick = {
+                                            CnpjConsultationHelper.abrirConsultaReceitaFederal(context, tutor.cpf)
+                                        },
+                                        modifier = Modifier
+                                            .height(56.dp)
+                                            .testTag("consultar_cnpj_button_$index"),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Search,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "Formato de CPF com 11 dígitos.",
-                                                color = Color(0xFFE65100),
-                                                fontSize = 11.sp
+                                                text = "Consultar\nCNPJ",
+                                                fontSize = 10.sp,
+                                                lineHeight = 11.sp,
+                                                textAlign = TextAlign.Center,
+                                                fontWeight = FontWeight.Bold
                                             )
                                         }
                                     }
-                                )
+                                }
                             }
                         }
                     }
