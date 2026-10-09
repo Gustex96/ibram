@@ -506,7 +506,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
     }
 
     // Diálogo global de aviso em destaque para exportação de PDF com botão OK
-    if (viewModel.pendingPdfAction != null) {
+    if (viewModel.showPdfDisclaimerDialog || viewModel.pendingPdfAction != null) {
         com.example.ui.components.PdfDisclaimerDialog(
             onDismiss = { viewModel.dismissPdfDisclaimer() },
             onConfirm = { viewModel.confirmPdfDisclaimer() }

@@ -269,7 +269,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         exactLongitude: Double? = null,
         exactTimestampMillis: Long? = null,
         exactRa: String? = null,
-        exemplarIndex: Int? = null
+        exemplarIndex: Int? = null,
+        photoTag: String? = null
     ) {
         val currentDraft = draft.value
         val captureLat = exactLatitude ?: currentDraft.latitude
@@ -303,7 +304,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 administrativeRegion = captureRa,
                 protocol = currentDraft.protocolNumber,
                 captureTimeMillis = captureTime,
-                exemplarIndex = orderIndex
+                exemplarIndex = orderIndex,
+                photoTag = photoTag
             )
 
             withContext(Dispatchers.Main) {
@@ -812,11 +814,21 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     var pendingPdfAction by mutableStateOf<(() -> Unit)?>(null)
         private set
 
+    var showPdfDisclaimerDialog by mutableStateOf(false)
+        private set
+
+    fun openPdfDisclaimerDialog(onConfirmed: (() -> Unit)? = null) {
+        pendingPdfAction = onConfirmed
+        showPdfDisclaimerDialog = true
+    }
+
     fun dismissPdfDisclaimer() {
+        showPdfDisclaimerDialog = false
         pendingPdfAction = null
     }
 
     fun confirmPdfDisclaimer() {
+        showPdfDisclaimerDialog = false
         val action = pendingPdfAction
         pendingPdfAction = null
         action?.invoke()

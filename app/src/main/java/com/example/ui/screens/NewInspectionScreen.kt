@@ -69,6 +69,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import com.example.ui.components.AppOutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -294,7 +295,7 @@ fun NewInspectionScreen(
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "📸 Ex ${activeIndex + 1} de ${photos.size}",
+                                    text = "📸 Foto ${activeIndex + 1} de ${photos.size}",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -405,7 +406,7 @@ fun NewInspectionScreen(
                                             modifier = Modifier.align(Alignment.TopStart)
                                         ) {
                                             Text(
-                                                text = "Ex ${idx + 1}",
+                                                text = "Foto ${idx + 1}",
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White,
@@ -606,7 +607,7 @@ fun NewInspectionScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     // 2. Quadra
-                    OutlinedTextField(
+                    AppOutlinedTextField(
                         value = draft.quadra,
                         onValueChange = { viewModel.updateQuadra(it) },
                         modifier = Modifier
@@ -625,7 +626,7 @@ fun NewInspectionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = draft.conjunto,
                             onValueChange = { viewModel.updateConjunto(it) },
                             modifier = Modifier
@@ -637,7 +638,7 @@ fun NewInspectionScreen(
                             shape = RoundedCornerShape(10.dp)
                         )
 
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = draft.numero,
                             onValueChange = { viewModel.updateNumero(it) },
                             modifier = Modifier
@@ -995,7 +996,7 @@ fun NewInspectionScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
+                    AppOutlinedTextField(
                         value = draft.horseDescription,
                         onValueChange = { viewModel.updateHorseDescription(it) },
                         modifier = Modifier
@@ -1103,7 +1104,7 @@ fun NewInspectionScreen(
 
                     if (draft.requiresSeagriApprehension) {
                         Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = draft.seagriNotes,
                             onValueChange = { viewModel.updateSeagriNotes(it) },
                             modifier = Modifier
@@ -1203,7 +1204,7 @@ fun NewInspectionScreen(
 
                     if (draft.requiresPmdfSupport) {
                         Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = draft.pmdfNotes,
                             onValueChange = { viewModel.updatePmdfNotes(it) },
                             modifier = Modifier
@@ -1225,7 +1226,7 @@ fun NewInspectionScreen(
                 description = "Descreva as condições dos animais, perigos e cenário observado."
             )
 
-            OutlinedTextField(
+            AppOutlinedTextField(
                 value = draft.imageNotes,
                 onValueChange = { viewModel.updateImageNotes(it) },
                 modifier = Modifier
@@ -1294,7 +1295,7 @@ fun NewInspectionScreen(
 
                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                OutlinedTextField(
+                                AppOutlinedTextField(
                                     value = tutor.name,
                                     onValueChange = { viewModel.updateTutor(index, it, tutor.cpf) },
                                     modifier = Modifier
@@ -1312,7 +1313,7 @@ fun NewInspectionScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    OutlinedTextField(
+                                    AppOutlinedTextField(
                                         value = tutor.cpf,
                                         onValueChange = { viewModel.updateTutor(index, tutor.name, it) },
                                         modifier = Modifier
@@ -1520,13 +1521,14 @@ fun NewInspectionScreen(
             administrativeRegion = draft.administrativeRegion,
             protocolNumber = draft.protocolNumber,
             capturedPhotosCount = draft.allPhotoPaths.size,
-            onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa ->
+            onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag ->
                 viewModel.addDraftPhotoUri(
                     uri = uri,
                     exactLatitude = exactLat,
                     exactLongitude = exactLng,
                     exactTimestampMillis = exactTime,
-                    exactRa = dynamicRa
+                    exactRa = dynamicRa,
+                    photoTag = photoTag
                 )
             },
             onPickFromGallery = {
@@ -1591,7 +1593,7 @@ fun RaSelectionDialog(
         },
         text = {
             Column(modifier = Modifier.height(380.dp)) {
-                OutlinedTextField(
+                AppOutlinedTextField(
                     value = filterText,
                     onValueChange = { filterText = it },
                     placeholder = { Text("Filtrar RA...") },

@@ -44,9 +44,14 @@ import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,10 +73,12 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.ui.components.AppOutlinedTextField
 import com.example.util.LocationHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -83,6 +90,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+data class PendingPhotoCapture(
+    val uri: Uri,
+    val exactLat: Double,
+    val exactLng: Double,
+    val exactTime: Long,
+    val exactRa: String
+)
+
 @Composable
 fun CameraCaptureScreen(
     initialLatitude: Double,
@@ -90,14 +105,14 @@ fun CameraCaptureScreen(
     administrativeRegion: String,
     protocolNumber: String,
     capturedPhotosCount: Int,
-    onPhotoCaptured: (uri: Uri, exactLatitude: Double, exactLongitude: Double, exactTimestampMillis: Long, dynamicRa: String) -> Unit,
+    onPhotoCaptured: (uri: Uri, exactLatitude: Double, exactLongitude: Double, exactTimestampMillis: Long, dynamicRa: String, photoTag: String?) -> Unit,
     onPickFromGallery: () -> Unit,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val exemplarNumber = capturedPhotosCount + 1
+    val photoNumber = capturedPhotosCount + 1
 
     val locationHelper = remember(context) { LocationHelper(context) }
     var currentLatitude by remember { mutableDoubleStateOf(initialLatitude) }
@@ -113,6 +128,8 @@ fun CameraCaptureScreen(
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
     var flashAnimation by remember { mutableStateOf(false) }
+    var pendingPhotoCapture by remember { mutableStateOf<PendingPhotoCapture?>(null) }
+    var photoTagInput by remember { mutableStateOf("") }
 
     // Stream contínuo de coordenadas dinâmicas e relógio tipo Timestamp Camera
     LaunchedEffect(Unit) {
@@ -276,7 +293,7 @@ fun CameraCaptureScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC).copy(alpha = 0.8f))
                         ) {
                             Text(
-                                text = "Ex $exemplarNumber",
+                                text = "Foto #$photoNumber",
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
@@ -366,7 +383,7 @@ fun CameraCaptureScreen(
                     color = Color(0xFF15803D)
                 ) {
                     Text(
-                        text = "Ex $exemplarNumber",
+                        text = "Foto #$photoNumber",
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -446,25 +463,25 @@ fun CameraCaptureScreen(
                                         flashAnimation = false
                                         isCapturing = false
                                         val uri = Uri.fromFile(photoFile)
-                                        onPhotoCaptured(uri, exactLat, exactLng, exactTime, exactRa)
-                                        Toast.makeText(context, "Foto salva (Ex $exemplarNumber • $exactRa)!", Toast.LENGTH_SHORT).show()
+                                        pendingPhotoCapture = PendingPhotoCapture(uri, exactLat, exactLng, exactTime, exactRa)
+                                        photoTagInput = ""
                                     }
 
                                     override fun onError(exception: ImageCaptureException) {
-                                        val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, exemplarNumber)
+                                        val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber)
                                         flashAnimation = false
                                         isCapturing = false
-                                        onPhotoCaptured(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa)
-                                        Toast.makeText(context, "Foto salva (Ex $exemplarNumber • $exactRa)!", Toast.LENGTH_SHORT).show()
+                                        pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa)
+                                        photoTagInput = ""
                                     }
                                 }
                             )
                         } else {
-                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, exemplarNumber)
+                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber)
                             flashAnimation = false
                             isCapturing = false
-                            onPhotoCaptured(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa)
-                            Toast.makeText(context, "Foto salva (Ex $exemplarNumber • $exactRa)!", Toast.LENGTH_SHORT).show()
+                            pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa)
+                            photoTagInput = ""
                         }
                     }
                     .testTag("camera_shutter_button"),
@@ -502,6 +519,106 @@ fun CameraCaptureScreen(
             }
         }
     }
+
+    // Balão / Diálogo para inserção de Tag na foto (máximo 20 caracteres)
+    pendingPhotoCapture?.let { pending ->
+        AlertDialog(
+            onDismissRequest = {
+                // Se fechar clicando fora, salva a foto sem tag
+                onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, null)
+                Toast.makeText(context, "Foto salva!", Toast.LENGTH_SHORT).show()
+                pendingPhotoCapture = null
+                photoTagInput = ""
+            },
+            shape = RoundedCornerShape(20.dp),
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(54.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Sell,
+                            contentDescription = "Tag",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(
+                    text = "Deseja colocar uma tag na foto?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Identifique o animal ou detalhe da foto para registro (limite de 20 caracteres):",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    AppOutlinedTextField(
+                        value = photoTagInput,
+                        onValueChange = { photoTagInput = it.take(20) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("photo_tag_input_field"),
+                        label = { Text("Tag da Foto") },
+                        placeholder = { Text("Ex: Baio, Potro, Pata dir.") },
+                        singleLine = true,
+                        maxLength = 20,
+                        supportingText = {
+                            Text(
+                                text = "${photoTagInput.length}/20 caracteres",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.End,
+                                fontSize = 11.sp
+                            )
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val finalTag = photoTagInput.trim().ifEmpty { null }
+                        onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, finalTag)
+                        Toast.makeText(context, if (finalTag != null) "Foto salva com tag!" else "Foto salva!", Toast.LENGTH_SHORT).show()
+                        pendingPhotoCapture = null
+                        photoTagInput = ""
+                    },
+                    modifier = Modifier.testTag("confirm_photo_tag_button"),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Salvar Tag", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, null)
+                        Toast.makeText(context, "Foto salva sem tag!", Toast.LENGTH_SHORT).show()
+                        pendingPhotoCapture = null
+                        photoTagInput = ""
+                    },
+                    modifier = Modifier.testTag("skip_photo_tag_button"),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Sem Tag")
+                }
+            }
+        )
+    }
 }
 
 private fun createFallbackFieldPhoto(
@@ -511,7 +628,7 @@ private fun createFallbackFieldPhoto(
     administrativeRegion: String,
     protocolNumber: String,
     timestamp: Long = System.currentTimeMillis(),
-    exemplarNumber: Int = 1
+    photoNumber: Int = 1
 ): File {
     val width = 1200
     val height = 900
@@ -535,7 +652,7 @@ private fun createFallbackFieldPhoto(
     textPaint.typeface = Typeface.DEFAULT
     textPaint.color = AndroidColor.rgb(254, 240, 138)
     canvas.drawText("Protocolo: $protocolNumber", 60f, 260f, textPaint)
-    canvas.drawText("Exemplar do Animal: Ex $exemplarNumber", 60f, 310f, textPaint)
+    canvas.drawText("Registro Fotográfico nº $photoNumber", 60f, 310f, textPaint)
     canvas.drawText("Região Administrativa: $administrativeRegion", 60f, 360f, textPaint)
 
     textPaint.color = AndroidColor.rgb(134, 239, 172)

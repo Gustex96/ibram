@@ -98,7 +98,7 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("RELATÓRIO PARA APOIO EM FISCALIZAÇÃO", textStartX, y + 14f, headerTitlePaint)
+        canvas.drawText("RELATÓRIO DE APOIO", textStartX, y + 14f, headerTitlePaint)
 
         val headerSubPaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
@@ -347,7 +347,7 @@ object PdfReportGenerator {
         }
 
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
-        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório para Apoio em Fiscalização"
+        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório de Apoio"
         canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
         val legalNote = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
         canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
@@ -437,7 +437,7 @@ object PdfReportGenerator {
 
                 // Footer for photo page
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
-                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico • Relatório para Apoio em Fiscalização"
+                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico • Relatório de Apoio"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)
@@ -519,7 +519,7 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        coverCanvas.drawText("RELATÓRIO PARA APOIO EM FISCALIZAÇÃO", margin + 70f, y + 20f, titlePaint)
+        coverCanvas.drawText("RELATÓRIO DE APOIO", margin + 70f, y + 20f, titlePaint)
         coverCanvas.drawText("LEVANTAMENTO DE CAMPO E BEM-ESTAR ANIMAL", margin + 70f, y + 36f, subPaint)
 
         y += 75f
@@ -702,7 +702,7 @@ object PdfReportGenerator {
             // Footer
             val dFooterY = pageHeight - 45f
             dCanvas.drawLine(margin, dFooterY, margin + contentWidth, dFooterY, linePaint)
-            dCanvas.drawText("Relatório para Apoio em Fiscalização • Página $pageNumber de ${inspections.size + 1}", margin, dFooterY + 14f, footerTextPaint)
+            dCanvas.drawText("Relatório de Apoio • Página $pageNumber de ${inspections.size + 1}", margin, dFooterY + 14f, footerTextPaint)
 
             document.finishPage(detailPage)
         }
@@ -819,14 +819,14 @@ object PdfReportGenerator {
                 context = context,
                 file = generatedFiles[0],
                 subject = "Relatório ${inspections[0].protocolNumber} - Levantamento Operacional",
-                message = "Segue em anexo o Relatório para Apoio em Fiscalização (PDF)."
+                message = "Segue em anexo o Relatório de Apoio (PDF)."
             )
         } else {
             shareMultiplePdfs(
                 context = context,
                 files = generatedFiles,
                 subject = "Exportação de ${generatedFiles.size} Relatórios PDF - Apoio em Fiscalização",
-                message = "Seguem em anexo os ${generatedFiles.size} relatórios em formato PDF (Relatório para Apoio em Fiscalização)."
+                message = "Seguem em anexo os ${generatedFiles.size} relatórios em formato PDF (Relatório de Apoio)."
             )
         }
     }

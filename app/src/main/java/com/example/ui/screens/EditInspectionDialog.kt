@@ -41,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import com.example.ui.components.AppOutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -230,7 +231,7 @@ fun EditInspectionDialog(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             // Quadra
-                            OutlinedTextField(
+                            AppOutlinedTextField(
                                 value = quadra,
                                 onValueChange = { quadra = it },
                                 modifier = Modifier.fillMaxWidth(),
@@ -247,7 +248,7 @@ fun EditInspectionDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                OutlinedTextField(
+                                AppOutlinedTextField(
                                     value = conjunto,
                                     onValueChange = { conjunto = it },
                                     modifier = Modifier.weight(1f),
@@ -257,7 +258,7 @@ fun EditInspectionDialog(
                                     shape = RoundedCornerShape(10.dp)
                                 )
 
-                                OutlinedTextField(
+                                AppOutlinedTextField(
                                     value = numero,
                                     onValueChange = { numero = it },
                                     modifier = Modifier.weight(1f),
@@ -551,7 +552,7 @@ fun EditInspectionDialog(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = horseDescription,
                             onValueChange = { horseDescription = it },
                             modifier = Modifier.fillMaxWidth(),
@@ -636,7 +637,7 @@ fun EditInspectionDialog(
 
                                 if (requiresSeagriApprehension) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
+                                    AppOutlinedTextField(
                                         value = seagriNotes,
                                         onValueChange = { seagriNotes = it },
                                         modifier = Modifier.fillMaxWidth(),
@@ -710,7 +711,7 @@ fun EditInspectionDialog(
 
                                 if (requiresPmdfSupport) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedTextField(
+                                    AppOutlinedTextField(
                                         value = pmdfNotes,
                                         onValueChange = { pmdfNotes = it },
                                         modifier = Modifier.fillMaxWidth(),
@@ -733,7 +734,7 @@ fun EditInspectionDialog(
                             fontSize = 13.sp
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
+                        AppOutlinedTextField(
                             value = notes,
                             onValueChange = { notes = it },
                             modifier = Modifier.fillMaxWidth(),
@@ -803,7 +804,7 @@ fun EditInspectionDialog(
 
                                     Spacer(modifier = Modifier.height(4.dp))
 
-                                    OutlinedTextField(
+                                    AppOutlinedTextField(
                                         value = tutor.name,
                                         onValueChange = { newName ->
                                             val updated = tutorsList.toMutableList()
@@ -822,7 +823,7 @@ fun EditInspectionDialog(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        OutlinedTextField(
+                                        AppOutlinedTextField(
                                             value = tutor.cpf,
                                             onValueChange = { rawCpf ->
                                                 val updated = tutorsList.toMutableList()

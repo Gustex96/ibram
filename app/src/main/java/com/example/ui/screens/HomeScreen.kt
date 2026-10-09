@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import com.example.ui.components.AppOutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -113,7 +114,7 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
+            AppOutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.searchQuery.value = it },
                 modifier = Modifier
@@ -693,7 +694,7 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                 }
 
                 // Filter search input
-                OutlinedTextField(
+                AppOutlinedTextField(
                     value = filterText,
                     onValueChange = { filterText = it },
                     modifier = Modifier

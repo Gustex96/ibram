@@ -30,7 +30,8 @@ object WatermarkUtils {
         administrativeRegion: String,
         protocol: String,
         captureTimeMillis: Long = System.currentTimeMillis(),
-        exemplarIndex: Int = 1
+        exemplarIndex: Int = 1,
+        photoTag: String? = null
     ): File? {
         val originalBitmap = decodeSampledBitmapFromUri(context, inputUri, 1920, 1920) ?: return null
         val orientedBitmap = fixBitmapOrientation(context, inputUri, originalBitmap)
@@ -42,7 +43,8 @@ object WatermarkUtils {
             administrativeRegion = administrativeRegion,
             protocol = protocol,
             captureTimeMillis = captureTimeMillis,
-            exemplarIndex = exemplarIndex
+            exemplarIndex = exemplarIndex,
+            photoTag = photoTag
         )
 
         // Save to app internal storage in 'photos' dir
@@ -50,7 +52,8 @@ object WatermarkUtils {
             if (!exists()) mkdirs()
         }
         val uniqueSuffix = java.util.UUID.randomUUID().toString().take(6)
-        val outputFile = File(photosDir, "FOTO_${protocol}_Ex${exemplarIndex}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
+        val tagSuffix = if (!photoTag.isNullOrBlank()) "_TAG_${photoTag.trim().take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")}" else ""
+        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -70,7 +73,8 @@ object WatermarkUtils {
         administrativeRegion: String,
         protocol: String,
         captureTimeMillis: Long = System.currentTimeMillis(),
-        exemplarIndex: Int = 1
+        exemplarIndex: Int = 1,
+        photoTag: String? = null
     ): File? {
         val watermarkedBitmap = addWatermarkToBitmap(
             source = source,
@@ -79,14 +83,16 @@ object WatermarkUtils {
             administrativeRegion = administrativeRegion,
             protocol = protocol,
             captureTimeMillis = captureTimeMillis,
-            exemplarIndex = exemplarIndex
+            exemplarIndex = exemplarIndex,
+            photoTag = photoTag
         )
 
         val photosDir = File(context.filesDir, "photos").apply {
             if (!exists()) mkdirs()
         }
         val uniqueSuffix = java.util.UUID.randomUUID().toString().take(6)
-        val outputFile = File(photosDir, "FOTO_${protocol}_Ex${exemplarIndex}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
+        val tagSuffix = if (!photoTag.isNullOrBlank()) "_TAG_${photoTag.trim().take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")}" else ""
+        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -105,7 +111,8 @@ object WatermarkUtils {
         administrativeRegion: String,
         protocol: String,
         captureTimeMillis: Long,
-        exemplarIndex: Int = 1
+        exemplarIndex: Int = 1,
+        photoTag: String? = null
     ): Bitmap {
         val width = source.width
         val height = source.height
@@ -131,8 +138,14 @@ object WatermarkUtils {
         val raString = "RA: $administrativeRegion"
         val protocolString = "PROTOCOLO: $protocol | APOIO À FISCALIZAÇÃO"
 
+        val tagLine = if (!photoTag.isNullOrBlank()) {
+            "🏷️ TAG: ${photoTag.trim().take(20)}"
+        } else {
+            "🐴 REGISTRO FOTOGRÁFICO: Foto #$exemplarIndex"
+        }
+
         val lines = listOf(
-            "🐴 ANIMAL FOTOGRAFADO: Ex $exemplarIndex (Exemplar nº $exemplarIndex)",
+            tagLine,
             "📍 COORDENADAS: $coordsString",
             "📅 DATA/HORA: $dateString",
             "🏛 REGIÃO: $raString"
