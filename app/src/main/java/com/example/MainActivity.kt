@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Visibility
@@ -395,8 +394,8 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
-                                            imageVector = Icons.Default.PriorityHigh,
-                                            contentDescription = "ANEXO F - Guia Prático de Bem-Estar",
+                                            painter = painterResource(id = R.drawable.ic_owl),
+                                            contentDescription = "Guia Técnico e Atlas de Anatomia do Cavalo",
                                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )

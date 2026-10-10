@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -48,12 +47,15 @@ import androidx.compose.material3.OutlinedTextField
 import com.example.ui.components.AppOutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,6 +65,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import com.example.R
+import com.example.ui.components.HorseAnatomyAtlasView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -142,8 +147,8 @@ fun HomeScreen(
                     .testTag("button_open_anexo_f")
             ) {
                 Icon(
-                    imageVector = Icons.Default.PriorityHigh,
-                    contentDescription = "Guia Prático - Anexo F",
+                    painter = painterResource(id = R.drawable.ic_owl),
+                    contentDescription = "Guia Técnico e Atlas de Anatomia do Cavalo",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(24.dp)
                 )
@@ -591,6 +596,7 @@ fun EmptyState(hasAny: Boolean, onStartNew: () -> Unit) {
 
 @Composable
 fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
+    var mainGuideTab by remember { mutableIntStateOf(0) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
     var selectedCategoryId by remember { mutableStateOf<String?>("all") }
     var filterText by remember { mutableStateOf("") }
 
@@ -624,7 +630,8 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 680.dp),
+            .heightIn(max = 720.dp)
+            .testTag("dialog_safety_info"),
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -633,172 +640,217 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(42.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.PriorityHigh,
-                            contentDescription = "Símbolo de Exclamação - Guia Anexo F",
+                            painter = painterResource(id = R.drawable.ic_owl),
+                            contentDescription = "Símbolo da Coruja - Atlas e Guia",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "ANEXO F - GUIA PRÁTICO",
+                        text = if (mainGuideTab == 0) "ATLAS DE ANATOMIA DO CAVALO" else "ANEXO F - GUIA PRÁTICO",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
                     )
                     Text(
-                        text = "Bem-Estar e Cuidados Básicos (Cães & Gatos)",
+                        text = if (mainGuideTab == 0)
+                            "Anatomia Externa do Cavalo (Página 2 do Atlas)"
+                        else
+                            "Bem-Estar e Cuidados Básicos (Cães & Gatos)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = AnexoFData.SOURCE_CREDIT,
+                        text = if (mainGuideTab == 0)
+                            "Biblioteca AGPTEA • Estrutura Anatômica Original Preservada"
+                        else
+                            AnexoFData.SOURCE_CREDIT,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp
+                        fontSize = 9.5.sp
                     )
                 }
             }
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Category Selector Chips
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = selectedCategoryId == "all",
-                            onClick = { selectedCategoryId = "all" },
-                            label = { Text("Todos") },
-                            modifier = Modifier.testTag("anexo_f_tab_all")
-                        )
-                    }
-                    items(allCategories) { cat ->
-                        FilterChip(
-                            selected = selectedCategoryId == cat.id,
-                            onClick = { selectedCategoryId = cat.id },
-                            label = { Text(cat.title) },
-                            modifier = Modifier.testTag("anexo_f_tab_${cat.id}")
-                        )
-                    }
-                }
-
-                // Filter search input
-                AppOutlinedTextField(
-                    value = filterText,
-                    onValueChange = { filterText = it },
+                // Abas Principais: Anatomia do Cavalo vs Guia Anexo F
+                TabRow(
+                    selectedTabIndex = mainGuideTab,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
-                        .testTag("anexo_f_search"),
-                    placeholder = { Text("Filtrar parâmetros (ex: olhos, água, abrigo...)", fontSize = 12.sp) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    trailingIcon = {
-                        if (filterText.isNotEmpty()) {
-                            IconButton(onClick = { filterText = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Limpar", modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
-                )
+                ) {
+                    Tab(
+                        selected = mainGuideTab == 0,
+                        onClick = { mainGuideTab = 0 },
+                        text = {
+                            Text(
+                                text = "Anatomia do Cavalo (Atlas)",
+                                fontSize = 11.5.sp,
+                                fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        modifier = Modifier.testTag("tab_guide_horse_anatomy")
+                    )
+                    Tab(
+                        selected = mainGuideTab == 1,
+                        onClick = { mainGuideTab = 1 },
+                        text = {
+                            Text(
+                                text = "Guia Bem-Estar (Anexo F)",
+                                fontSize = 11.5.sp,
+                                fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        modifier = Modifier.testTag("tab_guide_anexo_f")
+                    )
+                }
 
-                // List of items
-                if (filteredCategories.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Nenhum parâmetro encontrado para \"$filterText\".",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                if (mainGuideTab == 0) {
+                    // Visualizador da Anatomia Externa do Cavalo constante na Página 2
+                    HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
                 } else {
-                    LazyColumn(
+                    // Category Selector Chips
+                    LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        filteredCategories.forEach { category ->
-                            item(key = "header_${category.id}") {
-                                Column(modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = category.title.uppercase(),
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                    Text(
-                                        text = category.subtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(start = 2.dp, top = 2.dp)
-                                    )
+                        item {
+                            FilterChip(
+                                selected = selectedCategoryId == "all",
+                                onClick = { selectedCategoryId = "all" },
+                                label = { Text("Todos") },
+                                modifier = Modifier.testTag("anexo_f_tab_all")
+                            )
+                        }
+                        items(allCategories) { cat ->
+                            FilterChip(
+                                selected = selectedCategoryId == cat.id,
+                                onClick = { selectedCategoryId = cat.id },
+                                label = { Text(cat.title) },
+                                modifier = Modifier.testTag("anexo_f_tab_${cat.id}")
+                            )
+                        }
+                    }
+
+                    // Filter search input
+                    AppOutlinedTextField(
+                        value = filterText,
+                        onValueChange = { filterText = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                            .testTag("anexo_f_search"),
+                        placeholder = { Text("Filtrar parâmetros (ex: olhos, água, abrigo...)", fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        trailingIcon = {
+                            if (filterText.isNotEmpty()) {
+                                IconButton(onClick = { filterText = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Limpar", modifier = Modifier.size(16.dp))
                                 }
                             }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
 
-                            items(category.items, key = { "${category.id}_${it.title}" }) { item ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    ),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                    // List of items
+                    if (filteredCategories.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Nenhum parâmetro encontrado para \"$filterText\".",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            filteredCategories.forEach { category ->
+                                item(key = "header_${category.id}") {
+                                    Column(modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                            shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = item.title,
+                                                text = category.title.uppercase(),
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                style = MaterialTheme.typography.labelMedium,
                                                 fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurface
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
                                             )
-                                            Surface(
-                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                                shape = RoundedCornerShape(6.dp)
+                                        }
+                                        Text(
+                                            text = category.subtitle,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(start = 2.dp, top = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                items(category.items, key = { "${category.id}_${it.title}" }) { item ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = item.tag,
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    text = item.title,
+                                                    fontWeight = FontWeight.Bold,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
+                                                Surface(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text(
+                                                        text = item.tag,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = item.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                lineHeight = 16.sp
+                                            )
                                         }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = item.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            lineHeight = 16.sp
-                                        )
                                     }
                                 }
                             }
@@ -812,7 +864,7 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                 onClick = onDismiss,
                 modifier = Modifier.testTag("anexo_f_close_button")
             ) {
-                Text("Fechar Guia", fontWeight = FontWeight.Bold)
+                Text("Fechar", fontWeight = FontWeight.Bold)
             }
         }
     )

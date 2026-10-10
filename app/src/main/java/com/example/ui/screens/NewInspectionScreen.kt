@@ -91,6 +91,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import com.example.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -125,6 +127,7 @@ fun NewInspectionScreen(
     var selectedPhotoIndex by rememberSaveable { mutableIntStateOf(0) }
     var previewPhotoPath by remember { mutableStateOf<String?>(null) }
     var showLiveCamera by rememberSaveable { mutableStateOf(false) }
+    var showAnatomyDialog by rememberSaveable { mutableStateOf(false) }
 
     BackHandler {
         onNavigateBack()
@@ -989,13 +992,45 @@ fun NewInspectionScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                 Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "Descrição do(s) Cavalo(s)",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Descrição do(s) Cavalo(s)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Surface(
+                            onClick = { showAnatomyDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.testTag("button_open_horse_atlas")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_owl),
+                                    contentDescription = "Consultar Atlas Anatômico do Cavalo",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Atlas Anatômico",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     AppOutlinedTextField(
                         value = draft.horseDescription,
                         onValueChange = { viewModel.updateHorseDescription(it) },
@@ -1481,6 +1516,11 @@ fun NewInspectionScreen(
             },
             onDismiss = { showRaDialog = false }
         )
+    }
+
+    // Atlas Anatômico do Cavalo & Guia Técnico
+    if (showAnatomyDialog) {
+        DfSafetyInfoDialog(onDismiss = { showAnatomyDialog = false })
     }
 
     // Fullscreen Photo Preview Dialog
