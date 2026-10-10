@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.example.data.db.AppDatabase
 import com.example.data.model.HorseInspection
+import com.example.ui.components.AppSplashScreen
 import com.example.ui.components.AppUpdateDialog
 import com.example.ui.components.InstitutionalNoticeDialog
 import com.example.ui.components.UpdateFeedbackDialog
@@ -223,7 +224,8 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showInfoDialog by rememberSaveable { mutableStateOf(false) }
     var showVisualModeDialog by rememberSaveable { mutableStateOf(false) }
-    var showInstitutionalNoticeDialog by rememberSaveable { mutableStateOf(true) }
+    var showInstitutionalNoticeDialog by rememberSaveable { mutableStateOf(false) }
+    var showSplashScreen by rememberSaveable { mutableStateOf(true) }
 
     // Verificação de atualizações no GitHub ao iniciar o aplicativo
     LaunchedEffect(Unit) {
@@ -253,7 +255,12 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                 topBar = {
                     TopAppBar(
                         title = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showSplashScreen = true }
+                            ) {
                                 Image(
                                     painter = painterResource(id = R.drawable.logo_meio_ambiente),
                                     contentDescription = "Logo Meio Ambiente",
@@ -551,6 +558,17 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
         }
     }
 
+        // Tela de Abertura / Splash Screen inicial com imagem de fundo vetorizada e ícone do app
+        if (showSplashScreen) {
+            AppSplashScreen(
+                onDismiss = {
+                    showSplashScreen = false
+                    showInstitutionalNoticeDialog = true
+                }
+            )
+        }
+    }
+
     // Diálogo global de aviso em destaque para exportação de PDF com botão OK
     if (viewModel.showPdfDisclaimerDialog || viewModel.pendingPdfAction != null) {
         com.example.ui.components.PdfDisclaimerDialog(
@@ -558,7 +576,6 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
             onConfirm = { viewModel.confirmPdfDisclaimer() }
         )
     }
-}
 }
 
 @Composable
