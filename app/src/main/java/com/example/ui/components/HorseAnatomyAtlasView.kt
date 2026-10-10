@@ -1,6 +1,9 @@
 package com.example.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,16 +32,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,12 +68,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.R
 import com.example.model.AnatomicalPoint
+import com.example.model.AnatomyRegionCrop
 import com.example.model.HorseAnatomyData
 
 @Composable
@@ -76,14 +84,13 @@ fun HorseAnatomyAtlasView(
     var selectedRegion by remember { mutableStateOf("Todas as Regiões") }
     var searchQuery by remember { mutableStateOf("") }
     var showFullScreenDialog by remember { mutableStateOf(false) }
-    var currentZoomLevel by remember { mutableFloatStateOf(1f) }
+
+    val currentCrop = remember(selectedRegion) {
+        HorseAnatomyData.getCropForRegion(selectedRegion)
+    }
 
     val filteredPoints = remember(selectedRegion, searchQuery) {
-        val base = if (selectedRegion == "Todas as Regiões") {
-            HorseAnatomyData.points
-        } else {
-            HorseAnatomyData.points.filter { it.region == selectedRegion }
-        }
+        val base = HorseAnatomyData.getPointsForRegion(selectedRegion)
 
         if (searchQuery.isBlank()) {
             base
@@ -99,7 +106,91 @@ fun HorseAnatomyAtlasView(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Card Principal da Ilustração Anatômica Original (Página 2 do Atlas)
+        // Seletor de Filtros Anatômicos (Recortes do Atlas)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Cortes Anatômicos do Atlas:",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${filteredPoints.size} ponto(s) listado(s)",
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(HorseAnatomyData.regions) { region ->
+                    val isSelected = selectedRegion == region
+                    val pointCount = remember(region) {
+                        HorseAnatomyData.getPointsForRegion(region).size
+                    }
+
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { selectedRegion = region },
+                        label = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = region,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isSelected)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = pointCount.toString(),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSelected)
+                                                MaterialTheme.colorScheme.onPrimary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        modifier = Modifier.testTag("chip_anatomy_${region.replace(" ", "_")}")
+                    )
+                }
+            }
+        }
+
+        // Card do Recorte Anatômico Selecionado
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -107,31 +198,47 @@ fun HorseAnatomyAtlasView(
                 .testTag("card_horse_anatomy_chart"),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
+                // Cabeçalho do Card com Título Dinâmico do Corte
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CropFree,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = currentCrop.title,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Text(
-                            text = "Atlas Oficial de Anatomia do Cavalo",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Página 2 • Anatomia Externa Original (Biblioteca AGPTEA)",
+                            text = currentCrop.subtitle,
                             fontSize = 10.5.sp,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    // Botão para abrir em tela cheia com zoom detalhado
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Botão para ampliar em tela cheia com zoom interativo
                     OutlinedButton(
                         onClick = { showFullScreenDialog = true },
                         shape = RoundedCornerShape(8.dp),
@@ -141,7 +248,7 @@ fun HorseAnatomyAtlasView(
                         Icon(
                             imageVector = Icons.Default.Fullscreen,
                             contentDescription = "Expandir visualizador",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Ampliar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -150,7 +257,7 @@ fun HorseAnatomyAtlasView(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Quadro da Imagem Anatômica Original com Controle de Zoom
+                // Quadro do Recorte da Imagem Anatômica do Atlas Original
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -161,18 +268,24 @@ fun HorseAnatomyAtlasView(
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.anatomia_cavalo_atlas),
-                        contentDescription = "Anatomia do Cavalo constante na página 2 do Atlas de Anatomia do Cavalo",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1744f / 1230f)
-                    )
+                    AnimatedContent(
+                        targetState = currentCrop,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "anatomy_crop_transition"
+                    ) { crop ->
+                        Image(
+                            painter = painterResource(id = crop.drawableResId),
+                            contentDescription = "Recorte anatômico do cavalo: ${crop.title}",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(crop.aspectRatio)
+                        )
+                    }
 
                     // Selo de toque para zoom
                     Surface(
-                        color = Color.Black.copy(alpha = 0.65f),
+                        color = Color.Black.copy(alpha = 0.7f),
                         shape = RoundedCornerShape(6.dp),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -191,37 +304,37 @@ fun HorseAnatomyAtlasView(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Toque para Zoom HD",
-                                fontSize = 10.sp,
+                                fontSize = 9.5.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
                         }
                     }
+
+                    // Indicador de Região Ativa no topo
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(4.dp),
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            text = currentCrop.name,
+                            fontSize = 9.sp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "A estrutura e nomenclatura anatômica original foram 100% preservadas para conferência de fiscalização.",
-                    fontSize = 10.sp,
+                    text = currentCrop.description,
+                    fontSize = 10.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 13.sp
-                )
-            }
-        }
-
-        // Filtro por Região Anatômica
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items(HorseAnatomyData.regions) { region ->
-                FilterChip(
-                    selected = selectedRegion == region,
-                    onClick = { selectedRegion = region },
-                    label = { Text(region, fontSize = 11.5.sp) },
-                    modifier = Modifier.testTag("chip_anatomy_${region.replace(" ", "_")}")
+                    lineHeight = 14.sp
                 )
             }
         }
@@ -234,7 +347,7 @@ fun HorseAnatomyAtlasView(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
                 .testTag("input_search_anatomy_point"),
-            placeholder = { Text("Buscar ponto (ex: chanfro, cernelha, jarrete, casco, boleto...)", fontSize = 11.5.sp) },
+            placeholder = { Text("Buscar ponto anatômico (ex: chanfro, casco, quartela, jarrete...)", fontSize = 11.5.sp) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
@@ -247,17 +360,17 @@ fun HorseAnatomyAtlasView(
             shape = RoundedCornerShape(10.dp)
         )
 
-        // Lista de Pontos Anatômicos com Boa Visibilidade
+        // Lista de Pontos Anatômicos do Corte Selecionado
         if (filteredPoints.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp),
+                    .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Nenhum ponto anatômico encontrado para \"$searchQuery\".",
-                    fontSize = 12.5.sp,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -265,7 +378,7 @@ fun HorseAnatomyAtlasView(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 340.dp),
+                    .heightIn(max = 320.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredPoints, key = { it.id }) { point ->
@@ -278,20 +391,16 @@ fun HorseAnatomyAtlasView(
     // Modal de Tela Cheia com Zoom Interativo para leitura nítida das letras e linhas
     if (showFullScreenDialog) {
         Dialog(
-            onDismissRequest = {
-                showFullScreenDialog = false
-                currentZoomLevel = 1f
-            },
+            onDismissRequest = { showFullScreenDialog = false },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
                 dismissOnBackPress = true
             )
         ) {
             FullScreenAnatomyViewer(
-                onDismiss = {
-                    showFullScreenDialog = false
-                    currentZoomLevel = 1f
-                }
+                initialRegion = selectedRegion,
+                onRegionChanged = { selectedRegion = it },
+                onDismiss = { showFullScreenDialog = false }
             )
         }
     }
@@ -375,119 +484,169 @@ fun AnatomicalPointCard(point: AnatomicalPoint) {
 }
 
 /**
- * Visualizador em Tela Cheia com Suporte a Zoom e Pan para máxima nitidez das letras da página 2.
+ * Visualizador em Tela Cheia com Suporte a Zoom, Pan e Troca Rápida de Cortes Anatômicos.
  */
 @Composable
 fun FullScreenAnatomyViewer(
+    initialRegion: String,
+    onRegionChanged: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var activeRegion by remember { mutableStateOf(initialRegion) }
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    val crop = remember(activeRegion) {
+        HorseAnatomyData.getCropForRegion(activeRegion)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F1416))
+            .background(Color(0xFF0C1013))
             .testTag("dialog_fullscreen_anatomy")
     ) {
-        // Barra Superior de Controles
+        // Barra Superior de Controles e Identificação
         Surface(
-            color = Color.Black.copy(alpha = 0.8f),
+            color = Color.Black.copy(alpha = 0.85f),
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Atlas de Anatomia do Cavalo",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "Página 2 • Alta Resolução com Zoom",
-                        color = Color.LightGray,
-                        fontSize = 11.sp
-                    )
-                }
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = crop.title,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 13.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Atlas Oficial de Anatomia do Cavalo • Pág. 2 (AGPTEA)",
+                            color = Color.LightGray,
+                            fontSize = 10.5.sp
+                        )
+                    }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Botão Zoom Out
-                    IconButton(
-                        onClick = {
-                            scale = (scale - 0.4f).coerceAtLeast(1f)
-                            if (scale == 1f) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Botão Zoom Out
+                        IconButton(
+                            onClick = {
+                                scale = (scale - 0.5f).coerceAtLeast(1f)
+                                if (scale == 1f) {
+                                    offsetX = 0f
+                                    offsetY = 0f
+                                }
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Diminuir zoom", tint = Color.White)
+                        }
+
+                        Text(
+                            text = "${(scale * 100).toInt()}%",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+
+                        // Botão Zoom In
+                        IconButton(
+                            onClick = {
+                                scale = (scale + 0.5f).coerceAtMost(5f)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Aumentar zoom", tint = Color.White)
+                        }
+
+                        // Botão Reset
+                        IconButton(
+                            onClick = {
+                                scale = 1f
                                 offsetX = 0f
                                 offsetY = 0f
-                            }
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Diminuir zoom", tint = Color.White)
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.RestartAlt, contentDescription = "Redefinir visualização", tint = Color.White)
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Botão Fechar
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Fechar tela cheia", tint = Color.White)
+                        }
                     }
+                }
 
-                    Text(
-                        text = "${(scale * 100).toInt()}%",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-
-                    // Botão Zoom In
-                    IconButton(
-                        onClick = {
-                            scale = (scale + 0.5f).coerceAtMost(4f)
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Aumentar zoom", tint = Color.White)
-                    }
-
-                    // Botão Reset
-                    IconButton(
-                        onClick = {
-                            scale = 1f
-                            offsetX = 0f
-                            offsetY = 0f
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.RestartAlt, contentDescription = "Redefinir visualização", tint = Color.White)
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Botão Fechar
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar tela cheia", tint = Color.White)
+                // Seletor de Cortes Anatômicos dentro da Tela Cheia
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(HorseAnatomyData.regions) { region ->
+                        val isSelected = activeRegion == region
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                Color.White.copy(alpha = 0.15f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
+                                    activeRegion = region
+                                    onRegionChanged(region)
+                                    scale = 1f
+                                    offsetX = 0f
+                                    offsetY = 0f
+                                }
+                        ) {
+                            Text(
+                                text = region,
+                                fontSize = 10.5.sp,
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else
+                                    Color.White,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Área da Imagem com detecção de gestos (Pinch-to-zoom e Pan)
+        // Área da Imagem do Corte Anatômico com detecção de gestos (Pinch-to-zoom e Pan)
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 56.dp, bottom = 48.dp)
-                .pointerInput(Unit) {
+                .padding(top = 80.dp, bottom = 44.dp)
+                .pointerInput(activeRegion) {
                     detectTransformGestures { _, pan, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(1f, 4.5f)
+                        scale = (scale * zoom).coerceIn(1f, 5f)
                         if (scale > 1f) {
-                            val maxOffsetX = 800f * (scale - 1f)
-                            val maxOffsetY = 800f * (scale - 1f)
+                            val maxOffsetX = 900f * (scale - 1f)
+                            val maxOffsetY = 900f * (scale - 1f)
                             offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
                             offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
                         } else {
@@ -499,8 +658,8 @@ fun FullScreenAnatomyViewer(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.anatomia_cavalo_atlas),
-                contentDescription = "Anatomia do Cavalo ampliada",
+                painter = painterResource(id = crop.drawableResId),
+                contentDescription = "Corte Anatômico: ${crop.title}",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
@@ -513,9 +672,9 @@ fun FullScreenAnatomyViewer(
             )
         }
 
-        // Barra Inferior de Informações
+        // Barra Inferior de Informações e Legenda
         Surface(
-            color = Color.Black.copy(alpha = 0.8f),
+            color = Color.Black.copy(alpha = 0.85f),
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
@@ -523,19 +682,19 @@ fun FullScreenAnatomyViewer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💡 Arraste com os dedos para navegar ou use os botões (+) e (-) para ampliar os textos.",
+                    text = "💡 Arraste com dois dedos para navegar ou use (+) e (-) para ampliar letras e linhas de chamada.",
                     color = Color.LightGray,
-                    fontSize = 10.5.sp,
+                    fontSize = 10.sp,
                     modifier = Modifier.weight(1f)
                 )
 
                 Text(
-                    text = "Doc: AGPTEA Equinos",
+                    text = "Corte: ${crop.name}",
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.5.sp
