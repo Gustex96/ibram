@@ -1,6 +1,6 @@
 {
-  "versionCode": 2,
-  "versionName": "1.2",
+  "versionCode": 3,
+  "versionName": "1.0",
   "releaseNotes": "• Padronização do termo 'Relatório de Apoio' nas telas e relatórios\n• Aviso de documento independente em destaque ampliado com confirmação via botão OK\n• Novo balão ao tirar foto para inserção de tag fotográfica (máximo 20 caracteres)\n• Suporte a copiar e colar em todos os campos de formulário do aplicativo\n• Sistema de atualização e alertas otimizado com version.json exclusivo na raiz",
   "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
   "minRequiredVersion": 1
