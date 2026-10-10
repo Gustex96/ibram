@@ -1,7 +1,7 @@
 {
   "versionCode": 1,
   "versionName": "1.2",
-  "releaseNotes": "• Atualização para Relatório de Apoio em Fiscalização\n• Padronização da Avaliação Preliminar de Bem-Estar Animal baseada no PPBEA/CRMV\n• Ficha com suporte a CPF e CNPJ dinâmico\n• Melhorias na geolocalização e geração de relatórios em PDF",
+  "releaseNotes": "• Atualização para Relatório de Apoio em Fiscalização\n• Padronização da Avaliação Preliminar de Bem-Estar Animal baseada no PPBEA/CRMV\n• Ficha com suporte a CPF e CNPJ dinâmico\n• Melhorias na geolocalização e geração de relatórios em PDF e copia e cola",
   "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
   "minRequiredVersion": 1
 }
