@@ -201,7 +201,7 @@ fun HorseAnatomyAtlasView(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             )
         ) {
-            Column(modifier = Modifier.padding(10.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 // Cabeçalho do Card com Título Dinâmico do Corte
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -265,7 +265,7 @@ fun HorseAnatomyAtlasView(
                         .background(Color.White)
                         .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                         .clickable { showFullScreenDialog = true }
-                        .padding(4.dp),
+                        .padding(6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     AnimatedContent(
@@ -417,7 +417,7 @@ fun AnatomicalPointCard(point: AnatomicalPoint) {
         ),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

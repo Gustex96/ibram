@@ -464,7 +464,7 @@ fun HistoryScreen(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -505,7 +505,7 @@ fun HistoryScreen(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(

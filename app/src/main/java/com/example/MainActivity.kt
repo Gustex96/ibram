@@ -395,7 +395,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_owl),
-                                            contentDescription = "Guia Técnico e Atlas de Anatomia do Cavalo",
+                                            contentDescription = "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico",
                                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )

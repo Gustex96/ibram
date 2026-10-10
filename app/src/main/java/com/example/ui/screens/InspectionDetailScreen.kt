@@ -159,11 +159,14 @@ fun InspectionDetailScreen(
                     .fillMaxWidth()
                     .clickable { showZoomPhoto = true },
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = Color.Black)
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black)
                         .height(260.dp)
                 ) {
                     val file = File(activePhotoPath)

@@ -148,9 +148,9 @@ fun HomeScreen(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_owl),
-                    contentDescription = "Guia Técnico e Atlas de Anatomia do Cavalo",
+                    contentDescription = "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
         }
@@ -283,7 +283,7 @@ fun InspectionItemCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(14.dp)
         ) {
             // CABEÇALHO DO CARD: Número de protocolo em destaque e Botão de Ação Rápida PDF
             Row(
@@ -818,7 +818,7 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                                         ),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
