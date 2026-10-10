@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PriorityHigh
@@ -58,6 +60,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import com.example.ui.components.UpdateAlertBanner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -325,31 +329,57 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                 }
                             }
 
-                            // Botão para verificar atualizações no GitHub
+                            // Botão para verificar atualizações no GitHub com indicador de alerta
                             IconButton(
-                                onClick = { viewModel.checkForUpdates(isManualCheck = true) },
+                                onClick = {
+                                    if (viewModel.availableUpdate != null) {
+                                        viewModel.openUpdateDialog()
+                                    } else {
+                                        viewModel.checkForUpdates(isManualCheck = true)
+                                    }
+                                },
                                 modifier = Modifier.testTag("action_check_updates")
                             ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        if (viewModel.isCheckingUpdate) {
-                                            androidx.compose.material3.CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        } else {
-                                            Icon(
-                                                imageVector = Icons.Default.SystemUpdate,
-                                                contentDescription = "Verificar Atualizações no GitHub",
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(19.dp)
-                                            )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (viewModel.availableUpdate != null)
+                                            MaterialTheme.colorScheme.errorContainer
+                                        else
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            if (viewModel.isCheckingUpdate) {
+                                                androidx.compose.material3.CircularProgressIndicator(
+                                                    modifier = Modifier.size(16.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = if (viewModel.availableUpdate != null)
+                                                        Icons.Default.NewReleases
+                                                    else
+                                                        Icons.Default.SystemUpdate,
+                                                    contentDescription = "Verificar Atualizações no GitHub",
+                                                    tint = if (viewModel.availableUpdate != null)
+                                                        MaterialTheme.colorScheme.error
+                                                    else
+                                                        MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(19.dp)
+                                                )
+                                            }
                                         }
+                                    }
+                                    // Badge indicador de alerta se nova versão estiver disponível
+                                    if (viewModel.availableUpdate != null) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .align(Alignment.TopEnd)
+                                                .background(Color.Red, CircleShape)
+                                        )
                                     }
                                 }
                             }
@@ -441,24 +471,41 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                     }
                 }
             ) { innerPadding ->
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    when (selectedTab) {
-                        0 -> HomeScreen(
-                            viewModel = viewModel,
-                            onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") },
-                            onNavigateToDetail = { id -> viewModel.navigateTo("DETAIL", id) }
-                        )
-                        1 -> HistoryScreen(
-                            viewModel = viewModel,
-                            onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") }
-                        )
-                        2 -> ReportsHubScreen(
-                            viewModel = viewModel
-                        )
+                    // Banner de alerta de atualização em destaque caso haja nova versão detectada
+                    viewModel.availableUpdate?.let { updateInfo ->
+                        if (viewModel.showUpdateBanner) {
+                            UpdateAlertBanner(
+                                updateInfo = updateInfo,
+                                onOpenDialog = { viewModel.openUpdateDialog() },
+                                onDismissBanner = { viewModel.dismissUpdateBanner() }
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        when (selectedTab) {
+                            0 -> HomeScreen(
+                                viewModel = viewModel,
+                                onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") },
+                                onNavigateToDetail = { id -> viewModel.navigateTo("DETAIL", id) }
+                            )
+                            1 -> HistoryScreen(
+                                viewModel = viewModel,
+                                onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") }
+                            )
+                            2 -> ReportsHubScreen(
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }
@@ -483,7 +530,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
 
             // Diálogo de Atualização Disponível (Alerta de nova versão detectada via version.json do GitHub)
             val updateInfo = viewModel.availableUpdate
-            if (updateInfo != null) {
+            if (viewModel.showAppUpdateDialog && updateInfo != null) {
                 AppUpdateDialog(
                     updateInfo = updateInfo,
                     onDismiss = { viewModel.dismissUpdateDialog() }

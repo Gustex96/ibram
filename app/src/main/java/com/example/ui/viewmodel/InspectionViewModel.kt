@@ -128,17 +128,29 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         activeDetailId = detailId
     }
 
-    // Gerenciamento de Atualização do App (GitHub raw version.json)
+    // Gerenciamento de Atualização do App (version.json exclusivo na raiz do GitHub)
     var availableUpdate by mutableStateOf<AppVersionInfo?>(null)
         private set
     var isCheckingUpdate by mutableStateOf(value = false)
         private set
     var updateCheckResult by mutableStateOf<UpdateCheckResult?>(null)
         private set
+    var showAppUpdateDialog by mutableStateOf(false)
+        private set
+    var showUpdateBanner by mutableStateOf(true)
+        private set
     var showUpdateFeedbackDialog by mutableStateOf(false)
 
+    fun openUpdateDialog() {
+        showAppUpdateDialog = true
+    }
+
     fun dismissUpdateDialog() {
-        availableUpdate = null
+        showAppUpdateDialog = false
+    }
+
+    fun dismissUpdateBanner() {
+        showUpdateBanner = false
     }
 
     fun dismissUpdateFeedbackDialog() {
@@ -154,6 +166,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 when (result) {
                     is UpdateCheckResult.UpdateAvailable -> {
                         availableUpdate = result.info
+                        showAppUpdateDialog = true
+                        showUpdateBanner = true
                     }
                     is UpdateCheckResult.AlreadyUpToDate -> {
                         if (isManualCheck) {
@@ -185,6 +199,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     fun simulateUpdateCheck() {
         val sample = UpdateChecker.getSampleVersionInfo(getApplication())
         availableUpdate = sample
+        showAppUpdateDialog = true
+        showUpdateBanner = true
         showUpdateFeedbackDialog = false
     }
 

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +27,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -35,8 +35,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +51,7 @@ fun AppUpdateDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -57,14 +60,14 @@ fun AppUpdateDialog(
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(54.dp)
+                modifier = Modifier.size(56.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.SystemUpdate,
                         contentDescription = "Nova Atualização Disponível",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
@@ -80,7 +83,7 @@ fun AppUpdateDialog(
                     fontSize = 19.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
@@ -90,11 +93,11 @@ fun AppUpdateDialog(
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
-                            text = "Atual: v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                            text = "Atual: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(6.dp))
@@ -105,11 +108,11 @@ fun AppUpdateDialog(
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Text(
-                            text = "Nova: v${updateInfo.versionName} (${updateInfo.versionCode})",
+                            text = "Nova: v${updateInfo.versionName} (Build ${updateInfo.versionCode})",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -135,7 +138,7 @@ fun AppUpdateDialog(
                 ) {
                     Text(
                         text = updateInfo.releaseNotes.ifBlank { "Melhorias de desempenho, estabilidade e atualização de cadastros fiscais." },
-                        fontSize = 13.sp,
+                        fontSize = 12.5.sp,
                         lineHeight = 18.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(12.dp)
@@ -146,16 +149,36 @@ fun AppUpdateDialog(
                 // Link e Informações do APK
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = "Link do Release / APK:",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Link do Release / APK:",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(updateInfo.apkUrl))
+                                    Toast.makeText(context, "Link do APK copiado!", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copiar link do APK",
+                                    modifier = Modifier.size(15.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(3.dp))
                         Text(
                             text = updateInfo.apkUrl,
@@ -165,7 +188,7 @@ fun AppUpdateDialog(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "ℹ️ Dica: Se o GitHub exibir erro 404, significa que a Release ou o arquivo .apk ainda não foi publicado com o tag 'ibram' ou que o repositório é privado.",
+                            text = "ℹ️ Dica: O arquivo 'version.json' foi unificado na raiz do repositório para facilitar releases e atualizações automáticas.",
                             fontSize = 10.5.sp,
                             lineHeight = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -176,7 +199,7 @@ fun AppUpdateDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Recomenda-se atualizar para manter a precisão dos registros e estabilidade das vistorias em campo.",
-                    fontSize = 11.5.sp,
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -191,7 +214,7 @@ fun AppUpdateDialog(
                             }
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Não foi possível abrir o link de download: ${e.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Não foi possível abrir o link: ${e.message}", Toast.LENGTH_LONG).show()
                         }
                     } else {
                         Toast.makeText(context, "Link de download não configurado no version.json", Toast.LENGTH_SHORT).show()
@@ -219,7 +242,7 @@ fun AppUpdateDialog(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.testTag("button_dismiss_update")
             ) {
-                Text("Depois")
+                Text("Lembrar Depois")
             }
         }
     )

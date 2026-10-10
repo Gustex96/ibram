@@ -43,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -53,7 +52,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.BuildConfig
 import com.example.util.UpdateCheckResult
+import com.example.util.UpdateChecker
 
 @Composable
 fun UpdateFeedbackDialog(
@@ -125,8 +126,21 @@ fun UpdateFeedbackDialog(
                                     fontSize = 11.5.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Última verificação: ${UpdateChecker.getFormattedLastCheckTime(context)}",
+                                    fontSize = 10.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
                             }
                         }
+
+                        Text(
+                            text = "ℹ️ O arquivo de versão 'version.json' é mantido exclusivamente na raiz do projeto para sincronização com o GitHub.",
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 },
                 confirmButton = {
@@ -152,9 +166,10 @@ fun UpdateFeedbackDialog(
             var urlInput by remember { mutableStateOf(result.attemptedUrl) }
             val sampleJson = """{
   "versionCode": 2,
-  "versionName": "1.0.1",
-  "releaseNotes": "• Atualizações operacionais DIFIS-IV",
-  "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk"
+  "versionName": "1.1",
+  "releaseNotes": "• Padronização para Relatório de Apoio em Fiscalização\n• Aviso independente ampliado em destaque com confirmação via botão OK\n• Novo sistema de inserção de tags fotográficas (máx. 20 caracteres)\n• Suporte a ações de copiar e colar em todos os campos do aplicativo\n• Sistema de atualização otimizado exclusivamente com version.json na raiz",
+  "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
+  "minRequiredVersion": 1
 }"""
 
             AlertDialog(
@@ -202,7 +217,7 @@ fun UpdateFeedbackDialog(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
-                                    text = if (result.httpCode == 404) "HTTP 404: Arquivo não encontrado no GitHub" else "Falha na conexão com o GitHub",
+                                    text = if (result.httpCode == 404) "HTTP 404: Arquivo não encontrado no GitHub" else "Diagnóstico de Conexão com o GitHub",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.error
@@ -218,7 +233,7 @@ fun UpdateFeedbackDialog(
                         }
 
                         Text(
-                            text = "URL consultada para o arquivo version.json:",
+                            text = "URL consultada para o arquivo version.json na raiz:",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -241,7 +256,7 @@ fun UpdateFeedbackDialog(
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    urlInput = "https://github.com/Gustex96/ibram/blob/main/version.json"
+                                    urlInput = UpdateChecker.RAW_VERSION_MAIN_URL
                                     onResetDefaultUrl()
                                 },
                                 modifier = Modifier.weight(1f),
@@ -259,7 +274,7 @@ fun UpdateFeedbackDialog(
                             }
                         }
 
-                        // Instrução do arquivo version.json
+                        // Informações do version.json na raiz
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -275,7 +290,7 @@ fun UpdateFeedbackDialog(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Arquivo version.json criado no projeto:",
+                                        text = "Arquivo version.json exclusivo na raiz:",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.primary
@@ -283,7 +298,7 @@ fun UpdateFeedbackDialog(
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "O arquivo 'version.json' foi criado na raiz do projeto com o código e link do seu release. Ao fazer commit/push no seu GitHub, o aplicativo fará o GET automaticamente.",
+                                    text = "Conforme solicitado, o arquivo 'version.json' foi mantido exclusivamente na raiz do projeto (removido da pasta assets). Ao realizar o commit/push no branch 'main' do seu repositório no GitHub, o aplicativo fará a leitura automática.",
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -297,7 +312,7 @@ fun UpdateFeedbackDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
-                                    Text("Copiar código do version.json", fontSize = 11.sp)
+                                    Text("Copiar código do version.json da raiz", fontSize = 11.sp)
                                 }
                             }
                         }
