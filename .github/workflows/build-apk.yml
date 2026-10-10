@@ -14,23 +14,23 @@ permissions:
 jobs:
   build:
     name: Compilar APK (Debug)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Configurar o Java (JDK 21)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'gradle'
 
       - name: Configurar o Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Configurar o Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -64,7 +64,7 @@ jobs:
           ls -lh app/build/outputs/apk/debug/app-debug.apk
 
       - name: Salvar APK como Artefato do Workflow
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
@@ -75,11 +75,11 @@ jobs:
         run: |
           if [ -f version.json ]; then
             NOTES=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('releaseNotes', 'Atualização do aplicativo EquiDF'))")
-            VERSION_NAME=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('versionName', '1.1'))")
+            VERSION_NAME=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('versionName', '1.2'))")
             VERSION_CODE=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('versionCode', '2'))")
           else
             NOTES="Atualização automática do aplicativo EquiDF."
-            VERSION_NAME="1.1"
+            VERSION_NAME="1.2"
             VERSION_CODE="2"
           fi
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
@@ -89,9 +89,10 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Publicar / Atualizar Release no GitHub (tag 'ibram')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ibram
+          target_commitish: ${{ github.sha }}
           name: "Versão v${{ steps.release_notes.outputs.version_name }} (Build ${{ steps.release_notes.outputs.version_code }})"
           body: |
             ### 🐴 EquiDF - Fiscalização de Equinos
@@ -103,4 +104,6 @@ jobs:
             ---
             *Arquivo compilado e publicado automaticamente via GitHub Actions.*
           files: app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true
+          overwrite_files: true
           token: ${{ secrets.GITHUB_TOKEN }}
