@@ -187,7 +187,7 @@ fun HomeScreen(
             StatsSummaryCard(allInspections = allInspections)
         }
 
-        // Species Selector Tabs (Cachorro, Gato, Cavalo, Galo)
+        // Species Selector Tabs (Cachorro e Cavalo)
         SpeciesSelectorTabs(
             selectedSpecies = viewModel.selectedSpecies,
             onSpeciesSelected = { species ->
@@ -784,17 +784,25 @@ fun DfSafetyInfoDialog(
 ) {
     val context = LocalContext.current
     val isHorse = species == AnimalSpecies.HORSE
-    var mainGuideTab by remember { mutableIntStateOf(if (isHorse) 0 else 1) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
-    var selectedCategoryId by remember {
+    var mainGuideTab by remember(species) { mutableIntStateOf(if (isHorse) 0 else 1) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
+    var selectedCategoryId by remember(species) {
         mutableStateOf<String?>(
             if (species == AnimalSpecies.DOG) "caes" else "all"
         )
     }
     var filterText by remember { mutableStateOf("") }
 
-    val allCategories = AnexoFData.categories
+    val allCategories = remember(species) {
+        if (species == AnimalSpecies.HORSE) {
+            // Para a espécie equina, mantém os parâmetros de saúde e o Atlas de Anatomia exclusivo
+            AnexoFData.categories.filter { it.id != "caes" }
+        } else {
+            // Para caninos e outras espécies, o atlas de cavalos é totalmente excluído
+            AnexoFData.categories
+        }
+    }
 
-    val filteredCategories = remember(selectedCategoryId, filterText) {
+    val filteredCategories = remember(allCategories, selectedCategoryId, filterText) {
         val base = if (selectedCategoryId == null || selectedCategoryId == "all") {
             allCategories
         } else {

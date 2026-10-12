@@ -576,12 +576,10 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
         }
     }
 
-        // Tela de Abertura / Início com imagem de fundo vetorizada, ícone do app, identificação do auditor e botão Iniciar
+        // Tela de Abertura / Início com imagem de fundo vetorizada, ícone do app e botão Iniciar
         if (showSplashScreen) {
             AppSplashScreen(
-                initialAuditor = viewModel.auditorIdentification,
-                onStart = { auditorName ->
-                    viewModel.setAuditorId(auditorName)
+                onStart = {
                     showSplashScreen = false
                     showInstitutionalNoticeDialog = true
                 }

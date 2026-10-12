@@ -15,7 +15,7 @@ data class AnexoFGuideItem(
 
 object AnexoFData {
     const val DOCUMENT_TITLE = "ANEXO F - GUIA PRÁTICO"
-    const val DOCUMENT_SUBTITLE = "BEM-ESTAR E CUIDADOS BÁSICOS COM CÃES E GATOS"
+    const val DOCUMENT_SUBTITLE = "BEM-ESTAR E CUIDADOS BÁSICOS (CÃES & EQUINOS)"
     const val SOURCE_CREDIT = "Manual de Verificação Inicial de Maus-Tratos – CRMV/MS"
 
     val categories = listOf(
@@ -58,11 +58,6 @@ object AnexoFData {
                     title = "Atividade e Alerta",
                     description = "Os animais devem estar ativos, alertas e brincalhões, considerando as diferenças entre espécie, raça e temperamento.",
                     tag = "Estado de Alerta"
-                ),
-                AnexoFGuideItem(
-                    title = "Gatos Relaxados e Seguros",
-                    description = "Apresentam uma marcha relaxada, comportamento de exploração do ambiente, cauda elevada e ereta, comportamento de auto-higiene e pupilas em estado normal.",
-                    tag = "Comportamento Felino"
                 ),
                 AnexoFGuideItem(
                     title = "Cães Relaxados",
@@ -124,58 +119,6 @@ object AnexoFData {
                 AnexoFGuideItem(
                     title = "Castração",
                     description = "Procedimento indicado para o bem-estar animal, controle reprodutivo e prevenção de doenças.",
-                    tag = "Controle Populacional"
-                )
-            )
-        ),
-        AnexoFGuideCategory(
-            id = "gatos",
-            title = "Cuidados Básicos para Gatos",
-            subtitle = "Requisitos essenciais de enriquecimento, manejo e saúde felina",
-            items = listOf(
-                AnexoFGuideItem(
-                    title = "Água Fresca e Hidratação",
-                    description = "Ofertar água fresca em bebedouros limpos durante todo o dia. Dependendo do tamanho do ambiente, é necessário mais de um bebedouro distribuídos em pontos específicos.",
-                    tag = "Hidratação Felina"
-                ),
-                AnexoFGuideItem(
-                    title = "Alimentação Específica",
-                    description = "A alimentação deve ser realizada ao menos uma vez ao dia, com alimentos específicos e de boa qualidade.",
-                    tag = "Nutrição"
-                ),
-                AnexoFGuideItem(
-                    title = "Enriquecimento Ambiental",
-                    description = "Enriquecer o ambiente. Gatos são caçadores natos, eles precisam de estímulos físicos e mentais. Brincadeiras, joguinhos, arranhadores, nichos em variadas alturas.",
-                    tag = "Estímulo Mental"
-                ),
-                AnexoFGuideItem(
-                    title = "Caixas de Areia",
-                    description = "As caixas de areia devem ser limpas todos os dias. Colocadas em lugar de fácil acesso para que o gato tenha facilidade de entrar e sair. Devem ser posicionadas em lugar distante de onde é fornecido água e alimentação.",
-                    tag = "Manejo Sanitário"
-                ),
-                AnexoFGuideItem(
-                    title = "Telas em Janelas e Sacadas",
-                    description = "Gatos em apartamentos – as janelas e sacadas devem conter telas para prevenção de quedas.",
-                    tag = "Segurança Doméstica"
-                ),
-                AnexoFGuideItem(
-                    title = "Higiene Natural",
-                    description = "Gatos não têm necessidade de tomar banho. Eles realizam comportamento de autolimpeza.",
-                    tag = "Autocuidado"
-                ),
-                AnexoFGuideItem(
-                    title = "Ações Preventivas de Doenças",
-                    description = "Ações de prevenção de doenças (vacinas, desverminação e medicamentos contra pulga).",
-                    tag = "Sanidade Preventiva"
-                ),
-                AnexoFGuideItem(
-                    title = "Não Permitir Acesso à Rua",
-                    description = "Não permitir acesso à rua. Animais com acesso à rua podem correr risco de atropelamento, brigas com outros animais e contrair doenças.",
-                    tag = "Guarda Responsável"
-                ),
-                AnexoFGuideItem(
-                    title = "Castração",
-                    description = "Castração recomendada para evitar fugas, brigas, procriação indesejada e patologias.",
                     tag = "Controle Populacional"
                 )
             )

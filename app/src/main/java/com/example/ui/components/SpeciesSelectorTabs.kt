@@ -40,8 +40,8 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 
 /**
- * Representa as espécies contempladas pelo aplicativo e futuros módulos individualizados de
- * avaliação de bem-estar animal.
+ * Representa as espécies contempladas pelo aplicativo para o levantamento de bem-estar animal:
+ * Cachorro (Caninos) e Cavalo (Equinos).
  */
 enum class AnimalSpecies(
     val id: String,
@@ -61,15 +61,6 @@ enum class AnimalSpecies(
         isCurrentlyActive = true,
         badgeText = "Ativo"
     ),
-    CAT(
-        id = "cat",
-        displayName = "Gato",
-        subtitle = "Felinos domésticos",
-        iconRes = R.drawable.ic_species_cat,
-        emoji = "🐈",
-        isCurrentlyActive = false,
-        badgeText = "Em breve"
-    ),
     HORSE(
         id = "horse",
         displayName = "Cavalo",
@@ -78,22 +69,12 @@ enum class AnimalSpecies(
         emoji = "🐎",
         isCurrentlyActive = true,
         badgeText = "Ativo"
-    ),
-    ROOSTER(
-        id = "rooster",
-        displayName = "Galo",
-        subtitle = "Galos & Aves",
-        iconRes = R.drawable.ic_species_rooster,
-        emoji = "🐓",
-        isCurrentlyActive = false,
-        badgeText = "Em breve"
     )
 }
 
 /**
- * Seletor horizontal com ícones e identificadores das espécies: Cachorro, Gato, Cavalo e Galo.
- * Permite ao auditor alternar ou visualizar as categorias que serão futuramente individualizadas
- * para o levantamento de bem-estar animal por espécie.
+ * Seletor horizontal com ícones e identificadores das espécies ativas: Cachorro e Cavalo.
+ * Permite ao auditor alternar entre os levantamentos de bem-estar animal por espécie.
  */
 @Composable
 fun SpeciesSelectorTabs(
@@ -101,8 +82,6 @@ fun SpeciesSelectorTabs(
     onSpeciesSelected: (AnimalSpecies) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -130,7 +109,7 @@ fun SpeciesSelectorTabs(
                 )
             }
             Text(
-                text = "Módulos individualizados",
+                text = "Módulos ativos",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -138,10 +117,10 @@ fun SpeciesSelectorTabs(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Barra com os cards das 4 espécies (Cachorro, Gato, Cavalo, Galo)
+        // Barra com os cards das espécies (Cachorro e Cavalo)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AnimalSpecies.entries.forEach { species ->
@@ -152,13 +131,6 @@ fun SpeciesSelectorTabs(
                     isSelected = isSelected,
                     onClick = {
                         onSpeciesSelected(species)
-                        if (!species.isCurrentlyActive) {
-                            Toast.makeText(
-                                context,
-                                "Módulo de ${species.displayName} em fase de homologação (PPBEA/CRMV). Módulos ativos: Cachorro (Caninos) e Cavalo (Equinos).",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
                     },
                     modifier = Modifier.weight(1f)
                 )

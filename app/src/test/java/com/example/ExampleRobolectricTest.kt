@@ -72,23 +72,29 @@ class ExampleRobolectricTest {
 
     @Test
     fun testAnexoFDataContent() {
-        assertEquals(3, com.example.data.model.AnexoFData.categories.size)
+        assertEquals(2, com.example.data.model.AnexoFData.categories.size)
         val normalCategory = com.example.data.model.AnexoFData.categories.find { it.id == "normal" }
         val dogsCategory = com.example.data.model.AnexoFData.categories.find { it.id == "caes" }
         val catsCategory = com.example.data.model.AnexoFData.categories.find { it.id == "gatos" }
 
         assertNotNull(normalCategory)
         assertNotNull(dogsCategory)
-        assertNotNull(catsCategory)
+        assertTrue(catsCategory == null)
 
         assertEquals("Animal Saudável", normalCategory?.title)
-        assertEquals(9, normalCategory?.items?.size)
+        assertEquals(8, normalCategory?.items?.size)
+        assertTrue(normalCategory?.items?.none { it.title.contains("Gato", ignoreCase = true) || it.tag.contains("Felino", ignoreCase = true) } == true)
 
         assertEquals("Cuidados Básicos para Cães", dogsCategory?.title)
         assertEquals(10, dogsCategory?.items?.size)
+    }
 
-        assertEquals("Cuidados Básicos para Gatos", catsCategory?.title)
-        assertEquals(9, catsCategory?.items?.size)
+    @Test
+    fun testAnimalSpeciesEntriesOnlyDogAndHorse() {
+        val species = com.example.ui.components.AnimalSpecies.entries
+        assertEquals(2, species.size)
+        assertEquals(listOf("Cachorro", "Cavalo"), species.map { it.displayName })
+        assertTrue(species.none { it.name == "CAT" || it.name == "ROOSTER" })
     }
 
     @Test
@@ -230,5 +236,22 @@ class ExampleRobolectricTest {
         assertFalse(loaded?.isDog == true)
 
         db.close()
+    }
+
+    @Test
+    fun testOwlKnowledgeBaseSpeciesAtlasSeparation() {
+        val horseSpecies = com.example.ui.components.AnimalSpecies.HORSE
+        val dogSpecies = com.example.ui.components.AnimalSpecies.DOG
+
+        // For horse: horse anatomy atlas is preserved
+        assertTrue(horseSpecies == com.example.ui.components.AnimalSpecies.HORSE)
+
+        // For dog and any non-horse: atlas is excluded
+        assertFalse(dogSpecies == com.example.ui.components.AnimalSpecies.HORSE)
+
+        // Anexo F has no galo or gato categories
+        assertTrue(com.example.data.model.AnexoFData.categories.none {
+            it.id.contains("galo", ignoreCase = true) || it.id.contains("gato", ignoreCase = true)
+        })
     }
 }

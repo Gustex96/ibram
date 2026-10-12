@@ -71,17 +71,13 @@ import com.example.R
 
 /**
  * Tela de Entrada e Início Operacional que exibe a arte vetorial estilizada do Cerrado
- * com o cavalo ao fundo, o ícone do aplicativo, campo de identificação do auditor fiscal
- * e o botão Iniciar sem encerramento automático.
+ * com o cavalo ao fundo, o ícone do aplicativo e o botão Iniciar sem encerramento automático.
  */
 @Composable
 fun AppSplashScreen(
-    initialAuditor: String = "",
-    onStart: (auditorName: String) -> Unit
+    onStart: () -> Unit
 ) {
     var isVisible by remember { mutableStateOf(false) }
-    var auditorInput by remember { mutableStateOf(initialAuditor) }
-    val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
     // Animação de entrada suave dos elementos visuais
@@ -243,199 +239,60 @@ fun AppSplashScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Bloco de Identificação do Auditor Fiscal e Botão Iniciar
+            // Botão Iniciar Permanente
             AnimatedVisibility(
                 visible = isVisible,
                 enter = fadeIn(tween(750))
             ) {
-                Surface(
-                    color = Color(0xDD0B2417),
-                    shape = RoundedCornerShape(22.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0x5581C784)),
-                    shadowElevation = 12.dp,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp)
+                        .padding(bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Button(
+                        onClick = onStart,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .testTag("splash_start_button"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2E7D32),
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0x3381C784),
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Badge,
-                                        contentDescription = null,
-                                        tint = Color(0xFFA5D6A7),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Identificação do Auditor Fiscal",
-                                    color = Color.White,
-                                    fontSize = 14.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Informe seu nome ou matrícula para os relatórios",
-                                    color = Color(0xFFB0D5B5),
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Campo de Texto da Identificação do Auditor
-                        OutlinedTextField(
-                            value = auditorInput,
-                            onValueChange = { auditorInput = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("auditor_id_input"),
-                            shape = RoundedCornerShape(12.dp),
-                            label = {
-                                Text(
-                                    text = "Auditor Fiscal / Agente Responsável",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFFC8E6C9)
-                                )
-                            },
-                            placeholder = {
-                                Text(
-                                    text = "Ex: Auditor Silva • Matr. 123.456-X",
-                                    fontSize = 13.sp,
-                                    color = Color(0x88C8E6C9)
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = Color(0xFFA5D6A7),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            trailingIcon = {
-                                if (auditorInput.isNotBlank()) {
-                                    IconButton(onClick = { auditorInput = "" }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Clear,
-                                            contentDescription = "Limpar identificação",
-                                            tint = Color(0xFFC8E6C9),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    focusManager.clearFocus()
-                                    onStart(auditorInput)
-                                }
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color(0xFF81C784),
-                                unfocusedBorderColor = Color(0x6681C784),
-                                focusedContainerColor = Color(0x44000000),
-                                unfocusedContainerColor = Color(0x33000000),
-                                cursorColor = Color(0xFF81C784)
-                            )
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
                         )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Chips de Sugestão Rápida para o Auditor
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf("Auditor IBRAM", "Fiscal Ambiental", "DIFIS-IV").forEach { suggestion ->
-                                FilterChip(
-                                    selected = auditorInput == suggestion,
-                                    onClick = { auditorInput = suggestion },
-                                    label = { Text(suggestion, fontSize = 10.5.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFF2E7D32),
-                                        selectedLabelColor = Color.White,
-                                        containerColor = Color(0x22FFFFFF),
-                                        labelColor = Color(0xFFC8E6C9)
-                                    ),
-                                    border = FilterChipDefaults.filterChipBorder(
-                                        enabled = true,
-                                        selected = auditorInput == suggestion,
-                                        borderColor = Color(0x4481C784),
-                                        selectedBorderColor = Color(0xFF81C784)
-                                    )
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Botão Iniciar Permanente
-                        Button(
-                            onClick = {
-                                focusManager.clearFocus()
-                                onStart(auditorInput)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .testTag("splash_start_button"),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2E7D32),
-                                contentColor = Color.White
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Iniciar Fiscalização",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                letterSpacing = 0.5.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Toque em Iniciar para acessar o painel operacional",
-                            fontSize = 11.sp,
-                            color = Color(0xAAC8E6C9),
-                            textAlign = TextAlign.Center
+                            text = "Iniciar",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Toque em Iniciar para acessar o painel operacional",
+                        fontSize = 12.sp,
+                        color = Color(0xDDE8F5E9),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
