@@ -107,6 +107,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.data.model.DfConstants
+import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.MistreatmentChecklistView
 import com.example.ui.viewmodel.InspectionViewModel
 import com.example.util.CnpjConsultationHelper
@@ -1724,7 +1725,11 @@ fun NewInspectionScreen(
 
     // Atlas Anatômico do Cavalo & Guia Técnico
     if (showAnatomyDialog) {
-        DfSafetyInfoDialog(onDismiss = { showAnatomyDialog = false })
+        val currentSpecies = if (draft.isDog) AnimalSpecies.DOG else AnimalSpecies.HORSE
+        DfSafetyInfoDialog(
+            species = currentSpecies,
+            onDismiss = { showAnatomyDialog = false }
+        )
     }
 
     // Fullscreen Photo Preview Dialog

@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.example.data.db.AppDatabase
 import com.example.data.model.HorseInspection
+import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.AppSplashScreen
 import com.example.ui.components.AppUpdateDialog
 import com.example.ui.components.InstitutionalNoticeDialog
@@ -413,7 +414,10 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_owl),
-                                            contentDescription = "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico",
+                                            contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
+                                                "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico"
+                                            else
+                                                "Menu Conhecimento - Guia Técnico e Bem-Estar (${viewModel.selectedSpecies.displayName})",
                                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -538,7 +542,10 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
             }
 
             if (showInfoDialog) {
-                DfSafetyInfoDialog(onDismiss = { showInfoDialog = false })
+                DfSafetyInfoDialog(
+                    species = viewModel.selectedSpecies,
+                    onDismiss = { showInfoDialog = false }
+                )
             }
 
             if (showInstitutionalNoticeDialog) {

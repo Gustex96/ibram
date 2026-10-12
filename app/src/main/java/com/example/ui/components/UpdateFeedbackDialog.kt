@@ -165,9 +165,9 @@ fun UpdateFeedbackDialog(
         is UpdateCheckResult.Error -> {
             var urlInput by remember { mutableStateOf(result.attemptedUrl) }
             val sampleJson = """{
-  "versionCode": 4,
-  "versionName": "1.1",
-  "releaseNotes": "• Identificação do auditor fiscal na tela inicial e botão Iniciar permanente\n• Manutenção fixa da tela de fundo vetorizado e ícone sem encerramento automático\n• Correção definitiva de conflito de assinatura nas atualizações do GitHub Actions\n• Incremento do versionCode integrado e melhorias no fluxo operacional",
+  "versionCode": 6,
+  "versionName": "1.3",
+  "releaseNotes": "• Atlas da anatomia do cavalo mantido exclusivamente na espécie equina levantada, retirado das demais espécies no menu da Coruja\n• Camada de persistência Room consolidada para equinos com coordenadas geográficas e fotos locais\n• Opção na tela de Backup para deletar vistorias e arquivos locais armazenados no Room\n• Relatórios PDF com quebra dinâmica de linhas no endereço residencial e coordenadas GPS isoladas",
   "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
   "minRequiredVersion": 1
 }"""

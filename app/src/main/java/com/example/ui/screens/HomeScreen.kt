@@ -231,7 +231,10 @@ fun HomeScreen(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_owl),
-                    contentDescription = "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico",
+                    contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
+                        "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico"
+                    else
+                        "Menu Conhecimento - Guia Técnico e Bem-Estar (${viewModel.selectedSpecies.displayName})",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(26.dp)
                 )
@@ -266,7 +269,10 @@ fun HomeScreen(
     }
 
     if (showInfoDialog) {
-        DfSafetyInfoDialog(onDismiss = { showInfoDialog = false })
+        DfSafetyInfoDialog(
+            species = viewModel.selectedSpecies,
+            onDismiss = { showInfoDialog = false }
+        )
     }
 
     if (showAuditorDialog) {
@@ -772,10 +778,18 @@ fun EmptyState(hasAny: Boolean, onStartNew: () -> Unit) {
 }
 
 @Composable
-fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
+fun DfSafetyInfoDialog(
+    species: AnimalSpecies = AnimalSpecies.HORSE,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
-    var mainGuideTab by remember { mutableIntStateOf(0) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
-    var selectedCategoryId by remember { mutableStateOf<String?>("all") }
+    val isHorse = species == AnimalSpecies.HORSE
+    var mainGuideTab by remember { mutableIntStateOf(if (isHorse) 0 else 1) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
+    var selectedCategoryId by remember {
+        mutableStateOf<String?>(
+            if (species == AnimalSpecies.DOG) "caes" else "all"
+        )
+    }
     var filterText by remember { mutableStateOf("") }
 
     val allCategories = AnexoFData.categories
@@ -823,7 +837,7 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_owl),
-                            contentDescription = "Símbolo da Coruja - Atlas e Guia",
+                            contentDescription = if (isHorse) "Símbolo da Coruja - Atlas do Cavalo e Guia" else "Símbolo da Coruja - Guia Técnico (${species.displayName})",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(24.dp)
                         )
@@ -832,22 +846,31 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (mainGuideTab == 0) "ATLAS DE ANATOMIA DO CAVALO" else "ANEXO F - GUIA PRÁTICO",
+                        text = if (isHorse) {
+                            if (mainGuideTab == 0) "ATLAS DE ANATOMIA DO CAVALO" else "ANEXO F - GUIA PRÁTICO"
+                        } else {
+                            if (species == AnimalSpecies.DOG) "GUIA TÉCNICO DE BEM-ESTAR CANINO"
+                            else "GUIA TÉCNICO DE BEM-ESTAR (${species.displayName.uppercase()})"
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.5.sp
                     )
                     Text(
-                        text = if (mainGuideTab == 0)
-                            "Anatomia Externa do Cavalo (Página 2 do Atlas)"
-                        else
-                            "Bem-Estar e Cuidados Básicos (Cães & Gatos)",
+                        text = if (isHorse) {
+                            if (mainGuideTab == 0)
+                                "Anatomia Externa do Cavalo (Página 2 do Atlas)"
+                            else
+                                "Bem-Estar e Cuidados Básicos (Equinos & Geral)"
+                        } else {
+                            "Parâmetros de Bem-Estar e Fiscalização (${species.displayName})"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = if (mainGuideTab == 0)
+                        text = if (isHorse && mainGuideTab == 0)
                             "Biblioteca AGPTEA • Estrutura Original Preservada"
                         else
                             AnexoFData.SOURCE_CREDIT,
@@ -857,7 +880,7 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
                     )
                 }
 
-                if (mainGuideTab == 0) {
+                if (isHorse && mainGuideTab == 0) {
                     IconButton(
                         onClick = {
                             try {
@@ -884,41 +907,43 @@ fun DfSafetyInfoDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Abas Principais: Anatomia do Cavalo vs Guia Anexo F
-                TabRow(
-                    selectedTabIndex = mainGuideTab,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
-                    Tab(
-                        selected = mainGuideTab == 0,
-                        onClick = { mainGuideTab = 0 },
-                        text = {
-                            Text(
-                                text = "Anatomia do Cavalo (Atlas)",
-                                fontSize = 11.5.sp,
-                                fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        modifier = Modifier.testTag("tab_guide_horse_anatomy")
-                    )
-                    Tab(
-                        selected = mainGuideTab == 1,
-                        onClick = { mainGuideTab = 1 },
-                        text = {
-                            Text(
-                                text = "Guia Bem-Estar (Anexo F)",
-                                fontSize = 11.5.sp,
-                                fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        modifier = Modifier.testTag("tab_guide_anexo_f")
-                    )
+                if (isHorse) {
+                    // Abas Principais exclusivas da espécie Equina: Anatomia do Cavalo vs Guia Geral
+                    TabRow(
+                        selectedTabIndex = mainGuideTab,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Tab(
+                            selected = mainGuideTab == 0,
+                            onClick = { mainGuideTab = 0 },
+                            text = {
+                                Text(
+                                    text = "Anatomia do Cavalo (Atlas)",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("tab_guide_horse_anatomy")
+                        )
+                        Tab(
+                            selected = mainGuideTab == 1,
+                            onClick = { mainGuideTab = 1 },
+                            text = {
+                                Text(
+                                    text = "Guia Bem-Estar (Anexo F)",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("tab_guide_anexo_f")
+                        )
+                    }
                 }
 
-                if (mainGuideTab == 0) {
-                    // Visualizador da Anatomia Externa do Cavalo constante na Página 2
+                if (isHorse && mainGuideTab == 0) {
+                    // Visualizador da Anatomia Externa do Cavalo (mantido exclusivamente para a espécie equina)
                     HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
                 } else {
                     // Category Selector Chips

@@ -193,20 +193,45 @@ object PdfReportGenerator {
             "Área / logradouro público em ${inspection.administrativeRegion} (Sem numeração específica informada)"
         }
 
-        val boxTop = y - 2f
-        val boxHeight = 30f
-        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBoxPaint)
-        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBorderPaint)
-
         val addrLabelPaint = Paint().apply {
             color = Color.rgb(71, 85, 105)
             textSize = 7.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
+        val addrTextPaint = Paint(valuePaint).apply {
+            textSize = 8.5f
+        }
+
+        // Divide o endereço em linhas sem cortar palavras para nunca sobrepor outros campos
+        val addrWords = fullAddrText.split(" ")
+        val addrLines = mutableListOf<String>()
+        var currLine = StringBuilder()
+        val maxAddrW = contentWidth - 20f
+        for (w in addrWords) {
+            val cand = if (currLine.isEmpty()) w else "$currLine $w"
+            if (addrTextPaint.measureText(cand) <= maxAddrW) {
+                currLine = StringBuilder(cand)
+            } else {
+                if (currLine.isNotEmpty()) addrLines.add(currLine.toString())
+                currLine = StringBuilder(w)
+            }
+        }
+        if (currLine.isNotEmpty()) addrLines.add(currLine.toString())
+        val effectiveLines = if (addrLines.isEmpty()) listOf(fullAddrText) else addrLines
+
+        val boxTop = y - 2f
+        val boxHeight = 14f + (effectiveLines.size * 11.5f) + 4f
+        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBoxPaint)
+        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBorderPaint)
+
         canvas.drawText("ENDEREÇO RESIDENCIAL / LOGRADOURO DA AÇÃO FISCAL:", col1X, y + 8f, addrLabelPaint)
-        canvas.drawText(fullAddrText, col1X, y + 21f, valuePaint)
-        y += 38f
+        var addrDrawY = y + 19.5f
+        for (line in effectiveLines) {
+            canvas.drawText(line, col1X, addrDrawY, addrTextPaint)
+            addrDrawY += 11.5f
+        }
+        y = boxTop + boxHeight + 8f
 
         // 1.3 Coordenadas Geográficas (GPS) & Auditor Fiscal (Totalmente isolados do endereço residencial)
         canvas.drawText("COORDENADAS GEOGRÁFICAS (GPS):", col1X, y, labelPaint)
@@ -751,18 +776,6 @@ object PdfReportGenerator {
                 style = Paint.Style.STROKE
                 strokeWidth = 0.8f
             }
-            val dBoxTop = dy - 2f
-            val dBoxH = 28f
-            dCanvas.drawRoundRect(RectF(margin, dBoxTop, margin + contentWidth, dBoxTop + dBoxH), 4f, 4f, dAddrBoxPaint)
-            dCanvas.drawRoundRect(RectF(margin, dBoxTop, margin + contentWidth, dBoxTop + dBoxH), 4f, 4f, dAddrBorderPaint)
-
-            val dAddrLabelPaint = Paint().apply {
-                color = Color.rgb(71, 85, 105)
-                textSize = 7.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            dCanvas.drawText("ENDEREÇO RESIDENCIAL / LOGRADOURO DA AÇÃO FISCAL:", margin + 8f, dy + 7f, dAddrLabelPaint)
             val fullDetailAddr = buildString {
                 val parts = mutableListOf<String>()
                 if (item.quadra.isNotBlank()) parts.add("Quadra: ${item.quadra}")
@@ -771,8 +784,45 @@ object PdfReportGenerator {
                 if (parts.isNotEmpty()) append(parts.joinToString("  |  "))
                 else append("Área / logradouro público em ${item.administrativeRegion}")
             }
-            dCanvas.drawText(fullDetailAddr, margin + 8f, dy + 19f, valPaint)
-            dy += 36f
+
+            val dAddrLabelPaint = Paint().apply {
+                color = Color.rgb(71, 85, 105)
+                textSize = 7.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            val dAddrTextPaint = Paint(valPaint).apply {
+                textSize = 8.5f
+            }
+
+            val dWords = fullDetailAddr.split(" ")
+            val dLines = mutableListOf<String>()
+            var dCurr = StringBuilder()
+            val dMaxW = contentWidth - 20f
+            for (w in dWords) {
+                val cand = if (dCurr.isEmpty()) w else "$dCurr $w"
+                if (dAddrTextPaint.measureText(cand) <= dMaxW) {
+                    dCurr = StringBuilder(cand)
+                } else {
+                    if (dCurr.isNotEmpty()) dLines.add(dCurr.toString())
+                    dCurr = StringBuilder(w)
+                }
+            }
+            if (dCurr.isNotEmpty()) dLines.add(dCurr.toString())
+            val dEffectiveLines = if (dLines.isEmpty()) listOf(fullDetailAddr) else dLines
+
+            val dBoxTop = dy - 2f
+            val dBoxH = 14f + (dEffectiveLines.size * 11.5f) + 4f
+            dCanvas.drawRoundRect(RectF(margin, dBoxTop, margin + contentWidth, dBoxTop + dBoxH), 4f, 4f, dAddrBoxPaint)
+            dCanvas.drawRoundRect(RectF(margin, dBoxTop, margin + contentWidth, dBoxTop + dBoxH), 4f, 4f, dAddrBorderPaint)
+
+            dCanvas.drawText("ENDEREÇO RESIDENCIAL / LOGRADOURO DA AÇÃO FISCAL:", margin + 8f, dy + 8f, dAddrLabelPaint)
+            var dTextY = dy + 19.5f
+            for (line in dEffectiveLines) {
+                dCanvas.drawText(line, margin + 8f, dTextY, dAddrTextPaint)
+                dTextY += 11.5f
+            }
+            dy = dBoxTop + dBoxH + 8f
 
             // Coordenadas GPS (coluna 1) e Total de Animais (coluna 2)
             dCanvas.drawText("COORDENADAS GEOGRÁFICAS (GPS):", margin + 8f, dy, labelPaint)

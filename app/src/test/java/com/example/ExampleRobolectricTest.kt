@@ -186,4 +186,49 @@ class ExampleRobolectricTest {
 
         db.close()
     }
+
+    @Test
+    fun testHorseAnatomyDataConstants() {
+        assertEquals("Atlas de Anatomia do Cavalo", com.example.model.HorseAnatomyData.ATLAS_TITLE)
+        assertTrue(com.example.model.HorseAnatomyData.ATLAS_SOURCE.contains("AGPTEA"))
+        assertTrue(com.example.model.HorseAnatomyData.ATLAS_PAGE_REFERENCE.contains("Página 2"))
+        assertTrue(com.example.model.HorseAnatomyData.ATLAS_DOCUMENT_URL.startsWith("https://"))
+    }
+
+    @Test
+    fun testEquineRoomPersistenceWithGeoAndPhotoPaths() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val dao = db.horseInspectionDao()
+
+        val equineInspection = HorseInspection(
+            protocolNumber = "DF-EQU-2026-9999",
+            photoPath = "/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_front.jpg",
+            additionalPhotoPaths = "/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_lateral.jpg;;/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_pata.jpg",
+            latitude = -15.823456,
+            longitude = -47.987654,
+            administrativeRegion = "Planaltina (RA II)",
+            quadra = "Quadra 12",
+            conjunto = "Conjunto B",
+            numero = "Chácara 05",
+            species = "Cavalo",
+            horseDescription = "Equino castanho com cicatriz no flanco esquerdo",
+            horseCount = 1,
+            mistreatedHorseCount = 0
+        )
+
+        val id = dao.insertInspection(equineInspection)
+        val loaded = dao.getInspectionById(id).first()
+
+        assertNotNull(loaded)
+        assertEquals("DF-EQU-2026-9999", loaded?.protocolNumber)
+        assertEquals(-15.823456, loaded?.latitude ?: 0.0, 0.000001)
+        assertEquals(-47.987654, loaded?.longitude ?: 0.0, 0.000001)
+        assertEquals("/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_front.jpg", loaded?.photoPath)
+        assertEquals(3, loaded?.allPhotoPaths?.size)
+        assertEquals("Cavalo", loaded?.species)
+        assertFalse(loaded?.isDog == true)
+
+        db.close()
+    }
 }
