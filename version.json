@@ -1,0 +1,7 @@
+{
+  "versionCode": 5,
+  "versionName": "1.2",
+  "releaseNotes": "• Aplicativo oficializado como LEVO (Levantamento Operacional)\n• Categoria Cães: remoção de menções a Zoonoses/DIVAL e direcionamento para apoio policial (BPMA/PMDF)\n• Relatórios PDF: correção definitiva do embaralhamento entre endereço residencial e coordenadas GPS\n• Consulta do Atlas: referência bibliográfica e link oficial direto da Biblioteca AGPTEA (Página 2)\n• Identificação do Auditor Fiscal na tela inicial e documentos gerados",
+  "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk",
+  "minRequiredVersion": 1
+}

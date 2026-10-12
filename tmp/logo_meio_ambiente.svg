@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8F5E9" />
+      <stop offset="100%" stop-color="#C8E6C9" />
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B5E20" />
+      <stop offset="50%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#00695C" />
+    </linearGradient>
+    <linearGradient id="leafGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#43A047" />
+      <stop offset="100%" stop-color="#1B5E20" />
+    </linearGradient>
+    <linearGradient id="leafGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#66BB6A" />
+      <stop offset="100%" stop-color="#2E7D32" />
+    </linearGradient>
+    <linearGradient id="leafGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#81C784" />
+      <stop offset="100%" stop-color="#388E3C" />
+    </linearGradient>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00897B" />
+      <stop offset="100%" stop-color="#4DB6AC" />
+    </linearGradient>
+    <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5D4037" />
+      <stop offset="100%" stop-color="#3E2723" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Ring -->
+  <circle cx="256" cy="256" r="248" fill="url(#bgGrad)" stroke="url(#ringGrad)" stroke-width="14" />
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#A5D6A7" stroke-width="3" stroke-dasharray="6 6" />
+
+  <!-- Sun Rays / Halo in Sky -->
+  <circle cx="256" cy="180" r="100" fill="#FFF9C4" opacity="0.6" />
+
+  <!-- Tree Trunk & Roots -->
+  <path d="M 242 370 C 244 320 236 280 220 240 C 235 255 248 260 256 260 C 264 260 277 255 292 240 C 276 280 268 320 270 370 Z" fill="url(#trunkGrad)" />
+  <path d="M 230 370 C 210 380 190 385 170 388 C 195 380 220 375 240 370 Z" fill="url(#trunkGrad)" />
+  <path d="M 282 370 C 302 380 322 385 342 388 C 317 380 292 375 272 370 Z" fill="url(#trunkGrad)" />
+
+  <!-- Tree Canopy / Foliage - Left Main Leaf -->
+  <path d="M 256 100 C 180 120 140 180 170 250 C 190 290 230 290 256 270 C 250 210 245 150 256 100 Z" fill="url(#leafGrad1)" />
+
+  <!-- Tree Canopy - Right Main Leaf -->
+  <path d="M 256 100 C 332 120 372 180 342 250 C 322 290 282 290 256 270 C 262 210 267 150 256 100 Z" fill="url(#leafGrad2)" />
+
+  <!-- Center Sprout / Leaf -->
+  <path d="M 256 80 C 230 130 235 180 256 220 C 277 180 282 130 256 80 Z" fill="url(#leafGrad3)" />
+
+  <!-- Side Foliage Elements -->
+  <path d="M 180 180 C 120 200 120 260 170 270 C 200 270 210 240 180 180 Z" fill="url(#leafGrad2)" opacity="0.9" />
+  <path d="M 332 180 C 392 200 392 260 342 270 C 312 270 302 240 332 180 Z" fill="url(#leafGrad1)" opacity="0.9" />
+
+  <!-- Lower Earth / Water Arc -->
+  <path d="M 100 370 Q 256 430 412 370 Q 256 460 100 370 Z" fill="url(#waterGrad)" />
+  <path d="M 130 390 Q 256 440 382 390 Q 256 465 130 390 Z" fill="#004D40" opacity="0.4" />
+
+  <!-- Two Leaves Protecting from Bottom Left and Right -->
+  <path d="M 80 280 C 90 360 170 410 256 410 C 180 400 110 350 90 280 Z" fill="url(#leafGrad1)" />
+  <path d="M 432 280 C 422 360 342 410 256 410 C 332 400 402 350 422 280 Z" fill="url(#leafGrad2)" />
+
+  <!-- Small Stars / Sparkles of Nature -->
+  <circle cx="160" cy="130" r="4" fill="#FFFFFF" opacity="0.8" />
+  <circle cx="352" cy="130" r="4" fill="#FFFFFF" opacity="0.8" />
+  <circle cx="256" cy="64" r="5" fill="#43A047" />
+</svg>
