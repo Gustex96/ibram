@@ -119,6 +119,7 @@ fun HistoryScreen(
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var showMultiplePdfDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
+    var showConfirmDeleteAllDialog by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -645,12 +646,54 @@ fun HistoryScreen(
                         }
                     }
 
+                    // Opção 3: Deletar Todos os Registros e Arquivos Locais (Zerar Banco Room)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showBackupDialog = false
+                                showConfirmDeleteAllDialog = true
+                            }
+                            .testTag("button_open_delete_all_room"),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Deletar Arquivos & Zerar Banco (Room)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = "Exclui permanentemente todas as vistorias do banco Room e todas as fotos salvas localmente no aparelho.",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "Segurança & Privacidade: Todo o armazenamento é 100% local no próprio aparelho, funcionando completamente offline.",
+                            text = "Segurança & Privacidade: Todo o armazenamento é 100% local no próprio aparelho (Room SQLite), funcionando completamente offline.",
                             modifier = Modifier.padding(10.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -662,6 +705,66 @@ fun HistoryScreen(
             confirmButton = {
                 TextButton(onClick = { showBackupDialog = false }) {
                     Text("Fechar")
+                }
+            }
+        )
+    }
+
+    // Modal de Confirmação para Deletar Tudo (Room e Fotos)
+    if (showConfirmDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDeleteAllDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.WarningAmber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(36.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Zerar Banco Room e Deletar Arquivos?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Atenção: Esta ação irá excluir definitivamente todas as fiscalizações do banco de dados local (Room) e todos os arquivos de fotos armazenados no dispositivo.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Recomendamos exportar uma cópia de segurança antes de prosseguir.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmDeleteAllDialog = false
+                        viewModel.deleteAllLocalDataAndRoom { success, msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.testTag("button_confirm_delete_all_room")
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Deletar Tudo Permanentemente")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showConfirmDeleteAllDialog = false }) {
+                    Text("Cancelar")
                 }
             }
         )

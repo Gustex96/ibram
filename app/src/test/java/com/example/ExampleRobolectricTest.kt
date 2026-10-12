@@ -154,4 +154,36 @@ class ExampleRobolectricTest {
         val loaded = prefs.getString("key_auditor_id", "")
         assertEquals("Auditor Fiscal IBRAM • Matr. 987.654-1", loaded)
     }
+
+    @Test
+    fun testDeleteAllInspectionsInRoomDatabase() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+        val dao = db.horseInspectionDao()
+
+        val item1 = HorseInspection(
+            protocolNumber = "DF-EQU-001",
+            photoPath = "/local/photo1.jpg",
+            latitude = -15.80,
+            longitude = -47.90,
+            administrativeRegion = "Taguatinga"
+        )
+        val item2 = HorseInspection(
+            protocolNumber = "DF-EQU-002",
+            photoPath = "/local/photo2.jpg",
+            latitude = -15.82,
+            longitude = -47.92,
+            administrativeRegion = "Ceilândia"
+        )
+
+        dao.insertInspection(item1)
+        dao.insertInspection(item2)
+        assertEquals(2, dao.getAllInspectionsList().size)
+
+        val deletedCount = dao.deleteAllInspections()
+        assertEquals(2, deletedCount)
+        assertEquals(0, dao.getAllInspectionsList().size)
+
+        db.close()
+    }
 }

@@ -1013,6 +1013,25 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun deleteAllLocalDataAndRoom(onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getDatabase(getApplication())
+            val result = com.example.util.DatabaseBackupManager.deleteAllLocalDataAndRoom(
+                context = getApplication(),
+                dao = db.horseInspectionDao()
+            )
+            val (success, msg) = if (result.isSuccess) {
+                val count = result.getOrNull() ?: 0
+                Pair(true, "Limpeza concluída! $count registros do Room e todos os arquivos locais de fotos foram apagados.")
+            } else {
+                Pair(false, "Erro ao apagar dados do Room: ${result.exceptionOrNull()?.message}")
+            }
+            withContext(Dispatchers.Main) {
+                onResult(success, msg)
+            }
+        }
+    }
+
     fun exportConsolidatedPdf() {
         val inspections = reportPreviewInspections.value
         val start = reportStartDate.value

@@ -16,4 +16,6 @@ class InspectionRepository(private val dao: HorseInspectionDao) {
     suspend fun deleteInspection(inspection: HorseInspection) = dao.deleteInspection(inspection)
 
     suspend fun deleteInspectionById(id: Long) = dao.deleteInspectionById(id)
+
+    suspend fun deleteAllInspections(): Int = dao.deleteAllInspections()
 }

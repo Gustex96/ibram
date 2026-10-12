@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
@@ -67,6 +68,8 @@ object DatabaseBackupManager {
                     put("tutorName", item.tutorName)
                     put("tutorCpf", item.tutorCpf)
                     put("additionalTutors", item.additionalTutors)
+                    put("species", item.species)
+                    put("auditorName", item.auditorName)
                     put("inspectionTeam", item.inspectionTeam)
                     put("createdAt", item.createdAt)
                 }
@@ -129,6 +132,8 @@ object DatabaseBackupManager {
                     quadra = obj.optString("quadra", ""),
                     conjunto = obj.optString("conjunto", ""),
                     numero = obj.optString("numero", ""),
+                    species = obj.optString("species", "Cavalo"),
+                    auditorName = obj.optString("auditorName", ""),
                     horseDescription = obj.optString("horseDescription", ""),
                     horseCount = obj.optInt("horseCount", 1),
                     mistreatedHorseCount = obj.optInt("mistreatedHorseCount", 0),
@@ -159,6 +164,82 @@ object DatabaseBackupManager {
             Result.success(list.size)
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao importar backup: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Exclui permanentemente todos os registros da tabela Room e deleta
+     * todos os arquivos de fotos armazenados localmente no dispositivo.
+     */
+    suspend fun deleteAllLocalDataAndRoom(
+        context: Context,
+        dao: HorseInspectionDao
+    ): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            // 1. Obter todos os registros atuais para identificar e remover arquivos de fotos vinculados
+            val allRecords = dao.getAllInspectionsList()
+            var deletedFilesCount = 0
+
+            for (record in allRecords) {
+                // Deletar foto principal
+                if (record.photoPath.isNotBlank()) {
+                    try {
+                        val file = File(record.photoPath)
+                        if (file.exists() && file.delete()) {
+                            deletedFilesCount++
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Falha ao deletar foto principal: ${record.photoPath}", e)
+                    }
+                }
+                // Deletar fotos adicionais
+                if (record.additionalPhotoPaths.isNotBlank()) {
+                    for (path in record.additionalPhotoPaths.split(";;")) {
+                        if (path.isNotBlank()) {
+                            try {
+                                val file = File(path)
+                                if (file.exists() && file.delete()) {
+                                    deletedFilesCount++
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Falha ao deletar foto adicional: $path", e)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Limpar diretórios locais de armazenamento de fotos, relatórios e exports temporários
+            val directoriesToClean = listOf(
+                File(context.filesDir, "photos"),
+                File(context.cacheDir, "photos"),
+                File(context.cacheDir, "camera_raw"),
+                File(context.cacheDir, "reports"),
+                File(context.cacheDir, "exports")
+            )
+
+            for (dir in directoriesToClean) {
+                if (dir.exists() && dir.isDirectory) {
+                    dir.listFiles()?.forEach { f ->
+                        try {
+                            if (f.isFile && f.delete()) {
+                                deletedFilesCount++
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Falha ao limpar arquivo local: ${f.absolutePath}", e)
+                        }
+                    }
+                }
+            }
+
+            // 3. Deletar todos os registros da tabela Room
+            val deletedRecords = dao.deleteAllInspections()
+
+            Log.d(TAG, "Limpeza do Room concluída: $deletedRecords registros apagados e $deletedFilesCount arquivos locais deletados.")
+            Result.success(deletedRecords)
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao deletar dados locais e do Room: ${e.message}", e)
             Result.failure(e)
         }
     }

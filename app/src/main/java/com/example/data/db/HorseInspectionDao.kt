@@ -34,4 +34,7 @@ interface HorseInspectionDao {
 
     @Query("DELETE FROM horse_inspections WHERE id = :id")
     suspend fun deleteInspectionById(id: Long)
+
+    @Query("DELETE FROM horse_inspections")
+    suspend fun deleteAllInspections(): Int
 }
