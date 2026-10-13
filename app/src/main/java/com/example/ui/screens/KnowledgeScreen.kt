@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.AnexoFData
 import com.example.data.model.FiveDomainsData
-import com.example.data.model.HorseAnatomyData
+import com.example.model.HorseAnatomyData
 import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.FiveDomainsView
 import com.example.ui.components.HorseAnatomyAtlasView
@@ -166,7 +166,7 @@ fun KnowledgeScreen(
         // Seletor de Espécie
         SpeciesSelectorTabs(
             selectedSpecies = viewModel.selectedSpecies,
-            onSpeciesSelected = { viewModel.setSpecies(it) },
+            onSpeciesSelected = { viewModel.selectSpecies(it) },
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
