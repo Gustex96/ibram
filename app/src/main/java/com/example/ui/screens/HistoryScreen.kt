@@ -160,7 +160,7 @@ fun HistoryScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .testTag("history_search_field"),
-            placeholder = { Text("Filtrar por RA, protocolo, tutor, notas...") },
+            placeholder = { Text("Filtrar por RA, levantamento, tutor, notas...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {

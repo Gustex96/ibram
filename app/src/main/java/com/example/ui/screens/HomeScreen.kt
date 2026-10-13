@@ -210,7 +210,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .weight(1f)
                     .testTag("search_field"),
-                placeholder = { Text("Buscar por RA, tutor, protocolo ou notas...") },
+                placeholder = { Text("Buscar por RA, tutor, levantamento ou notas...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -441,7 +441,7 @@ fun InspectionItemCard(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "Protocolo: ${inspection.protocolNumber}",
+                            text = "Levantamento: ${inspection.protocolNumber}",
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.5.sp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -858,8 +858,8 @@ fun DfSafetyInfoDialog(
                     Text(
                         text = if (isHorse) {
                             when (mainGuideTab) {
-                                0 -> "ATLAS DE ANATOMIA DO CAVALO"
-                                1 -> "OS 5 DOMÍNIOS DO BEM-ESTAR"
+                                0 -> "OS 5 DOMÍNIOS DO BEM-ESTAR"
+                                1 -> "ATLAS DE ANATOMIA DO CAVALO"
                                 else -> "ANEXO F - GUIA PRÁTICO"
                             }
                         } else {
@@ -874,8 +874,8 @@ fun DfSafetyInfoDialog(
                     Text(
                         text = if (isHorse) {
                             when (mainGuideTab) {
-                                0 -> "Anatomia Externa do Cavalo (Página 2 do Atlas)"
-                                1 -> "Garantias Fundamentais ao Bem-Estar Animal"
+                                0 -> "Garantias Fundamentais ao Bem-Estar Animal"
+                                1 -> "Anatomia Externa do Cavalo (Página 2 do Atlas)"
                                 else -> "Bem-Estar e Cuidados Básicos (Equinos & Geral)"
                             }
                         } else {
@@ -889,8 +889,8 @@ fun DfSafetyInfoDialog(
                     Text(
                         text = if (isHorse) {
                             when (mainGuideTab) {
-                                0 -> "Biblioteca AGPTEA • Estrutura Original Preservada"
-                                1 -> FiveDomainsData.FRAMEWORK_SOURCE
+                                0 -> FiveDomainsData.FRAMEWORK_SOURCE
+                                1 -> "Biblioteca AGPTEA • Estrutura Original Preservada"
                                 else -> AnexoFData.SOURCE_CREDIT
                             }
                         } else {
@@ -903,7 +903,7 @@ fun DfSafetyInfoDialog(
                     )
                 }
 
-                if (isHorse && mainGuideTab == 0) {
+                if (isHorse && mainGuideTab == 1) {
                     IconButton(
                         onClick = {
                             try {
@@ -931,7 +931,7 @@ fun DfSafetyInfoDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (isHorse) {
-                    // Abas Principais da espécie Equina: Atlas, 5 Domínios e Guia Prático Anexo F
+                    // Abas Principais da espécie Equina: 5 Domínios, Atlas e Guia Prático Anexo F
                     TabRow(
                         selectedTabIndex = mainGuideTab,
                         modifier = Modifier
@@ -943,24 +943,24 @@ fun DfSafetyInfoDialog(
                             onClick = { mainGuideTab = 0 },
                             text = {
                                 Text(
-                                    text = "Atlas Equino",
+                                    text = "5 Domínios",
                                     fontSize = 11.5.sp,
                                     fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
-                            modifier = Modifier.testTag("tab_guide_horse_anatomy")
+                            modifier = Modifier.testTag("tab_guide_five_domains")
                         )
                         Tab(
                             selected = mainGuideTab == 1,
                             onClick = { mainGuideTab = 1 },
                             text = {
                                 Text(
-                                    text = "5 Domínios",
+                                    text = "Atlas Equino",
                                     fontSize = 11.5.sp,
                                     fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
-                            modifier = Modifier.testTag("tab_guide_five_domains")
+                            modifier = Modifier.testTag("tab_guide_horse_anatomy")
                         )
                         Tab(
                             selected = mainGuideTab == 2,
@@ -1011,13 +1011,13 @@ fun DfSafetyInfoDialog(
                 }
 
                 when {
-                    isHorse && mainGuideTab == 0 -> {
-                        // Visualizador da Anatomia Externa do Cavalo (mantido exclusivamente para a espécie equina)
-                        HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
-                    }
-                    (isHorse && mainGuideTab == 1) || (!isHorse && mainGuideTab == 0) -> {
+                    mainGuideTab == 0 -> {
                         // Os 5 Domínios que devem ser garantidos aos animais
                         FiveDomainsView(modifier = Modifier.fillMaxWidth())
+                    }
+                    isHorse && mainGuideTab == 1 -> {
+                        // Visualizador da Anatomia Externa do Cavalo (mantido exclusivamente para a espécie equina)
+                        HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
                     }
                     else -> {
                     // Category Selector Chips

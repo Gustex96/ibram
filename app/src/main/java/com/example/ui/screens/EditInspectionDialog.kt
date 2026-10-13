@@ -156,7 +156,7 @@ fun EditInspectionDialog(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Protocolo: ${inspection.protocolNumber}",
+                            text = "Levantamento: ${inspection.protocolNumber}",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -33,7 +33,7 @@ object CsvExportUtils {
                 fos.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
                 OutputStreamWriter(fos, StandardCharsets.UTF_8).use { writer ->
                     // Header line (using semicolon delimiter which is the standard for Brazilian Excel)
-                    writer.append("Protocolo;")
+                    writer.append("Levantamento;")
                     writer.append("Espécie;")
                     writer.append("Auditor Fiscal;")
                     writer.append("Data e Hora;")

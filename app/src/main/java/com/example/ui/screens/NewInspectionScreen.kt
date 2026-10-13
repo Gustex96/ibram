@@ -202,7 +202,7 @@ fun NewInspectionScreen(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "Protocolo: ${draft.protocolNumber}",
+                            text = "Levantamento: ${draft.protocolNumber}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

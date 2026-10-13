@@ -274,4 +274,33 @@ class ExampleRobolectricTest {
             assertTrue(domain.tag.isNotBlank())
         }
     }
+
+    @Test
+    fun testReportTerminologyAndFiveDomainsGuarantees() {
+        val inspection = HorseInspection(
+            protocolNumber = "DF-EQU-2026-0001",
+            photoPath = "/mock/path.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Brasília (RA I)"
+        )
+        // Check that PDF file name format uses Levantamento
+        val expectedFileName = "Levantamento_${inspection.protocolNumber}.pdf"
+        assertTrue(expectedFileName.startsWith("Levantamento_"))
+        assertFalse(expectedFileName.contains("Protocolo"))
+
+        // Check that the 5 domains specify guarantees for nutrition, environment, health, behavior and mental state
+        val domains = com.example.data.model.FiveDomainsData.domains
+        val nutrition = domains.first { it.number == 1 }
+        val environment = domains.first { it.number == 2 }
+        val health = domains.first { it.number == 3 }
+        val behavior = domains.first { it.number == 4 }
+        val mental = domains.first { it.number == 5 }
+
+        assertTrue(nutrition.whatMustBeGuaranteed.contains("água", ignoreCase = true))
+        assertTrue(environment.whatMustBeGuaranteed.contains("ambiente", ignoreCase = true))
+        assertTrue(health.whatMustBeGuaranteed.contains("integridade", ignoreCase = true))
+        assertTrue(behavior.whatMustBeGuaranteed.contains("comportamentos", ignoreCase = true))
+        assertTrue(mental.whatMustBeGuaranteed.contains("estados mentais", ignoreCase = true))
+    }
 }

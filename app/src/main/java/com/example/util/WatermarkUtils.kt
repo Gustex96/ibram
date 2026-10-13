@@ -136,7 +136,7 @@ object WatermarkUtils {
         val dateString = sdf.format(Date(captureTimeMillis))
         val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f° (GPS)", latitude, longitude)
         val raString = "RA: $administrativeRegion"
-        val protocolString = "PROTOCOLO: $protocol | APOIO À FISCALIZAÇÃO"
+        val protocolString = "LEVANTAMENTO: $protocol | APOIO À FISCALIZAÇÃO"
 
         val tagLine = if (!photoTag.isNullOrBlank()) {
             "🏷️ TAG: ${photoTag.trim().take(20)}"

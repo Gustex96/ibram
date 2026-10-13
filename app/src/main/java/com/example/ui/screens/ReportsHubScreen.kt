@@ -504,7 +504,7 @@ fun ReportPreviewItem(inspection: HorseInspection, onExportIndividual: () -> Uni
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${inspection.protocolNumber} • ${inspection.formattedAddress}",
+                    text = "Levantamento ${inspection.protocolNumber} • ${inspection.formattedAddress}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     maxLines = 1,

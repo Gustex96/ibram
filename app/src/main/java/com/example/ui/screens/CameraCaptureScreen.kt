@@ -651,7 +651,7 @@ private fun createFallbackFieldPhoto(
     textPaint.textSize = 28f
     textPaint.typeface = Typeface.DEFAULT
     textPaint.color = AndroidColor.rgb(254, 240, 138)
-    canvas.drawText("Protocolo: $protocolNumber", 60f, 260f, textPaint)
+    canvas.drawText("Levantamento: $protocolNumber", 60f, 260f, textPaint)
     canvas.drawText("Registro Fotográfico nº $photoNumber", 60f, 310f, textPaint)
     canvas.drawText("Região Administrativa: $administrativeRegion", 60f, 360f, textPaint)
 

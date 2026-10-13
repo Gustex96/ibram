@@ -403,7 +403,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             }
 
                             IconButton(
-                                onClick = { showInfoDialog = true },
+                                onClick = { selectedTab = 3 },
                                 modifier = Modifier.testTag("action_info_dialog")
                             ) {
                                 Surface(
@@ -474,13 +474,26 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             selected = selectedTab == 2,
                             onClick = { selectedTab = 2 },
                             icon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Relatórios") },
-                            label = { Text("Relatórios PDF") },
+                            label = { Text("Relatórios") },
                             modifier = Modifier.testTag("nav_tab_reports")
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 3,
+                            onClick = { selectedTab = 3 },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_owl),
+                                    contentDescription = "Conhecimento",
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            },
+                            label = { Text("Conhecimento") },
+                            modifier = Modifier.testTag("nav_tab_knowledge")
                         )
                     }
                 },
                 floatingActionButton = {
-                    if (selectedTab != 2) {
+                    if (selectedTab == 0 || selectedTab == 1) {
                         FloatingActionButton(
                             onClick = { viewModel.navigateTo("NEW_INSPECTION") },
                             containerColor = MaterialTheme.colorScheme.primary,
@@ -524,6 +537,9 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                 onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") }
                             )
                             2 -> ReportsHubScreen(
+                                viewModel = viewModel
+                            )
+                            3 -> com.example.ui.screens.KnowledgeScreen(
                                 viewModel = viewModel
                             )
                         }

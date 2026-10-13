@@ -118,7 +118,7 @@ object PdfReportGenerator {
 
         y += 52f
 
-        // Document Badge - LEVANTAMENTO E NÚMERO DO PROTOCOLO
+        // Document Badge - LEVANTAMENTO DE CAMPO
         val badgeBgPaint = Paint().apply {
             color = Color.rgb(241, 245, 249)
             style = Paint.Style.FILL
@@ -132,7 +132,7 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("LEVANTAMENTO E NÚMERO DO PROTOCOLO", margin + 10f, y + 16f, docNamePaint)
+        canvas.drawText("LEVANTAMENTO DE CAMPO", margin + 10f, y + 16f, docNamePaint)
 
         val protocolPaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
@@ -496,7 +496,7 @@ object PdfReportGenerator {
                 var py = 32f
                 pCanvas.drawText("ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL", margin, py, headerSubPaint)
                 py += 15f
-                pCanvas.drawText("Protocolo: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | Foto ${photoIndex + 1} de ${allPhotos.size}", margin, py, headerSmallPaint)
+                pCanvas.drawText("Levantamento: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | Foto ${photoIndex + 1} de ${allPhotos.size}", margin, py, headerSmallPaint)
                 py += 20f
 
                 py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM ALTA DEFINIÇÃO (PROPORÇÃO 500x500)", margin, py, contentWidth)
@@ -552,7 +552,7 @@ object PdfReportGenerator {
         val reportsDir = File(context.cacheDir, "reports").apply {
             if (!exists()) mkdirs()
         }
-        val outputFile = File(reportsDir, "Levantamento_Protocolo_${inspection.protocolNumber}.pdf")
+        val outputFile = File(reportsDir, "Levantamento_${inspection.protocolNumber}.pdf")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -746,7 +746,7 @@ object PdfReportGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            dCanvas.drawText("REGISTRO DE CAMPO Nº ${index + 1} - PROTOCOLO: ${item.protocolNumber}", margin, dy, dHeadPaint)
+            dCanvas.drawText("REGISTRO DE CAMPO Nº ${index + 1} - LEVANTAMENTO: ${item.protocolNumber}", margin, dy, dHeadPaint)
             dy += 14f
             val itemAuditor = if (item.auditorName.isNotBlank()) item.auditorName else "Não informado"
             val dAuditorPaint = Paint().apply {
@@ -945,8 +945,8 @@ object PdfReportGenerator {
             sharePdf(
                 context = context,
                 file = file,
-                subject = "Levantamento e número do protocolo - ${inspection.protocolNumber}",
-                message = "Segue em anexo o Levantamento referente ao protocolo ${inspection.protocolNumber}."
+                subject = "Levantamento Técnico - ${inspection.protocolNumber}",
+                message = "Segue em anexo o Levantamento referente ao registro ${inspection.protocolNumber}."
             )
         } else {
             Toast.makeText(context, "Erro ao gerar PDF", Toast.LENGTH_SHORT).show()
