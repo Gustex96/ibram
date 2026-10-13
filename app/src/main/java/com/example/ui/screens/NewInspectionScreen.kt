@@ -1202,13 +1202,13 @@ fun NewInspectionScreen(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_owl),
-                                    contentDescription = if (isDog) "Consultar Guia Técnico Canino" else "Consultar Atlas Anatômico do Cavalo",
+                                    contentDescription = if (isDog) "Consultar 5 Domínios e Guia Canino" else "Consultar Atlas Anatômico e 5 Domínios",
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = if (isDog) "Guia Técnico Canino" else "Atlas Anatômico",
+                                    text = if (isDog) "5 Domínios & Guia" else "Atlas & 5 Domínios",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer

@@ -309,9 +309,9 @@ object UpdateChecker {
      */
     fun getSampleVersionInfo(context: Context): AppVersionInfo {
         return AppVersionInfo(
-            versionCode = 7,
-            versionName = "1.4",
-            releaseNotes = "• Remoção definitiva das categorias de Galo e Gato do aplicativo\n• Painel de espécies focado exclusivamente nos módulos ativos de Cachorro e Cavalo\n• Guia técnico otimizado para fiscalização e bem-estar de cães e equinos",
+            versionCode = 8,
+            versionName = "1.5",
+            releaseNotes = "• Inclusão dos 5 Domínios de Bem-Estar Animal na aba Conhecimento (Nutrição, Ambiente, Saúde, Comportamento e Estado Mental)\n• Diretrizes e indicadores de fiscalização segundo o modelo de David Mellor e Resolução CFMV 1.236/2018\n• Atlas anatômico exclusivo para equinos e guia prático atualizado",
             apkUrl = DEFAULT_APK_DOWNLOAD_URL,
             minRequiredVersion = 1,
             publishedDate = "Versão Recente"

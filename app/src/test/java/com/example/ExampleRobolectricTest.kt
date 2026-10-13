@@ -254,4 +254,24 @@ class ExampleRobolectricTest {
             it.id.contains("galo", ignoreCase = true) || it.id.contains("gato", ignoreCase = true)
         })
     }
+
+    @Test
+    fun testFiveDomainsDataModel() {
+        val domains = com.example.data.model.FiveDomainsData.domains
+        assertEquals(5, domains.size)
+
+        val numbers = domains.map { it.number }
+        assertEquals(listOf(1, 2, 3, 4, 5), numbers)
+
+        val names = domains.map { it.shortName }
+        assertEquals(listOf("Nutrição", "Ambiente", "Saúde", "Comportamento", "Estado Mental"), names)
+
+        domains.forEach { domain ->
+            assertTrue(domain.whatMustBeGuaranteed.isNotBlank())
+            assertTrue(domain.auditIndicators.isNotEmpty())
+            assertTrue(domain.positiveIndicators.isNotEmpty())
+            assertTrue(domain.violationIndicators.isNotEmpty())
+            assertTrue(domain.tag.isNotBlank())
+        }
+    }
 }

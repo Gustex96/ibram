@@ -76,6 +76,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import com.example.R
 import com.example.ui.components.HorseAnatomyAtlasView
+import com.example.ui.components.FiveDomainsView
+import com.example.data.model.FiveDomainsData
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -232,9 +234,9 @@ fun HomeScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_owl),
                     contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
-                        "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico"
+                        "Menu Conhecimento - Atlas Anatômico do Cavalo, 5 Domínios e Guia Técnico"
                     else
-                        "Menu Conhecimento - Guia Técnico e Bem-Estar (${viewModel.selectedSpecies.displayName})",
+                        "Menu Conhecimento - Os 5 Domínios e Guia Técnico (${viewModel.selectedSpecies.displayName})",
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(26.dp)
                 )
@@ -784,7 +786,7 @@ fun DfSafetyInfoDialog(
 ) {
     val context = LocalContext.current
     val isHorse = species == AnimalSpecies.HORSE
-    var mainGuideTab by remember(species) { mutableIntStateOf(if (isHorse) 0 else 1) } // 0: Anatomia do Cavalo (Atlas), 1: Guia Bem-Estar (Anexo F)
+    var mainGuideTab by remember(species) { mutableIntStateOf(0) }
     var selectedCategoryId by remember(species) {
         mutableStateOf<String?>(
             if (species == AnimalSpecies.DOG) "caes" else "all"
@@ -845,7 +847,7 @@ fun DfSafetyInfoDialog(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_owl),
-                            contentDescription = if (isHorse) "Símbolo da Coruja - Atlas do Cavalo e Guia" else "Símbolo da Coruja - Guia Técnico (${species.displayName})",
+                            contentDescription = if (isHorse) "Símbolo da Coruja - Atlas do Cavalo, 5 Domínios e Guia" else "Símbolo da Coruja - 5 Domínios e Guia Técnico (${species.displayName})",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(24.dp)
                         )
@@ -855,9 +857,14 @@ fun DfSafetyInfoDialog(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (isHorse) {
-                            if (mainGuideTab == 0) "ATLAS DE ANATOMIA DO CAVALO" else "ANEXO F - GUIA PRÁTICO"
+                            when (mainGuideTab) {
+                                0 -> "ATLAS DE ANATOMIA DO CAVALO"
+                                1 -> "OS 5 DOMÍNIOS DO BEM-ESTAR"
+                                else -> "ANEXO F - GUIA PRÁTICO"
+                            }
                         } else {
-                            if (species == AnimalSpecies.DOG) "GUIA TÉCNICO DE BEM-ESTAR CANINO"
+                            if (mainGuideTab == 0) "OS 5 DOMÍNIOS DO BEM-ESTAR"
+                            else if (species == AnimalSpecies.DOG) "GUIA TÉCNICO DE BEM-ESTAR CANINO"
                             else "GUIA TÉCNICO DE BEM-ESTAR (${species.displayName.uppercase()})"
                         },
                         style = MaterialTheme.typography.titleMedium,
@@ -866,22 +873,30 @@ fun DfSafetyInfoDialog(
                     )
                     Text(
                         text = if (isHorse) {
-                            if (mainGuideTab == 0)
-                                "Anatomia Externa do Cavalo (Página 2 do Atlas)"
-                            else
-                                "Bem-Estar e Cuidados Básicos (Equinos & Geral)"
+                            when (mainGuideTab) {
+                                0 -> "Anatomia Externa do Cavalo (Página 2 do Atlas)"
+                                1 -> "Garantias Fundamentais ao Bem-Estar Animal"
+                                else -> "Bem-Estar e Cuidados Básicos (Equinos & Geral)"
+                            }
                         } else {
-                            "Parâmetros de Bem-Estar e Fiscalização (${species.displayName})"
+                            if (mainGuideTab == 0) "Garantias Fundamentais ao Bem-Estar Animal"
+                            else "Parâmetros de Bem-Estar e Fiscalização (${species.displayName})"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = if (isHorse && mainGuideTab == 0)
-                            "Biblioteca AGPTEA • Estrutura Original Preservada"
-                        else
-                            AnexoFData.SOURCE_CREDIT,
+                        text = if (isHorse) {
+                            when (mainGuideTab) {
+                                0 -> "Biblioteca AGPTEA • Estrutura Original Preservada"
+                                1 -> FiveDomainsData.FRAMEWORK_SOURCE
+                                else -> AnexoFData.SOURCE_CREDIT
+                            }
+                        } else {
+                            if (mainGuideTab == 0) FiveDomainsData.FRAMEWORK_SOURCE
+                            else AnexoFData.SOURCE_CREDIT
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 9.sp
@@ -916,7 +931,7 @@ fun DfSafetyInfoDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (isHorse) {
-                    // Abas Principais exclusivas da espécie Equina: Anatomia do Cavalo vs Guia Geral
+                    // Abas Principais da espécie Equina: Atlas, 5 Domínios e Guia Prático Anexo F
                     TabRow(
                         selectedTabIndex = mainGuideTab,
                         modifier = Modifier
@@ -928,7 +943,7 @@ fun DfSafetyInfoDialog(
                             onClick = { mainGuideTab = 0 },
                             text = {
                                 Text(
-                                    text = "Anatomia do Cavalo (Atlas)",
+                                    text = "Atlas Equino",
                                     fontSize = 11.5.sp,
                                     fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -940,7 +955,52 @@ fun DfSafetyInfoDialog(
                             onClick = { mainGuideTab = 1 },
                             text = {
                                 Text(
-                                    text = "Guia Bem-Estar (Anexo F)",
+                                    text = "5 Domínios",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("tab_guide_five_domains")
+                        )
+                        Tab(
+                            selected = mainGuideTab == 2,
+                            onClick = { mainGuideTab = 2 },
+                            text = {
+                                Text(
+                                    text = "Anexo F",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (mainGuideTab == 2) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("tab_guide_anexo_f")
+                        )
+                    }
+                } else {
+                    // Abas das Demais Espécies (ex: Caninos): 5 Domínios e Guia Prático (sem o atlas do cavalo)
+                    TabRow(
+                        selectedTabIndex = mainGuideTab,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Tab(
+                            selected = mainGuideTab == 0,
+                            onClick = { mainGuideTab = 0 },
+                            text = {
+                                Text(
+                                    text = "5 Domínios",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (mainGuideTab == 0) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("tab_guide_five_domains")
+                        )
+                        Tab(
+                            selected = mainGuideTab == 1,
+                            onClick = { mainGuideTab = 1 },
+                            text = {
+                                Text(
+                                    text = if (species == AnimalSpecies.DOG) "Guia Canino" else "Guia Prático",
                                     fontSize = 11.5.sp,
                                     fontWeight = if (mainGuideTab == 1) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -950,10 +1010,16 @@ fun DfSafetyInfoDialog(
                     }
                 }
 
-                if (isHorse && mainGuideTab == 0) {
-                    // Visualizador da Anatomia Externa do Cavalo (mantido exclusivamente para a espécie equina)
-                    HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
-                } else {
+                when {
+                    isHorse && mainGuideTab == 0 -> {
+                        // Visualizador da Anatomia Externa do Cavalo (mantido exclusivamente para a espécie equina)
+                        HorseAnatomyAtlasView(modifier = Modifier.fillMaxWidth())
+                    }
+                    (isHorse && mainGuideTab == 1) || (!isHorse && mainGuideTab == 0) -> {
+                        // Os 5 Domínios que devem ser garantidos aos animais
+                        FiveDomainsView(modifier = Modifier.fillMaxWidth())
+                    }
+                    else -> {
                     // Category Selector Chips
                     LazyRow(
                         modifier = Modifier
@@ -1093,8 +1159,9 @@ fun DfSafetyInfoDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
+        }
+    },
+    confirmButton = {
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("anexo_f_close_button")

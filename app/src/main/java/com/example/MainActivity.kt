@@ -415,9 +415,9 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_owl),
                                             contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
-                                                "Menu Conhecimento - Atlas Anatômico do Cavalo e Guia Técnico"
+                                                "Menu Conhecimento - Atlas Anatômico do Cavalo, 5 Domínios e Guia Técnico"
                                             else
-                                                "Menu Conhecimento - Guia Técnico e Bem-Estar (${viewModel.selectedSpecies.displayName})",
+                                                "Menu Conhecimento - Os 5 Domínios e Guia Técnico (${viewModel.selectedSpecies.displayName})",
                                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )
