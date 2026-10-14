@@ -281,6 +281,42 @@ fun InstitutionalNoticeDialog(
                     }
                 }
 
+                // Card 3: Segurança da Instalação e Assinatura com Keystore de Produção
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Instalação Segura & Play Protect",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Este aplicativo é assinado com Keystore Oficial de Produção (CN=Fiscalizacao Ambiental DF, OU=Auditoria Fiscal, O=GDF) e desenvolvido exclusivamente para apoio às ações de proteção ao meio ambiente e fiscalização animal.\n\nCaso o Google Play Protect ou antivírus no aparelho do fiscal apresente alerta preventivo por ser uma instalação corporativa externa à Play Store:\n1. Toque em 'Mais detalhes' no alerta do Android;\n2. Toque em 'Instalar assim mesmo';\n3. O app é 100% limpo, sem riscos ou anúncios.",
+                            fontSize = 11.5.sp,
+                            lineHeight = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
                 // Botão de acesso direto ao documento
                 OutlinedButton(
                     onClick = { openManualUrl() },

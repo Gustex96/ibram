@@ -1,14 +1,21 @@
 package com.example.ui.components
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,17 +36,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -52,15 +68,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -74,8 +82,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,6 +106,14 @@ fun HorseAnatomyAtlasView(
     var selectedRegion by remember { mutableStateOf("Todas as Regiões") }
     var searchQuery by remember { mutableStateOf("") }
     var showFullScreenDialog by remember { mutableStateOf(false) }
+    var isCitationExpanded by remember { mutableStateOf(false) }
+    var selectedPointForDetail by remember { mutableStateOf<AnatomicalPoint?>(null) }
+
+    val regionsList = remember { HorseAnatomyData.regions }
+    val currentRegionIndex = remember(selectedRegion) {
+        val idx = regionsList.indexOf(selectedRegion)
+        if (idx >= 0) idx else 0
+    }
 
     val currentCrop = remember(selectedRegion) {
         HorseAnatomyData.getCropForRegion(selectedRegion)
@@ -116,231 +135,305 @@ fun HorseAnatomyAtlasView(
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        // Card de Referência Bibliográfica e Link Oficial do Atlas
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .testTag("card_atlas_reference"),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(30.dp)
+    fun navigateToPreviousRegion() {
+        val prevIndex = if (currentRegionIndex > 0) currentRegionIndex - 1 else regionsList.lastIndex
+        selectedRegion = regionsList[prevIndex]
+    }
+
+    fun navigateToNextRegion() {
+        val nextIndex = if (currentRegionIndex < regionsList.lastIndex) currentRegionIndex + 1 else 0
+        selectedRegion = regionsList[nextIndex]
+    }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("atlas_horse_lazy_column"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 76.dp)
+    ) {
+        // 1. Fonte Bibliográfica Compacta (Recolhível)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("card_atlas_reference"),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isCitationExpanded = !isCitationExpanded },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.MenuBook,
-                                contentDescription = "Livro do Atlas",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                                        contentDescription = "Atlas",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = "Atlas de Anatomia do Cavalo • Pág. 2",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Biblioteca AGPTEA / Vetarq • Anatomia Externa",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                    contentDescription = "Abrir PDF",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { isCitationExpanded = !isCitationExpanded },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isCitationExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isCitationExpanded) "Recolher" else "Expandir",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Referência do Atlas Anatômico",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = HorseAnatomyData.ATLAS_PAGE_REFERENCE,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "${HorseAnatomyData.ATLAS_TITLE} • ${HorseAnatomyData.ATLAS_SOURCE}",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            } catch (_: Exception) {
-                                Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("button_open_atlas_pdf"),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 5.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.OpenInNew,
-                            contentDescription = "Abrir Atlas Original",
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        Text(
-                            text = "Abrir Atlas (PDF)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            clipboard.setText(AnnotatedString(HorseAnatomyData.ATLAS_DOCUMENT_URL))
-                            Toast.makeText(context, "Link do Atlas copiado!", Toast.LENGTH_SHORT).show()
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 5.dp),
-                        modifier = Modifier.testTag("button_copy_atlas_url")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copiar link do Atlas",
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copiar Link", fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-        }
-
-        // Seletor de Filtros Anatômicos (Recortes do Atlas)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Cortes Anatômicos do Atlas:",
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${filteredPoints.size} ponto(s) listado(s)",
-                    fontSize = 10.5.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(HorseAnatomyData.regions) { region ->
-                    val isSelected = selectedRegion == region
-                    val pointCount = remember(region) {
-                        HorseAnatomyData.getPointsForRegion(region).size
-                    }
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedRegion = region },
-                        label = {
+                    AnimatedVisibility(visible = isCitationExpanded) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                        ) {
+                            Text(
+                                text = HorseAnatomyData.ATLAS_FULL_CITATION,
+                                fontSize = 10.sp,
+                                lineHeight = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    text = region,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
-                                Surface(
-                                    shape = CircleShape,
-                                    color = if (isSelected)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                    modifier = Modifier.size(16.dp)
+                                Button(
+                                    onClick = {
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(6.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = pointCount.toString(),
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected)
-                                                MaterialTheme.colorScheme.onPrimary
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Abrir PDF Original", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        clipboard.setText(AnnotatedString(HorseAnatomyData.ATLAS_DOCUMENT_URL))
+                                        Toast.makeText(context, "Link do Atlas copiado!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    shape = RoundedCornerShape(6.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Copiar Link", fontSize = 10.5.sp)
                                 }
                             }
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ),
-                        modifier = Modifier.testTag("chip_anatomy_${region.replace(" ", "_")}")
-                    )
+                        }
+                    }
                 }
             }
         }
 
-        // Card do Recorte Anatômico Selecionado
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .testTag("card_horse_anatomy_chart"),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                // Cabeçalho do Card com Título Dinâmico do Corte
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
+        // 2. Seletor Horizontal de Cortes Anatômicos
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.CropFree,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cortes Anatômicos do Cavalo",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = "${currentRegionIndex + 1} de ${regionsList.size}",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(regionsList) { region ->
+                            val isSelected = selectedRegion == region
+                            val pointCount = remember(region) {
+                                HorseAnatomyData.getPointsForRegion(region).size
+                            }
+
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedRegion = region },
+                                label = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = region,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = if (isSelected)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                            modifier = Modifier.size(15.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    text = pointCount.toString(),
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isSelected)
+                                                        MaterialTheme.colorScheme.onPrimary
+                                                    else
+                                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                modifier = Modifier.testTag("chip_anatomy_${region.replace(" ", "_")}")
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Quadro do Corte Anatômico com Visualização Limpa e Navegação Fluida
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("card_horse_anatomy_chart"),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    // Cabeçalho do Card: Nome da Região em destaque + Título do Corte + Botão de Zoom HD
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = currentCrop.name,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Corte ${currentRegionIndex + 1} de ${regionsList.size}",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = currentCrop.title,
                                 fontWeight = FontWeight.Bold,
@@ -350,169 +443,314 @@ fun HorseAnatomyAtlasView(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Text(
-                            text = currentCrop.subtitle,
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
-                    // Botão para ampliar em tela cheia com zoom interativo
-                    OutlinedButton(
-                        onClick = { showFullScreenDialog = true },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        modifier = Modifier.testTag("button_fullscreen_anatomy")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "Expandir visualizador",
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Ampliar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Quadro do Recorte da Imagem Anatômica do Atlas Original
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                        .clickable { showFullScreenDialog = true }
-                        .padding(6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AnimatedContent(
-                        targetState = currentCrop,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "anatomy_crop_transition"
-                    ) { crop ->
-                        Image(
-                            painter = painterResource(id = crop.drawableResId),
-                            contentDescription = "Recorte anatômico do cavalo: ${crop.title}",
-                            contentScale = ContentScale.Fit,
+                        // Botão de Tela Cheia / Zoom
+                        Button(
+                            onClick = { showFullScreenDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(crop.aspectRatio)
-                        )
-                    }
-
-                    // Selo de toque para zoom
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.7f),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                .height(32.dp)
+                                .testTag("button_fullscreen_anatomy")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Fullscreen,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(13.dp)
+                                imageVector = Icons.Default.ZoomIn,
+                                contentDescription = "Ampliar visualizador",
+                                modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Toque para Zoom HD",
-                                fontSize = 9.5.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
+                            Text("Zoom HD", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Imagem Anatômica 100% Limpa e Desobstruída (SEM balão flutuante deslocado)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                            .clickable { showFullScreenDialog = true }
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedContent(
+                            targetState = currentCrop,
+                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            label = "anatomy_crop_transition"
+                        ) { crop ->
+                            Image(
+                                painter = painterResource(id = crop.drawableResId),
+                                contentDescription = "Recorte anatômico do cavalo: ${crop.title}",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(crop.aspectRatio.coerceIn(0.9f, 2.2f))
                             )
                         }
                     }
 
-                    // Indicador de Região Ativa no topo
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                        shape = RoundedCornerShape(4.dp),
+                    // Barra de Navegação Inferior: Anterior, Selo de Toque e Próximo Corte
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(6.dp)
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = currentCrop.name,
-                            fontSize = 9.sp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
+                        OutlinedButton(
+                            onClick = { navigateToPreviousRegion() },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "Corte Anterior", modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text("Anterior", fontSize = 10.5.sp)
+                        }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { showFullScreenDialog = true }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Icon(Icons.Default.Fullscreen, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Toque para Zoom HD", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { navigateToNextRegion() },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Text("Próximo", fontSize = 10.5.sp)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(Icons.Default.ChevronRight, contentDescription = "Próximo Corte", modifier = Modifier.size(14.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = currentCrop.description,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 15.sp
+                    )
+                }
+            }
+        }
+
+        // 4. Campo de Busca de Pontos Anatômicos
+        item {
+            AppOutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("input_search_anatomy_point"),
+                placeholder = { Text("Buscar ponto anatômico (chanfro, casco, quartela, jarrete...)", fontSize = 11.5.sp) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp)
+            )
+        }
+
+        // 5. Cabeçalho de Contagem de Pontos
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = currentCrop.description,
+                    text = "Pontos Anatômicos (${currentCrop.name})",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${filteredPoints.size} identificado(s)",
                     fontSize = 10.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 14.sp
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
 
-        // Campo de Pesquisa Rápida de Pontos Anatômicos
-        AppOutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .testTag("input_search_anatomy_point"),
-            placeholder = { Text("Buscar ponto anatômico (ex: chanfro, casco, quartela, jarrete...)", fontSize = 11.5.sp) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Limpar busca", modifier = Modifier.size(16.dp))
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(10.dp)
-        )
-
-        // Lista de Pontos Anatômicos do Corte Selecionado
+        // 6. Lista de Pontos Anatômicos
         if (filteredPoints.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Nenhum ponto anatômico encontrado para \"$searchQuery\".",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nenhum ponto anatômico encontrado para \"$searchQuery\".",
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 320.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filteredPoints, key = { it.id }) { point ->
-                    AnatomicalPointCard(point = point)
-                }
+            items(filteredPoints, key = { it.id }) { point ->
+                AnatomicalPointCard(
+                    point = point,
+                    onClick = { selectedPointForDetail = point }
+                )
             }
         }
     }
 
-    // Modal de Tela Cheia com Zoom Interativo para leitura nítida das letras e linhas
+    // Balão / Diálogo de Detalhes do Ponto Anatômico Selecionado
+    selectedPointForDetail?.let { point ->
+        AlertDialog(
+            onDismissRequest = { selectedPointForDetail = null },
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = point.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "Região: ${point.region}",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Definição Anatômica:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = point.description,
+                                fontSize = 11.5.sp,
+                                lineHeight = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Relevância na Fiscalização (Maus-Tratos):",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = point.clinicalImportance,
+                                fontSize = 11.5.sp,
+                                lineHeight = 16.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val matchingCrop = HorseAnatomyData.regionCrops.firstOrNull { it.name.contains(point.region, ignoreCase = true) }
+                        if (matchingCrop != null) {
+                            selectedRegion = matchingCrop.name
+                        }
+                        selectedPointForDetail = null
+                    },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        val matchingCrop = HorseAnatomyData.regionCrops.firstOrNull { it.name.contains(point.region, ignoreCase = true) }
+                        if (matchingCrop != null) {
+                            selectedRegion = matchingCrop.name
+                        }
+                        selectedPointForDetail = null
+                        showFullScreenDialog = true
+                    },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Ver Corte no Zoom")
+                }
+            }
+        )
+    }
+
+    // Modal de Tela Cheia com Zoom Interativo e Rolagem Completa
     if (showFullScreenDialog) {
         Dialog(
             onDismissRequest = { showFullScreenDialog = false },
@@ -531,17 +769,21 @@ fun HorseAnatomyAtlasView(
 }
 
 @Composable
-fun AnatomicalPointCard(point: AnatomicalPoint) {
+fun AnatomicalPointCard(
+    point: AnatomicalPoint,
+    onClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .testTag("card_point_${point.id}"),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
         ),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -550,39 +792,39 @@ fun AnatomicalPointCard(point: AnatomicalPoint) {
                 Text(
                     text = point.name,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.5.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Surface(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         text = point.region,
-                        fontSize = 9.5.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = point.description,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Surface(
                 shape = RoundedCornerShape(6.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(6.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     Icon(
@@ -590,14 +832,14 @@ fun AnatomicalPointCard(point: AnatomicalPoint) {
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .size(14.dp)
+                            .size(13.dp)
                             .padding(top = 1.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = "Importância na Fiscalização: ${point.clinicalImportance}",
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
+                        text = "Fiscalização: ${point.clinicalImportance}",
+                        fontSize = 10.5.sp,
+                        lineHeight = 14.sp,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Medium
                     )
@@ -608,7 +850,7 @@ fun AnatomicalPointCard(point: AnatomicalPoint) {
 }
 
 /**
- * Visualizador em Tela Cheia com Suporte a Zoom, Pan e Troca Rápida de Cortes Anatômicos.
+ * Visualizador em Tela Cheia com Suporte a Zoom, Pan Completo e Troca Fácil de Cortes.
  */
 @Composable
 fun FullScreenAnatomyViewer(
@@ -622,28 +864,51 @@ fun FullScreenAnatomyViewer(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    val regionsList = remember { HorseAnatomyData.regions }
+    val currentIdx = remember(activeRegion) {
+        val i = regionsList.indexOf(activeRegion)
+        if (i >= 0) i else 0
+    }
+
     val crop = remember(activeRegion) {
         HorseAnatomyData.getCropForRegion(activeRegion)
     }
 
-    Box(
+    fun changeRegion(newRegion: String) {
+        activeRegion = newRegion
+        onRegionChanged(newRegion)
+        scale = 1f
+        offsetX = 0f
+        offsetY = 0f
+    }
+
+    fun goPrev() {
+        val prevIdx = if (currentIdx > 0) currentIdx - 1 else regionsList.lastIndex
+        changeRegion(regionsList[prevIdx])
+    }
+
+    fun goNext() {
+        val nextIdx = if (currentIdx < regionsList.lastIndex) currentIdx + 1 else 0
+        changeRegion(regionsList[nextIdx])
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0C1013))
             .testTag("dialog_fullscreen_anatomy")
     ) {
-        // Barra Superior de Controles e Identificação
+        // 1. Barra Superior de Controles e Identificação
         Surface(
-            color = Color.Black.copy(alpha = 0.85f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
+            color = Color.Black.copy(alpha = 0.95f),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // Linha 1: Título e Botões de Zoom / Fechar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -652,19 +917,19 @@ fun FullScreenAnatomyViewer(
                             text = crop.title,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 13.5.sp,
+                            fontSize = 13.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Atlas Oficial de Anatomia do Cavalo • Pág. 2 (AGPTEA)",
+                            text = "Atlas Original (AGPTEA) • Pág. 2",
                             color = Color.LightGray,
-                            fontSize = 10.5.sp
+                            fontSize = 10.sp
                         )
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Botão Acessar Atlas Original PDF
+                        // PDF Original
                         IconButton(
                             onClick = {
                                 try {
@@ -676,11 +941,12 @@ fun FullScreenAnatomyViewer(
                                     Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(Icons.Default.OpenInNew, contentDescription = "Acessar Atlas Original (PDF)", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "PDF", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
-                        // Botão Zoom Out
+
+                        // Menos Zoom
                         IconButton(
                             onClick = {
                                 scale = (scale - 0.5f).coerceAtLeast(1f)
@@ -689,111 +955,119 @@ fun FullScreenAnatomyViewer(
                                     offsetY = 0f
                                 }
                             },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "Diminuir zoom", tint = Color.White)
+                            Icon(Icons.Default.Remove, contentDescription = "Diminuir zoom", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
 
                         Text(
                             text = "${(scale * 100).toInt()}%",
                             color = Color.White,
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            modifier = Modifier.padding(horizontal = 2.dp)
                         )
 
-                        // Botão Zoom In
+                        // Mais Zoom
                         IconButton(
                             onClick = {
                                 scale = (scale + 0.5f).coerceAtMost(5f)
                             },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Aumentar zoom", tint = Color.White)
+                            Icon(Icons.Default.Add, contentDescription = "Aumentar zoom", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
 
-                        // Botão Reset
+                        // Reset
                         IconButton(
                             onClick = {
                                 scale = 1f
                                 offsetX = 0f
                                 offsetY = 0f
                             },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(Icons.Default.RestartAlt, contentDescription = "Redefinir visualização", tint = Color.White)
+                            Icon(Icons.Default.RestartAlt, contentDescription = "Reset", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
 
                         Spacer(modifier = Modifier.width(4.dp))
 
-                        // Botão Fechar
+                        // Fechar
                         IconButton(
                             onClick = onDismiss,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(30.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar tela cheia", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
 
-                // Seletor de Cortes Anatômicos dentro da Tela Cheia
-                LazyRow(
+                // Linha 2: Seletor com Botões Anterior e Próximo para Troca Rápida de Cortes
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(HorseAnatomyData.regions) { region ->
-                        val isSelected = activeRegion == region
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable {
-                                    activeRegion = region
-                                    onRegionChanged(region)
-                                    scale = 1f
-                                    offsetX = 0f
-                                    offsetY = 0f
-                                }
-                        ) {
-                            Text(
-                                text = region,
-                                fontSize = 10.5.sp,
+                    IconButton(
+                        onClick = { goPrev() },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Corte Anterior", tint = Color.White)
+                    }
+
+                    LazyRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(regionsList) { region ->
+                            val isSelected = activeRegion == region
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
                                 color = if (isSelected)
-                                    MaterialTheme.colorScheme.onPrimary
+                                    MaterialTheme.colorScheme.primary
                                 else
-                                    Color.White,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                            )
+                                    Color.White.copy(alpha = 0.15f),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable { changeRegion(region) }
+                            ) {
+                                Text(
+                                    text = region,
+                                    fontSize = 10.sp,
+                                    color = if (isSelected)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        Color.White,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
+                    }
+
+                    IconButton(
+                        onClick = { goNext() },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Próximo Corte", tint = Color.White)
                     }
                 }
             }
         }
 
-        // Área da Imagem do Corte Anatômico com detecção de gestos (Pinch-to-zoom e Pan)
+        // 2. Área da Imagem Anatômica com Rolagem Livre e Zoom (Ocupa espaço restante dinamicamente)
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 80.dp, bottom = 44.dp)
+                .weight(1f)
+                .fillMaxWidth()
                 .pointerInput(activeRegion) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 5f)
-                        if (scale > 1f) {
-                            val maxOffsetX = 900f * (scale - 1f)
-                            val maxOffsetY = 900f * (scale - 1f)
-                            offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                            offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                        } else {
-                            offsetX = 0f
-                            offsetY = 0f
-                        }
+                        val maxOffsetX = 1200f * scale
+                        val maxOffsetY = 1200f * scale
+                        offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                        offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
                     }
                 },
             contentAlignment = Alignment.Center
@@ -813,33 +1087,37 @@ fun FullScreenAnatomyViewer(
             )
         }
 
-        // Barra Inferior de Informações e Legenda
+        // 3. Barra Inferior de Informações e Legenda
         Surface(
-            color = Color.Black.copy(alpha = 0.85f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
+            color = Color.Black.copy(alpha = 0.95f),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💡 Arraste com dois dedos para navegar ou use (+) e (-) para ampliar letras e linhas de chamada.",
+                    text = "💡 Arraste com o dedo para rolar a imagem completa ou use (+) e (-) para zoom.",
                     color = Color.LightGray,
                     fontSize = 10.sp,
                     modifier = Modifier.weight(1f)
                 )
-
-                Text(
-                    text = "Corte: ${crop.name}",
+                Spacer(modifier = Modifier.width(6.dp))
+                Surface(
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.5.sp
-                )
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "Corte ${currentIdx + 1}/${regionsList.size}",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.5.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
     }

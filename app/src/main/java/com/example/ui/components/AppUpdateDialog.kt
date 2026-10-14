@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -194,21 +195,31 @@ fun AppUpdateDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(6.dp))
+                        // Informações de Assinatura Release e Desbloqueio Play Protect / Antivírus
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = "📱 Solução para erro 'Conflito com o app' ao instalar:",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Shield,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Assinatura Release & Google Play Protect:",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Se o instalador do Android exibir mensagem de 'conflito com o app instalado' ou 'pacote incompatível', basta desinstalar a versão anterior do LEVO do celular uma única vez antes de instalar o novo APK. As chaves de assinatura foram unificadas no GitHub Actions, garantindo que todas as próximas atualizações instalem normalmente sem conflito.",
+                                    text = "• APK de Produção Oficial: Assinado com Certificado Digital Institucional (Fiscalização Ambiental DF - GDF). Não contém vírus, propagandas ou riscos aos dados do fiscal.\n• Se o Google Play Protect ou Antivírus exibir aviso ('Desenvolvedor não reconhecido' ou 'App bloqueado'):\n   1. No alerta exibido na tela, clique em 'Mais detalhes' (ou seta para baixo);\n   2. Selecione 'Instalar assim mesmo';\n   3. A instalação ocorrerá normalmente.\n• Se o Android acusar 'conflito com o app', desinstale a versão antiga uma única vez antes de instalar o novo APK release.",
                                     fontSize = 10.5.sp,
                                     lineHeight = 14.5.sp,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer

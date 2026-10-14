@@ -158,19 +158,19 @@ fun HistoryScreen(
             onValueChange = { viewModel.searchQuery.value = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 2.dp)
                 .testTag("history_search_field"),
-            placeholder = { Text("Filtrar por RA, levantamento, tutor, notas...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            placeholder = { Text("Filtrar por RA, levantamento, tutor, notas...", fontSize = 11.5.sp) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Limpar busca")
+                        Icon(Icons.Default.Clear, contentDescription = "Limpar busca", modifier = Modifier.size(16.dp))
                     }
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(10.dp)
         )
 
         // 2. Chips de Filtro Rápido por Região Administrativa (RA)
@@ -191,14 +191,14 @@ fun HistoryScreen(
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             item {
                 FilterChip(
                     selected = selectedRaFilter == null,
                     onClick = { selectedRaFilter = null },
-                    label = { Text("Todas as RAs", fontSize = 11.5.sp) }
+                    label = { Text("Todas as RAs", fontSize = 10.5.sp) }
                 )
             }
             items(availableRas) { ra ->
@@ -208,20 +208,20 @@ fun HistoryScreen(
                     onClick = {
                         selectedRaFilter = if (isSelected) null else ra
                     },
-                    label = { Text(ra, fontSize = 11.5.sp) }
+                    label = { Text(ra, fontSize = 10.5.sp) }
                 )
             }
         }
 
         // 3. Barra de Seleção Múltipla e Ações em Lote (PDFs e CSV)
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(10.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -369,8 +369,8 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(start = 6.dp, end = 6.dp, top = 2.dp, bottom = 76.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 itemsIndexed(displayedInspections, key = { _, item -> item.id }) { index, item ->
                     val isChecked = selectedIds.contains(item.id)
@@ -878,26 +878,26 @@ fun HistoryItemCard(
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(12.dp)
             )
             .testTag("history_item_${inspection.id}"),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = cardBgColor
         ),
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 1.dp,
-            pressedElevation = 3.dp
+            pressedElevation = 2.dp
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
-            // 1. HEADER: Checkbox + NÚMERO DE PROTOCOLO + DATA
+            // 1. HEADER: Checkbox + NÚMERO DE PROTOCOLO + DATA (Margens Otimizadas)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    .padding(horizontal = 6.dp, vertical = 2.5.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -911,71 +911,78 @@ fun HistoryItemCard(
                         colors = CheckboxDefaults.colors(
                             checkedColor = MaterialTheme.colorScheme.primary
                         ),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(3.dp)
                     ) {
                         Text(
                             text = inspection.protocolNumber,
-                            fontSize = 11.5.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(6.dp)
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(3.dp)
                     ) {
                         Text(
                             text = "${inspection.speciesEmoji} ${inspection.speciesDisplay}",
-                            fontSize = 10.5.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp)
                         )
                     }
                     if (inspection.auditorName.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "👤 ${inspection.auditorName}",
-                            fontSize = 10.5.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 2.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(11.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = inspection.formattedCaptureDate,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // 2. PARÂMETRO: REGIÃO ADMINISTRATIVA (RA) & ENDEREÇO RESIDENCIAL
+            // 2. PARÂMETRO: REGIÃO ADMINISTRATIVA (RA) & ENDEREÇO RESIDENCIAL (Margens Ajustadas)
             Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
                 ) {
                     // Linha 1: Região Administrativa (RA)
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -983,19 +990,19 @@ fun HistoryItemCard(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(13.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Região Administrativa (RA): ",
+                            text = "RA: ",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = inspection.administrativeRegion,
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 12.5.sp,
+                            fontSize = 11.5.sp,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -1008,19 +1015,19 @@ fun HistoryItemCard(
                             imageVector = Icons.Default.Home,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(13.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Endereço Residencial: ",
+                            text = "Endereço: ",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 11.5.sp,
+                            fontSize = 10.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = inspection.residentialAddress,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -1029,19 +1036,19 @@ fun HistoryItemCard(
                 }
             }
 
-            // 3. PARÂMETRO: FOTO DA OCORRÊNCIA + THUMBNAIL DO PONTO NO MAPA (Lado a Lado)
+            // 3. PARÂMETRO: FOTO DA OCORRÊNCIA + THUMBNAIL DO PONTO NO MAPA (Compacto)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Coluna Esquerda: Fotografia da Ocorrência
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(135.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .height(95.dp)
+                        .clip(RoundedCornerShape(6.dp))
                         .background(Color.Black)
                         .clickable(onClick = onOpenZoom)
                 ) {
@@ -1107,7 +1114,7 @@ fun HistoryItemCard(
                     protocolNumber = inspection.protocolNumber,
                     modifier = Modifier
                         .weight(1f)
-                        .height(135.dp)
+                        .height(95.dp)
                 )
             }
 
@@ -1115,8 +1122,8 @@ fun HistoryItemCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
 
                 // 4. PARÂMETRO: QUANTOS CAVALOS MONITORADOS E QUANTOS COM SINAIS DE MAUS TRATOS
@@ -1245,7 +1252,7 @@ fun HistoryItemCard(
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 6.dp)
+                        .padding(top = 3.dp)
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                         Text(

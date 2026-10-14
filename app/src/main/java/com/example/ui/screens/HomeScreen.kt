@@ -184,11 +184,6 @@ fun HomeScreen(
             }
         }
 
-        // Stats Header
-        if (allInspections.isNotEmpty()) {
-            StatsSummaryCard(allInspections = allInspections)
-        }
-
         // Species Selector Tabs (Cachorro e Cavalo)
         SpeciesSelectorTabs(
             selectedSpecies = viewModel.selectedSpecies,

@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Info
@@ -85,6 +86,7 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InspectionDetailScreen
 import com.example.ui.screens.NewInspectionScreen
 import com.example.ui.screens.ReportsHubScreen
+import com.example.ui.screens.StatisticsScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.VisualComfortMode
 import com.example.ui.viewmodel.InspectionViewModel
@@ -403,7 +405,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             }
 
                             IconButton(
-                                onClick = { selectedTab = 3 },
+                                onClick = { selectedTab = 4 },
                                 modifier = Modifier.testTag("action_info_dialog")
                             ) {
                                 Surface(
@@ -460,34 +462,41 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             selected = selectedTab == 0,
                             onClick = { selectedTab = 0 },
                             icon = { Icon(Icons.Default.Dashboard, contentDescription = "Painel") },
-                            label = { Text("Painel") },
+                            label = { Text("Painel", fontSize = 11.sp) },
                             modifier = Modifier.testTag("nav_tab_home")
                         )
                         NavigationBarItem(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
                             icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = "Histórico") },
-                            label = { Text("Histórico") },
+                            label = { Text("Histórico", fontSize = 11.sp) },
                             modifier = Modifier.testTag("nav_tab_history")
                         )
                         NavigationBarItem(
                             selected = selectedTab == 2,
                             onClick = { selectedTab = 2 },
-                            icon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Relatórios") },
-                            label = { Text("Relatórios") },
-                            modifier = Modifier.testTag("nav_tab_reports")
+                            icon = { Icon(Icons.Default.BarChart, contentDescription = "Estatísticas") },
+                            label = { Text("Estatísticas", fontSize = 11.sp) },
+                            modifier = Modifier.testTag("nav_tab_stats")
                         )
                         NavigationBarItem(
                             selected = selectedTab == 3,
                             onClick = { selectedTab = 3 },
+                            icon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Relatórios") },
+                            label = { Text("Relatórios", fontSize = 11.sp) },
+                            modifier = Modifier.testTag("nav_tab_reports")
+                        )
+                        NavigationBarItem(
+                            selected = selectedTab == 4,
+                            onClick = { selectedTab = 4 },
                             icon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_owl),
                                     contentDescription = "Conhecimento",
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             },
-                            label = { Text("Conhecimento") },
+                            label = { Text("Conhecimento", fontSize = 11.sp) },
                             modifier = Modifier.testTag("nav_tab_knowledge")
                         )
                     }
@@ -536,10 +545,13 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                 viewModel = viewModel,
                                 onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") }
                             )
-                            2 -> ReportsHubScreen(
+                            2 -> StatisticsScreen(
                                 viewModel = viewModel
                             )
-                            3 -> com.example.ui.screens.KnowledgeScreen(
+                            3 -> ReportsHubScreen(
+                                viewModel = viewModel
+                            )
+                            4 -> com.example.ui.screens.KnowledgeScreen(
                                 viewModel = viewModel
                             )
                         }
