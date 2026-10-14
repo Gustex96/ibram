@@ -775,7 +775,7 @@ fun HistoryScreen(
         EditInspectionDialog(
             inspection = inspectionToEdit!!,
             onDismiss = { inspectionToEdit = null },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, additionalTutors, auditorName ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, additionalTutors, auditorName ->
                 viewModel.updateInspection(
                     original = inspectionToEdit!!,
                     newNotes = notes,
@@ -792,6 +792,9 @@ fun HistoryScreen(
                     newSeagriNotes = seagriNotes,
                     newRequiresPmdfSupport = requiresPmdfSupport,
                     newPmdfNotes = pmdfNotes,
+                    newRequiresOtherAgencySupport = requiresOtherAgencySupport,
+                    newOtherAgencyName = otherAgencyName,
+                    newOtherAgencyNotes = otherAgencyNotes,
                     newRiskLevel = riskLevel,
                     newSafetyRiskAssessment = safetyRiskAssessment,
                     newTutorName = tutorName,
@@ -1230,6 +1233,34 @@ fun HistoryItemCard(
                                     maxLines = 1
                                 )
                             }
+                        }
+                    }
+                }
+
+                // Apoio de Outro Órgão / Providências de Apreensão
+                val otherAgencyMarked = inspection.requiresOtherAgencySupport
+                Surface(
+                    color = if (otherAgencyMarked) Color(0xFFF3E5F5) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    border = if (otherAgencyMarked) BorderStroke(1.dp, Color(0xFFCE93D8)) else null,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                        Text(
+                            text = if (otherAgencyMarked) "🏛️ OUTRO ÓRGÃO: ${inspection.otherAgencyName.ifBlank { "REQUISITADO" }}" else "⚪ Outro Órgão: Não requisitado",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (otherAgencyMarked) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (otherAgencyMarked && inspection.otherAgencyNotes.isNotBlank()) {
+                            Text(
+                                text = inspection.otherAgencyNotes,
+                                fontSize = 9.5.sp,
+                                color = Color(0xFF4A148C),
+                                maxLines = 2
+                            )
                         }
                     }
                 }

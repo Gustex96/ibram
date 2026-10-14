@@ -38,6 +38,10 @@ data class HorseInspection(
     // Providências Operacionais: Apoio da Polícia Militar (PMDF)
     val requiresPmdfSupport: Boolean = false,
     val pmdfNotes: String = "",
+    // Providências Operacionais: Apoio de Outro Órgão / Outras Providências de Apreensão
+    val requiresOtherAgencySupport: Boolean = false,
+    val otherAgencyName: String = "",
+    val otherAgencyNotes: String = "",
     // Avaliação de riscos de fiscalização ambiental (Escala 1 a 5 e parâmetros de fiscalização ambiental)
     val riskLevel: Int = 1, // 1 to 5
     val riskJustification: String = "",

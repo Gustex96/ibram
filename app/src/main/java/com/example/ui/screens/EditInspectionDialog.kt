@@ -29,11 +29,15 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,6 +93,9 @@ fun EditInspectionDialog(
         seagriNotes: String,
         requiresPmdfSupport: Boolean,
         pmdfNotes: String,
+        requiresOtherAgencySupport: Boolean,
+        otherAgencyName: String,
+        otherAgencyNotes: String,
         riskLevel: Int,
         safetyRiskAssessment: String,
         tutorName: String,
@@ -112,6 +119,9 @@ fun EditInspectionDialog(
     var seagriNotes by remember { mutableStateOf(inspection.seagriNotes) }
     var requiresPmdfSupport by remember { mutableStateOf(inspection.requiresPmdfSupport) }
     var pmdfNotes by remember { mutableStateOf(inspection.pmdfNotes) }
+    var requiresOtherAgencySupport by remember { mutableStateOf(inspection.requiresOtherAgencySupport) }
+    var otherAgencyName by remember { mutableStateOf(inspection.otherAgencyName) }
+    var otherAgencyNotes by remember { mutableStateOf(inspection.otherAgencyNotes) }
     var riskLevel by remember { mutableIntStateOf(inspection.riskLevel) }
     var safetyRiskAssessment by remember { mutableStateOf(inspection.safetyRiskAssessment) }
     val context = LocalContext.current
@@ -779,6 +789,117 @@ fun EditInspectionDialog(
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Outro Órgão / Providências
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                        Text(
+                                            text = "Requerer outro órgão ou outras providências de apreensão?",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = if (requiresOtherAgencySupport) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Apoio aos auditores fiscais ou requisição (DEMA/PCDF, Zoonoses/Dival, DF Legal, IBAMA, etc.)",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp))
+                                                .clickable { requiresOtherAgencySupport = true },
+                                            color = if (requiresOtherAgencySupport) Color(0xFF6A1B9A) else Color.Transparent
+                                        ) {
+                                            Text(
+                                                text = "SIM",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (requiresOtherAgencySupport) Color.White else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                        Surface(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
+                                                .clickable { requiresOtherAgencySupport = false },
+                                            color = if (!requiresOtherAgencySupport) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent
+                                        ) {
+                                            Text(
+                                                text = "NÃO",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (!requiresOtherAgencySupport) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (requiresOtherAgencySupport) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    val agencySuggestions = listOf(
+                                        "DEMA / PCDF",
+                                        "Zoonoses / Dival",
+                                        "DF Legal",
+                                        "IBAMA",
+                                        "CBMDF (Bombeiros)"
+                                    )
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        items(agencySuggestions) { agency ->
+                                            val isSelected = otherAgencyName.equals(agency, ignoreCase = true)
+                                            FilterChip(
+                                                selected = isSelected,
+                                                onClick = { otherAgencyName = agency },
+                                                label = { Text(agency, fontSize = 11.sp) },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = Color(0xFFF3E5F5),
+                                                    selectedLabelColor = Color(0xFF6A1B9A)
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    AppOutlinedTextField(
+                                        value = otherAgencyName,
+                                        onValueChange = { otherAgencyName = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        placeholder = { Text("Ex: DEMA / PCDF, Vigilância Ambiental (Zoonoses), DF Legal...") },
+                                        label = { Text("Órgão ou Entidade Requisitada") },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    AppOutlinedTextField(
+                                        value = otherAgencyNotes,
+                                        onValueChange = { otherAgencyNotes = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        placeholder = { Text("Ex: Requerer acolhimento dos animais pela Zoonoses ou inquérito policial...") },
+                                        label = { Text("Providências Requeridas / Apoio e Apreensão") },
+                                        minLines = 2,
+                                        maxLines = 4,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -970,7 +1091,7 @@ fun EditInspectionDialog(
                             val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
                             val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
                             val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
-                            onSave(notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, alertIndicatorsToSave, adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, riskLevel, safetyRiskAssessment, prim.name, prim.cpf, add, auditorName)
+                            onSave(notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, alertIndicatorsToSave, adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, prim.name, prim.cpf, add, auditorName)
                         },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

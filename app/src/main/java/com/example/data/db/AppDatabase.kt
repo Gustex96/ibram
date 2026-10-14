@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.HorseInspection
 
-@Database(entities = [HorseInspection::class], version = 11, exportSchema = false)
+@Database(entities = [HorseInspection::class], version = 12, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun horseInspectionDao(): HorseInspectionDao
 
@@ -37,6 +37,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE horse_inspections ADD COLUMN requiresOtherAgencySupport INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE horse_inspections ADD COLUMN otherAgencyName TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE horse_inspections ADD COLUMN otherAgencyNotes TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -44,7 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "horse_inspection_database",
                 )
-                    .addMigrations(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                    .addMigrations(MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance

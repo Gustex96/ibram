@@ -597,6 +597,46 @@ fun InspectionDetailScreen(
                             color = Color(0xFF1565C0)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Outro Órgão / Providências de Apreensão
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Apoio de Outro Órgão / Providências de Apreensão:",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        )
+                        Surface(
+                            color = if (inspection.requiresOtherAgencySupport) Color(0xFFF3E5F5) else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = if (inspection.requiresOtherAgencySupport) "SIM (${inspection.otherAgencyName.ifBlank { "REQUISITADO" }})" else "NÃO",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (inspection.requiresOtherAgencySupport) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    if (inspection.requiresOtherAgencySupport && inspection.otherAgencyNotes.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Providências / Justificativa: ${inspection.otherAgencyNotes}",
+                            fontSize = 12.sp,
+                            color = Color(0xFF6A1B9A)
+                        )
+                    }
                 }
             }
 
@@ -824,7 +864,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -842,6 +882,9 @@ fun InspectionDetailScreen(
                     newSeagriNotes = seagriNotes,
                     newRequiresPmdfSupport = requiresPmdfSupport,
                     newPmdfNotes = pmdfNotes,
+                    newRequiresOtherAgencySupport = requiresOtherAgencySupport,
+                    newOtherAgencyName = otherAgencyName,
+                    newOtherAgencyNotes = otherAgencyNotes,
                     newRiskLevel = risk,
                     newSafetyRiskAssessment = safetyRiskAssessment,
                     newTutorName = tutor,

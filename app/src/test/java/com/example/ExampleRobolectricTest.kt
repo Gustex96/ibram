@@ -118,6 +118,9 @@ class ExampleRobolectricTest {
             seagriNotes = "Caminhão gaiola solicitado",
             requiresPmdfSupport = true,
             pmdfNotes = "Apoio BPMA para escolta",
+            requiresOtherAgencySupport = true,
+            otherAgencyName = "DEMA / PCDF",
+            otherAgencyNotes = "Abertura de inquérito e perícia conjunta",
             riskLevel = 2,
             riskJustification = "Área controlada sem tráfego de alta velocidade",
             safetyRiskAssessment = "Risco baixo de invasão de pista expressa",
@@ -145,6 +148,9 @@ class ExampleRobolectricTest {
         assertEquals("Caminhão gaiola solicitado", loaded?.seagriNotes)
         assertTrue(loaded?.requiresPmdfSupport == true)
         assertEquals("Apoio BPMA para escolta", loaded?.pmdfNotes)
+        assertTrue(loaded?.requiresOtherAgencySupport == true)
+        assertEquals("DEMA / PCDF", loaded?.otherAgencyName)
+        assertEquals("Abertura de inquérito e perícia conjunta", loaded?.otherAgencyNotes)
         assertEquals(2, loaded?.riskLevel)
         assertEquals("Risco baixo de invasão de pista expressa", loaded?.safetyRiskAssessment)
 

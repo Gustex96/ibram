@@ -61,6 +61,9 @@ object DatabaseBackupManager {
                     put("seagriNotes", item.seagriNotes)
                     put("requiresPmdfSupport", item.requiresPmdfSupport)
                     put("pmdfNotes", item.pmdfNotes)
+                    put("requiresOtherAgencySupport", item.requiresOtherAgencySupport)
+                    put("otherAgencyName", item.otherAgencyName)
+                    put("otherAgencyNotes", item.otherAgencyNotes)
                     put("riskLevel", item.riskLevel)
                     put("riskJustification", item.riskJustification)
                     put("safetyRiskAssessment", item.safetyRiskAssessment)
@@ -143,6 +146,9 @@ object DatabaseBackupManager {
                     seagriNotes = obj.optString("seagriNotes", ""),
                     requiresPmdfSupport = obj.optBoolean("requiresPmdfSupport", false),
                     pmdfNotes = obj.optString("pmdfNotes", ""),
+                    requiresOtherAgencySupport = obj.optBoolean("requiresOtherAgencySupport", false),
+                    otherAgencyName = obj.optString("otherAgencyName", ""),
+                    otherAgencyNotes = obj.optString("otherAgencyNotes", ""),
                     riskLevel = obj.optInt("riskLevel", 1),
                     riskJustification = obj.optString("riskJustification", ""),
                     safetyRiskAssessment = obj.optString("safetyRiskAssessment", ""),

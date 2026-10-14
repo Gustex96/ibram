@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -64,6 +65,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1238,8 +1241,8 @@ fun NewInspectionScreen(
 
             // 4. SECTION: PROVIDÊNCIAS OPERACIONAIS
             SectionHeader(
-                title = if (isDog) "4. Apoio da Polícia Militar (BPMA / PMDF)" else "4. Apreensão pela SEAGRI & Apoio da Polícia Militar",
-                description = if (isDog) "Defina se a ação fiscal precisará de apoio policial (BPMA / PMDF / DEMA) para segurança e atuação em flagrante delito." else "Defina se a ação fiscal necessita de apreensão pela SEAGRI e se precisará de apoio da Polícia Militar."
+                title = if (isDog) "4. Apoio Policial & Providências Interinstitucionais" else "4. Apreensão, Apoio Policial e Outros Órgãos",
+                description = if (isDog) "Defina se a ação fiscal precisará de apoio policial (BPMA / PMDF / DEMA) ou requisição de outro órgão para apoio e apreensão." else "Defina se a ação fiscal necessita de apreensão pela SEAGRI, apoio da Polícia Militar ou requisição de outro órgão público para apoio aos auditores."
             )
 
             Card(
@@ -1449,6 +1452,154 @@ fun NewInspectionScreen(
                             label = { Text("Justificativa do Apoio Policial (PMDF)") },
                             minLines = 2,
                             maxLines = 3,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 4.3 REQUISIÇÃO DE OUTRO ÓRGÃO / OUTRAS PROVIDÊNCIAS DE APREENSÃO
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Requerer outro órgão ou outras providências de apreensão?",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = if (draft.requiresOtherAgencySupport) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (draft.requiresOtherAgencySupport) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = Color(0xFFF3E5F5),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "INTERINSTITUCIONAL",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF6A1B9A),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "Apoio aos auditores fiscais ou requisição de providências (DEMA/PCDF, Zoonoses/Dival, DF Legal, IBAMA, CBMDF, etc.)",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Toggle Buttons (SIM / NÃO)
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
+                                    .clickable { viewModel.updateRequiresOtherAgencySupport(true) }
+                                    .testTag("other_agency_yes_button"),
+                                color = if (draft.requiresOtherAgencySupport) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.surface
+                            ) {
+                                Text(
+                                    text = "SIM",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (draft.requiresOtherAgencySupport) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
+                                    .clickable { viewModel.updateRequiresOtherAgencySupport(false) }
+                                    .testTag("other_agency_no_button"),
+                                color = if (!draft.requiresOtherAgencySupport) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
+                            ) {
+                                Text(
+                                    text = "NÃO",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (!draft.requiresOtherAgencySupport) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (draft.requiresOtherAgencySupport) {
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Sugestões rápidas de órgãos públicos no DF
+                        val agencySuggestions = listOf(
+                            "DEMA / PCDF (Polícia Civil)",
+                            "Zoonoses / Dival",
+                            "DF Legal",
+                            "IBAMA",
+                            "CBMDF (Bombeiros)",
+                            "Conselho Tutelar"
+                        )
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(agencySuggestions) { agency ->
+                                val isSelected = draft.otherAgencyName.equals(agency, ignoreCase = true)
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        viewModel.updateOtherAgencyName(agency)
+                                    },
+                                    label = { Text(agency, fontSize = 11.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFF3E5F5),
+                                        selectedLabelColor = Color(0xFF6A1B9A)
+                                    )
+                                )
+                            }
+                        }
+
+                        AppOutlinedTextField(
+                            value = draft.otherAgencyName,
+                            onValueChange = { viewModel.updateOtherAgencyName(it) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("other_agency_name_field"),
+                            placeholder = { Text("Ex: DEMA / PCDF, Vigilância Ambiental (Zoonoses), DF Legal...") },
+                            label = { Text("Órgão ou Entidade Requisitada") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        AppOutlinedTextField(
+                            value = draft.otherAgencyNotes,
+                            onValueChange = { viewModel.updateOtherAgencyNotes(it) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("other_agency_notes_field"),
+                            placeholder = {
+                                Text("Ex: Requerer acolhimento e laudo veterinário pela Zoonoses, apoio do DF Legal para desobstrução, ou requisição de inquérito à DEMA/PCDF...")
+                            },
+                            label = { Text("Providências Requeridas e Justificativa de Apoio / Apreensão") },
+                            minLines = 2,
+                            maxLines = 4,
                             shape = RoundedCornerShape(8.dp)
                         )
                     }

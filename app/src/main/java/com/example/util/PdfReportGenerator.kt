@@ -340,10 +340,11 @@ object PdfReportGenerator {
         }
 
         // SECTION 3: PROVIDÊNCIAS OPERACIONAIS
-        if (isDog) {
-            val sec3Title = "3. PROVIDÊNCIAS OPERACIONAIS (APOIO POLICIAL PMDF / BPMA)"
-            y = drawSectionHeader(canvas, sec3Title, margin, y, contentWidth)
+        val sec3Title = if (isDog) "3. PROVIDÊNCIAS OPERACIONAIS & APOIO AOS AUDITORES (PMDF / OUTROS)"
+                        else "3. PROVIDÊNCIAS OPERACIONAIS, APREENSÃO E APOIO AOS AUDITORES (SEAGRI / PMDF / OUTROS)"
+        y = drawSectionHeader(canvas, sec3Title, margin, y, contentWidth)
 
+        if (isDog) {
             canvas.drawText("APOIO DA POLÍCIA MILITAR (PMDF / BPMA):", col1X, y, labelPaint)
             val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO SOLICITADO"
             val pmdfPaint = if (inspection.requiresPmdfSupport) {
@@ -359,9 +360,6 @@ object PdfReportGenerator {
                 y += 4f
             }
         } else {
-            val sec3Title = "3. PROVIDÊNCIAS OPERACIONAIS (SEAGRI & PMDF)"
-            y = drawSectionHeader(canvas, sec3Title, margin, y, contentWidth)
-
             val appLabel = "APREENSÃO / TRANSPORTE (SEAGRI-DF):"
             canvas.drawText(appLabel, col1X, y, labelPaint)
             val seagriStatus = if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
@@ -391,6 +389,27 @@ object PdfReportGenerator {
                 y = drawWrappedText(canvas, inspection.pmdfNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
                 y += 4f
             }
+        }
+
+        // REQUISIÇÃO DE OUTRO ÓRGÃO / OUTRAS PROVIDÊNCIAS DE APREENSÃO
+        canvas.drawText("REQUISIÇÃO DE OUTRO ÓRGÃO / PROVIDÊNCIAS DE APREENSÃO:", col1X, y, labelPaint)
+        val otherStatus = if (inspection.requiresOtherAgencySupport) "SIM (SOLICITADO)" else "NÃO SOLICITADO"
+        val otherPaint = if (inspection.requiresOtherAgencySupport) {
+            Paint().apply { color = Color.rgb(106, 27, 154); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+        } else valuePaint
+        canvas.drawText(otherStatus, col1X, y + 11f, otherPaint)
+
+        if (inspection.requiresOtherAgencySupport && inspection.otherAgencyName.isNotBlank()) {
+            canvas.drawText("ÓRGÃO REQUISITADO:", col2X, y, labelPaint)
+            canvas.drawText(inspection.otherAgencyName, col2X, y + 11f, valuePaint)
+        }
+        y += 24f
+
+        if (inspection.requiresOtherAgencySupport && inspection.otherAgencyNotes.isNotBlank()) {
+            canvas.drawText("PROVIDÊNCIAS REQUERIDAS / JUSTIFICATIVA (APREENSÃO OU APOIO):", col1X, y, labelPaint)
+            y += 10f
+            y = drawWrappedText(canvas, inspection.otherAgencyNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
+            y += 4f
         }
 
         // SECTION 4: TUTORES / RESPONSÁVEIS
@@ -715,6 +734,10 @@ object PdfReportGenerator {
 
         coverCanvas.drawText("DEMANDAS DE APOIO POLICIAL (PMDF):", margin + 8f, y, labelPaint)
         coverCanvas.drawText("$pmdfCount solicitação(ões)", margin + 8f, y + 14f, valPaint)
+
+        val otherAgencyCount = inspections.count { it.requiresOtherAgencySupport }
+        coverCanvas.drawText("OUTROS ÓRGÃOS / PROVIDÊNCIAS:", margin + (contentWidth / 2f), y, labelPaint)
+        coverCanvas.drawText("$otherAgencyCount solicitação(ões)", margin + (contentWidth / 2f), y + 14f, valPaint)
         y += 40f
 
         // Footer Cover

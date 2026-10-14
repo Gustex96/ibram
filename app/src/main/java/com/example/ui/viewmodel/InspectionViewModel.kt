@@ -60,6 +60,9 @@ data class InspectionDraftState(
     val seagriNotes: String = "",
     val requiresPmdfSupport: Boolean = false,
     val pmdfNotes: String = "",
+    val requiresOtherAgencySupport: Boolean = false,
+    val otherAgencyName: String = "",
+    val otherAgencyNotes: String = "",
     val riskLevel: Int = 3,
     val safetyRiskAssessment: String = "",
     val imageNotes: String = "",
@@ -579,6 +582,18 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         draft.value = draft.value.copy(pmdfNotes = notes)
     }
 
+    fun updateRequiresOtherAgencySupport(required: Boolean) {
+        draft.value = draft.value.copy(requiresOtherAgencySupport = required)
+    }
+
+    fun updateOtherAgencyName(name: String) {
+        draft.value = draft.value.copy(otherAgencyName = name)
+    }
+
+    fun updateOtherAgencyNotes(notes: String) {
+        draft.value = draft.value.copy(otherAgencyNotes = notes)
+    }
+
     fun updateHorseDescription(desc: String) {
         draft.value = draft.value.copy(horseDescription = desc)
     }
@@ -722,6 +737,9 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     seagriNotes = current.seagriNotes,
                     requiresPmdfSupport = current.requiresPmdfSupport,
                     pmdfNotes = current.pmdfNotes,
+                    requiresOtherAgencySupport = current.requiresOtherAgencySupport,
+                    otherAgencyName = current.otherAgencyName,
+                    otherAgencyNotes = current.otherAgencyNotes,
                     riskLevel = current.riskLevel,
                     riskJustification = justification,
                     safetyRiskAssessment = safetyAssessment,
@@ -819,6 +837,9 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         seagriNotes = current.seagriNotes,
                         requiresPmdfSupport = current.requiresPmdfSupport,
                         pmdfNotes = current.pmdfNotes,
+                        requiresOtherAgencySupport = current.requiresOtherAgencySupport,
+                        otherAgencyName = current.otherAgencyName,
+                        otherAgencyNotes = current.otherAgencyNotes,
                         riskLevel = current.riskLevel,
                         riskJustification = justification,
                         safetyRiskAssessment = safetyAssessment,
@@ -859,6 +880,9 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newSeagriNotes: String = original.seagriNotes,
         newRequiresPmdfSupport: Boolean = original.requiresPmdfSupport,
         newPmdfNotes: String = original.pmdfNotes,
+        newRequiresOtherAgencySupport: Boolean = original.requiresOtherAgencySupport,
+        newOtherAgencyName: String = original.otherAgencyName,
+        newOtherAgencyNotes: String = original.otherAgencyNotes,
         newRiskLevel: Int = original.riskLevel,
         newSafetyRiskAssessment: String = original.safetyRiskAssessment,
         newTutorName: String,
@@ -891,6 +915,9 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 seagriNotes = newSeagriNotes,
                 requiresPmdfSupport = newRequiresPmdfSupport,
                 pmdfNotes = newPmdfNotes,
+                requiresOtherAgencySupport = newRequiresOtherAgencySupport,
+                otherAgencyName = newOtherAgencyName,
+                otherAgencyNotes = newOtherAgencyNotes,
                 riskLevel = newRiskLevel,
                 riskJustification = justification,
                 safetyRiskAssessment = safetyAssessment,
