@@ -64,7 +64,7 @@ object UpdateChecker {
     const val GITHUB_RELEASES_API_URL =
         "https://api.github.com/repos/Gustex96/ibram/releases/latest"
     const val DEFAULT_APK_DOWNLOAD_URL =
-        "https://github.com/Gustex96/ibram/releases/download/ibram/app-debug.apk"
+        "https://github.com/Gustex96/ibram/releases/download/ibram/app-release.apk"
 
     private val httpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
