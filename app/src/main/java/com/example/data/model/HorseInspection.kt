@@ -63,7 +63,7 @@ data class HorseInspection(
         get() = species.equals("Cachorro", ignoreCase = true) || species.equals("dog", ignoreCase = true)
 
     val speciesDisplay: String
-        get() = if (isDog) "Cachorro (Canino)" else "Cavalo (Equino)"
+        get() = if (isDog) "Cachorro (Canino)" else "Cavalo"
 
     val speciesEmoji: String
         get() = if (isDog) "🐕" else "🐎"

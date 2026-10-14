@@ -75,7 +75,7 @@ data class InspectionDraftState(
         get() = DfConstants.isDogSpecies(species)
 
     val speciesDisplay: String
-        get() = if (isDog) "Cachorro (Canino)" else "Cavalo (Equino)"
+        get() = if (isDog) "Cachorro (Canino)" else "Cavalo"
 
     val speciesEmoji: String
         get() = if (isDog) "🐕" else "🐎"
