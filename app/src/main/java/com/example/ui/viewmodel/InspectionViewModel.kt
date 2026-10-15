@@ -1011,12 +1011,14 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     fun exportBackupToUri(uri: Uri, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val currentList = allInspections.value
-            val result = com.example.util.DatabaseBackupManager.exportToJsonUri(getApplication(), uri, currentList)
+            val result = com.example.util.DatabaseBackupManager.exportToZipUri(getApplication(), uri, currentList)
             val (success, msg) = if (result.isSuccess) {
-                val count = result.getOrNull() ?: 0
-                Pair(true, "Cópia do banco de dados salva com sucesso! ($count registros salvos no arquivo)")
+                val backup = result.getOrNull()
+                val recCount = backup?.recordsCount ?: 0
+                val photoCount = backup?.photosCount ?: 0
+                Pair(true, "Cópia completa salva com sucesso! ($recCount relatórios e $photoCount fotos arquivadas)")
             } else {
-                Pair(false, "Erro ao salvar cópia do banco de dados: ${result.exceptionOrNull()?.message}")
+                Pair(false, "Erro ao salvar cópia completa: ${result.exceptionOrNull()?.message}")
             }
             withContext(Dispatchers.Main) {
                 onResult(success, msg)
@@ -1027,12 +1029,14 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     fun importBackupFromUri(uri: Uri, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(getApplication())
-            val result = com.example.util.DatabaseBackupManager.importFromJsonUri(getApplication(), uri, db.horseInspectionDao())
+            val result = com.example.util.DatabaseBackupManager.importFromBackupUri(getApplication(), uri, db.horseInspectionDao())
             val (success, msg) = if (result.isSuccess) {
-                val count = result.getOrNull() ?: 0
-                Pair(true, "$count registros restaurados do arquivo selecionado!")
+                val backup = result.getOrNull()
+                val recCount = backup?.recordsCount ?: 0
+                val photoCount = backup?.photosCount ?: 0
+                Pair(true, "Backup restaurado com sucesso! ($recCount relatórios e $photoCount fotos recuperadas no aparelho)")
             } else {
-                Pair(false, "Erro ao restaurar banco de dados: ${result.exceptionOrNull()?.message}")
+                Pair(false, "Erro ao restaurar backup: ${result.exceptionOrNull()?.message}")
             }
             withContext(Dispatchers.Main) {
                 onResult(success, msg)

@@ -1,5 +1,6 @@
 package com.example.util
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,8 +11,13 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
-import android.net.Uri
 import android.media.ExifInterface
+import android.media.MediaScannerConnection
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -59,6 +65,13 @@ object WatermarkUtils {
             FileOutputStream(outputFile).use { out ->
                 watermarkedBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
             }
+            // Salva na galeria de fotos do celular
+            saveToGallery(
+                context = context,
+                imageFile = outputFile,
+                title = "Fiscalização $protocol - Foto $exemplarIndex",
+                description = "Levantamento $protocol • RA: $administrativeRegion • Data: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(captureTimeMillis))}"
+            )
             outputFile
         } catch (_: Exception) {
             null
@@ -98,8 +111,73 @@ object WatermarkUtils {
             FileOutputStream(outputFile).use { out ->
                 watermarkedBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
             }
+            // Salva na galeria de fotos do celular
+            saveToGallery(
+                context = context,
+                imageFile = outputFile,
+                title = "Fiscalização $protocol - Foto $exemplarIndex",
+                description = "Levantamento $protocol • RA: $administrativeRegion • Data: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(captureTimeMillis))}"
+            )
             outputFile
         } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Salva uma cópia da fotografia tirada diretamente na Galeria de Fotos do celular (MediaStore).
+     * Cria o álbum "FiscalizacaoDF" para fácil identificação pelo usuário e órgãos de fiscalização.
+     */
+    fun saveToGallery(
+        context: Context,
+        imageFile: File,
+        title: String,
+        description: String? = null
+    ): Uri? {
+        if (!imageFile.exists() || imageFile.length() == 0L) return null
+        return try {
+            val resolver = context.contentResolver
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, imageFile.name)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.TITLE, title)
+                if (!description.isNullOrBlank()) {
+                    put(MediaStore.Images.Media.DESCRIPTION, description)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "FiscalizacaoDF")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            }
+
+            val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            if (imageUri != null) {
+                resolver.openOutputStream(imageUri)?.use { outStream ->
+                    imageFile.inputStream().use { inStream ->
+                        inStream.copyTo(outStream)
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    resolver.update(imageUri, contentValues, null, null)
+                }
+                try {
+                    MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(imageFile.absolutePath),
+                        arrayOf("image/jpeg"),
+                        null
+                    )
+                } catch (_: Exception) {}
+
+                Log.d("WatermarkUtils", "Foto salva na galeria pública: $imageUri")
+                imageUri
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("WatermarkUtils", "Erro ao salvar foto na galeria: ${e.message}", e)
             null
         }
     }

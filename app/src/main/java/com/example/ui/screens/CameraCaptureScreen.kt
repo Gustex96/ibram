@@ -10,6 +10,7 @@ import android.graphics.Typeface
 import android.graphics.Color as AndroidColor
 import android.net.Uri
 import android.widget.Toast
+import com.example.util.WatermarkUtils
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -462,6 +463,13 @@ fun CameraCaptureScreen(
                                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                                         flashAnimation = false
                                         isCapturing = false
+                                        // Salva cópia imediata na galeria de fotos do celular
+                                        WatermarkUtils.saveToGallery(
+                                            context = context,
+                                            imageFile = photoFile,
+                                            title = "Foto de Campo - $protocolNumber",
+                                            description = "Registro de campo da fiscalização $protocolNumber em $exactRa"
+                                        )
                                         val uri = Uri.fromFile(photoFile)
                                         pendingPhotoCapture = PendingPhotoCapture(uri, exactLat, exactLng, exactTime, exactRa)
                                         photoTagInput = ""
@@ -526,7 +534,7 @@ fun CameraCaptureScreen(
             onDismissRequest = {
                 // Se fechar clicando fora, salva a foto sem tag
                 onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, null)
-                Toast.makeText(context, "Foto salva!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
                 pendingPhotoCapture = null
                 photoTagInput = ""
             },
@@ -593,7 +601,7 @@ fun CameraCaptureScreen(
                     onClick = {
                         val finalTag = photoTagInput.trim().ifEmpty { null }
                         onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, finalTag)
-                        Toast.makeText(context, if (finalTag != null) "Foto salva com tag!" else "Foto salva!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (finalTag != null) "Foto com tag salva no relatório e na Galeria!" else "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
                         pendingPhotoCapture = null
                         photoTagInput = ""
                     },
@@ -607,7 +615,7 @@ fun CameraCaptureScreen(
                 OutlinedButton(
                     onClick = {
                         onPhotoCaptured(pending.uri, pending.exactLat, pending.exactLng, pending.exactTime, pending.exactRa, null)
-                        Toast.makeText(context, "Foto salva sem tag!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
                         pendingPhotoCapture = null
                         photoTagInput = ""
                     },

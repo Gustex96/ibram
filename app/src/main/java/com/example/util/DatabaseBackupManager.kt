@@ -9,13 +9,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.BufferedInputStream
 import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+
+data class BackupResult(
+    val recordsCount: Int,
+    val photosCount: Int
+)
 
 object DatabaseBackupManager {
 
@@ -23,17 +33,21 @@ object DatabaseBackupManager {
 
     fun generateBackupFilename(): String {
         val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-        return "backup_fiscalizacoes_df_${sdf.format(Date())}.json"
+        return "backup_completo_fiscalizacoes_df_${sdf.format(Date())}.zip"
     }
 
-    suspend fun exportToJsonUri(
+    /**
+     * Exporta um arquivo ZIP completo contendo os relatórios (inspections.json)
+     * e todas as fotografias com marca d'água das ocorrências na pasta /photos.
+     */
+    suspend fun exportToZipUri(
         context: Context,
         uri: Uri,
         inspections: List<HorseInspection>
-    ): Result<Int> = withContext(Dispatchers.IO) {
+    ): Result<BackupResult> = withContext(Dispatchers.IO) {
         try {
             val root = JSONObject()
-            root.put("version", 1)
+            root.put("version", 2)
             root.put("appName", "Levantamento Operacional DF")
             root.put("exportedAt", System.currentTimeMillis())
             root.put("recordCount", inspections.size)
@@ -80,99 +94,241 @@ object DatabaseBackupManager {
             }
             root.put("inspections", array)
 
-            val jsonString = root.toString(2)
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                OutputStreamWriter(outputStream, Charsets.UTF_8).use { writer ->
-                    writer.write(jsonString)
-                    writer.flush()
-                }
-            } ?: return@withContext Result.failure(Exception("Não foi possível abrir o local selecionado para gravação."))
+            var exportedPhotosCount = 0
+            val processedFileNames = HashSet<String>()
 
-            Log.d(TAG, "Backup exportado com sucesso: ${inspections.size} registros salvos no URI: $uri")
-            Result.success(inspections.size)
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                ZipOutputStream(outputStream).use { zipOut ->
+                    // 1. Grava o inspections.json dentro do ZIP
+                    zipOut.putNextEntry(ZipEntry("inspections.json"))
+                    val jsonBytes = root.toString(2).toByteArray(Charsets.UTF_8)
+                    zipOut.write(jsonBytes)
+                    zipOut.closeEntry()
+
+                    // 2. Empacota todas as fotografias locais na pasta photos/ dentro do ZIP
+                    for (item in inspections) {
+                        // Foto principal
+                        if (item.photoPath.isNotBlank()) {
+                            val file = File(item.photoPath)
+                            if (file.exists() && file.isFile && !processedFileNames.contains(file.name)) {
+                                processedFileNames.add(file.name)
+                                zipOut.putNextEntry(ZipEntry("photos/${file.name}"))
+                                file.inputStream().use { input ->
+                                    input.copyTo(zipOut)
+                                }
+                                zipOut.closeEntry()
+                                exportedPhotosCount++
+                            }
+                        }
+                        // Fotos adicionais
+                        if (item.additionalPhotoPaths.isNotBlank()) {
+                            for (path in item.additionalPhotoPaths.split(";;")) {
+                                if (path.isNotBlank()) {
+                                    val file = File(path)
+                                    if (file.exists() && file.isFile && !processedFileNames.contains(file.name)) {
+                                        processedFileNames.add(file.name)
+                                        zipOut.putNextEntry(ZipEntry("photos/${file.name}"))
+                                        file.inputStream().use { input ->
+                                            input.copyTo(zipOut)
+                                        }
+                                        zipOut.closeEntry()
+                                        exportedPhotosCount++
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    zipOut.finish()
+                }
+            } ?: return@withContext Result.failure(Exception("Não foi possível abrir o local selecionado para gravação do backup."))
+
+            Log.d(TAG, "Backup ZIP exportado com sucesso: ${inspections.size} relatórios e $exportedPhotosCount fotos arquivadas.")
+            Result.success(BackupResult(recordsCount = inspections.size, photosCount = exportedPhotosCount))
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao exportar backup: ${e.message}", e)
+            Log.e(TAG, "Erro ao exportar backup completo: ${e.message}", e)
             Result.failure(e)
         }
     }
 
-    suspend fun importFromJsonUri(
+    /**
+     * Importa um backup completo (.zip com fotos e dados) ou legado (.json com dados).
+     * Recupera as fotos para o armazenamento local e as registra na Galeria do celular.
+     */
+    suspend fun importFromBackupUri(
         context: Context,
         uri: Uri,
         dao: HorseInspectionDao
-    ): Result<Int> = withContext(Dispatchers.IO) {
+    ): Result<BackupResult> = withContext(Dispatchers.IO) {
         try {
-            val content = StringBuilder()
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->
-                    var line = reader.readLine()
-                    while (line != null) {
-                        content.append(line)
-                        line = reader.readLine()
+            val rawInputStream = context.contentResolver.openInputStream(uri)
+                ?: return@withContext Result.failure(Exception("Não foi possível ler o arquivo selecionado."))
+
+            val bis = BufferedInputStream(rawInputStream)
+            bis.mark(16)
+            val headerBytes = ByteArray(4)
+            val readCount = bis.read(headerBytes, 0, 4)
+            bis.reset()
+
+            // Assinatura ZIP: PK (0x50, 0x4B)
+            val isZip = readCount >= 4 &&
+                headerBytes[0] == 0x50.toByte() &&
+                headerBytes[1] == 0x4B.toByte() &&
+                (headerBytes[2] == 0x03.toByte() || headerBytes[2] == 0x05.toByte() || headerBytes[2] == 0x07.toByte())
+
+            if (isZip) {
+                val photosDir = File(context.filesDir, "photos").apply {
+                    if (!exists()) mkdirs()
+                }
+                val extractedPhotos = mutableMapOf<String, String>()
+                var inspectionsJsonText: String? = null
+                var restoredPhotosCount = 0
+
+                ZipInputStream(bis).use { zis ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        val entryName = entry.name
+                        if (!entry.isDirectory) {
+                            if (entryName == "inspections.json" || entryName.endsWith(".json")) {
+                                inspectionsJsonText = zis.bufferedReader(Charsets.UTF_8).readText()
+                            } else if (entryName.startsWith("photos/") || entryName.endsWith(".jpg") || entryName.endsWith(".jpeg") || entryName.endsWith(".png")) {
+                                val simpleName = File(entryName).name
+                                val targetFile = File(photosDir, simpleName)
+                                FileOutputStream(targetFile).use { out ->
+                                    zis.copyTo(out)
+                                }
+                                extractedPhotos[simpleName] = targetFile.absolutePath
+                                restoredPhotosCount++
+
+                                // Disponibiliza também na Galeria de Fotos do celular
+                                WatermarkUtils.saveToGallery(
+                                    context = context,
+                                    imageFile = targetFile,
+                                    title = "Foto Recuperada - $simpleName",
+                                    description = "Foto restaurada de cópia de segurança"
+                                )
+                            }
+                        }
+                        zis.closeEntry()
+                        entry = zis.nextEntry
                     }
                 }
-            } ?: return@withContext Result.failure(Exception("Não foi possível ler o arquivo selecionado."))
 
-            val text = content.toString().trim()
-            val array = if (text.startsWith("[")) {
-                JSONArray(text)
+                if (inspectionsJsonText.isNullOrBlank()) {
+                    return@withContext Result.failure(Exception("Arquivo de backup inválido: dados de relatórios não encontrados dentro do arquivo ZIP."))
+                }
+
+                val list = parseInspectionsJson(inspectionsJsonText!!, extractedPhotos, photosDir)
+                if (list.isNotEmpty()) {
+                    dao.insertAll(list)
+                }
+
+                Log.d(TAG, "Backup ZIP importado com sucesso: ${list.size} vistorias e $restoredPhotosCount fotos restauradas.")
+                Result.success(BackupResult(recordsCount = list.size, photosCount = restoredPhotosCount))
             } else {
-                val root = JSONObject(text)
-                root.optJSONArray("inspections") ?: root.optJSONArray("records") ?: JSONArray()
+                // Legado: Arquivo JSON simples
+                val jsonText = bis.bufferedReader(Charsets.UTF_8).readText().trim()
+                val list = parseInspectionsJson(jsonText, emptyMap(), null)
+                if (list.isNotEmpty()) {
+                    dao.insertAll(list)
+                }
+                Log.d(TAG, "Backup JSON legado importado: ${list.size} registros.")
+                Result.success(BackupResult(recordsCount = list.size, photosCount = 0))
             }
-
-            val list = mutableListOf<HorseInspection>()
-            for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
-                val inspection = HorseInspection(
-                    protocolNumber = obj.optString("protocolNumber", "DF-REC-${System.currentTimeMillis()}"),
-                    photoPath = obj.optString("photoPath", ""),
-                    additionalPhotoPaths = obj.optString("additionalPhotoPaths", ""),
-                    latitude = obj.optDouble("latitude", com.example.data.model.DfConstants.DEFAULT_DF_LATITUDE),
-                    longitude = obj.optDouble("longitude", com.example.data.model.DfConstants.DEFAULT_DF_LONGITUDE),
-                    captureTimestamp = obj.optLong("captureTimestamp", System.currentTimeMillis()),
-                    administrativeRegion = obj.optString("administrativeRegion", "Plano Piloto (RA I)"),
-                    quadra = obj.optString("quadra", ""),
-                    conjunto = obj.optString("conjunto", ""),
-                    numero = obj.optString("numero", ""),
-                    species = obj.optString("species", "Cavalo"),
-                    auditorName = obj.optString("auditorName", ""),
-                    horseDescription = obj.optString("horseDescription", ""),
-                    horseCount = obj.optInt("horseCount", 1),
-                    mistreatedHorseCount = obj.optInt("mistreatedHorseCount", 0),
-                    mistreatmentIndicators = obj.optString("mistreatmentIndicators", ""),
-                    adequateIndicators = obj.optString("adequateIndicators", ""),
-                    requiresSeagriApprehension = obj.optBoolean("requiresSeagriApprehension", false),
-                    seagriNotes = obj.optString("seagriNotes", ""),
-                    requiresPmdfSupport = obj.optBoolean("requiresPmdfSupport", false),
-                    pmdfNotes = obj.optString("pmdfNotes", ""),
-                    requiresOtherAgencySupport = obj.optBoolean("requiresOtherAgencySupport", false),
-                    otherAgencyName = obj.optString("otherAgencyName", ""),
-                    otherAgencyNotes = obj.optString("otherAgencyNotes", ""),
-                    riskLevel = obj.optInt("riskLevel", 1),
-                    riskJustification = obj.optString("riskJustification", ""),
-                    safetyRiskAssessment = obj.optString("safetyRiskAssessment", ""),
-                    imageNotes = obj.optString("imageNotes", ""),
-                    tutorName = obj.optString("tutorName", ""),
-                    tutorCpf = obj.optString("tutorCpf", ""),
-                    additionalTutors = obj.optString("additionalTutors", ""),
-                    inspectionTeam = obj.optString("inspectionTeam", "Equipe de Apoio em Fiscalização"),
-                    createdAt = obj.optLong("createdAt", System.currentTimeMillis())
-                )
-                list.add(inspection)
-            }
-
-            if (list.isNotEmpty()) {
-                dao.insertAll(list)
-            }
-
-            Log.d(TAG, "Backup importado com sucesso: ${list.size} registros restaurados.")
-            Result.success(list.size)
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao importar backup: ${e.message}", e)
             Result.failure(e)
         }
     }
+
+    private fun parseInspectionsJson(
+        text: String,
+        extractedPhotos: Map<String, String>,
+        photosDir: File?
+    ): List<HorseInspection> {
+        val array = if (text.startsWith("[")) {
+            JSONArray(text)
+        } else {
+            val root = JSONObject(text)
+            root.optJSONArray("inspections") ?: root.optJSONArray("records") ?: JSONArray()
+        }
+
+        val list = mutableListOf<HorseInspection>()
+        for (i in 0 until array.length()) {
+            val obj = array.getJSONObject(i)
+
+            // Remapeia a foto principal se ela tiver sido restaurada
+            val rawPhotoPath = obj.optString("photoPath", "")
+            val resolvedPhotoPath = if (rawPhotoPath.isNotBlank()) {
+                val simpleName = File(rawPhotoPath).name
+                extractedPhotos[simpleName]
+                    ?: if (photosDir != null && File(photosDir, simpleName).exists()) File(photosDir, simpleName).absolutePath
+                    else rawPhotoPath
+            } else ""
+
+            // Remapeia fotos adicionais
+            val rawAdditionalPaths = obj.optString("additionalPhotoPaths", "")
+            val resolvedAdditionalPaths = if (rawAdditionalPaths.isNotBlank()) {
+                rawAdditionalPaths.split(";;").map { path ->
+                    if (path.isNotBlank()) {
+                        val simpleName = File(path).name
+                        extractedPhotos[simpleName]
+                            ?: if (photosDir != null && File(photosDir, simpleName).exists()) File(photosDir, simpleName).absolutePath
+                            else path
+                    } else ""
+                }.filter { it.isNotBlank() }.joinToString(";;")
+            } else ""
+
+            val inspection = HorseInspection(
+                protocolNumber = obj.optString("protocolNumber", "DF-REC-${System.currentTimeMillis()}"),
+                photoPath = resolvedPhotoPath,
+                additionalPhotoPaths = resolvedAdditionalPaths,
+                latitude = obj.optDouble("latitude", com.example.data.model.DfConstants.DEFAULT_DF_LATITUDE),
+                longitude = obj.optDouble("longitude", com.example.data.model.DfConstants.DEFAULT_DF_LONGITUDE),
+                captureTimestamp = obj.optLong("captureTimestamp", System.currentTimeMillis()),
+                administrativeRegion = obj.optString("administrativeRegion", "Plano Piloto (RA I)"),
+                quadra = obj.optString("quadra", ""),
+                conjunto = obj.optString("conjunto", ""),
+                numero = obj.optString("numero", ""),
+                species = obj.optString("species", "Cavalo"),
+                auditorName = obj.optString("auditorName", ""),
+                horseDescription = obj.optString("horseDescription", ""),
+                horseCount = obj.optInt("horseCount", 1),
+                mistreatedHorseCount = obj.optInt("mistreatedHorseCount", 0),
+                mistreatmentIndicators = obj.optString("mistreatmentIndicators", ""),
+                adequateIndicators = obj.optString("adequateIndicators", ""),
+                requiresSeagriApprehension = obj.optBoolean("requiresSeagriApprehension", false),
+                seagriNotes = obj.optString("seagriNotes", ""),
+                requiresPmdfSupport = obj.optBoolean("requiresPmdfSupport", false),
+                pmdfNotes = obj.optString("pmdfNotes", ""),
+                requiresOtherAgencySupport = obj.optBoolean("requiresOtherAgencySupport", false),
+                otherAgencyName = obj.optString("otherAgencyName", ""),
+                otherAgencyNotes = obj.optString("otherAgencyNotes", ""),
+                riskLevel = obj.optInt("riskLevel", 1),
+                riskJustification = obj.optString("riskJustification", ""),
+                safetyRiskAssessment = obj.optString("safetyRiskAssessment", ""),
+                imageNotes = obj.optString("imageNotes", ""),
+                tutorName = obj.optString("tutorName", ""),
+                tutorCpf = obj.optString("tutorCpf", ""),
+                additionalTutors = obj.optString("additionalTutors", ""),
+                inspectionTeam = obj.optString("inspectionTeam", "Equipe de Apoio em Fiscalização"),
+                createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+            )
+            list.add(inspection)
+        }
+        return list
+    }
+
+    suspend fun exportToJsonUri(
+        context: Context,
+        uri: Uri,
+        inspections: List<HorseInspection>
+    ): Result<Int> = exportToZipUri(context, uri, inspections).map { it.recordsCount }
+
+    suspend fun importFromJsonUri(
+        context: Context,
+        uri: Uri,
+        dao: HorseInspectionDao
+    ): Result<Int> = importFromBackupUri(context, uri, dao).map { it.recordsCount }
 
     /**
      * Exclui permanentemente todos os registros da tabela Room e deleta

@@ -7,6 +7,7 @@ import com.example.data.db.AppDatabase
 import com.example.data.model.DfConstants
 import com.example.data.model.HorseInspection
 import com.example.util.CpfValidator
+import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -308,5 +309,92 @@ class ExampleRobolectricTest {
         assertTrue(health.whatMustBeGuaranteed.contains("integridade", ignoreCase = true))
         assertTrue(behavior.whatMustBeGuaranteed.contains("comportamentos", ignoreCase = true))
         assertTrue(mental.whatMustBeGuaranteed.contains("estados mentais", ignoreCase = true))
+    }
+
+    @Test
+    fun testSpeciesDisplayUsesPopularNameCavalo() {
+        val horseInspection = HorseInspection(
+            protocolNumber = "DF-HORSE-01",
+            photoPath = "/mock/horse.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Plano Piloto (RA I)",
+            species = "Cavalo",
+            horseDescription = "Cavalo manga-larga"
+        )
+        assertEquals("Cavalo", horseInspection.speciesDisplay)
+        assertFalse(horseInspection.speciesDisplay.contains("Equino", ignoreCase = true))
+
+        val dogInspection = HorseInspection(
+            protocolNumber = "DF-DOG-01",
+            photoPath = "/mock/dog.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Plano Piloto (RA I)",
+            species = "Cachorro",
+            horseDescription = "Cão sem raça definida"
+        )
+        assertEquals("Cachorro (Canino)", dogInspection.speciesDisplay)
+    }
+
+    @Test
+    fun testZipBackupAndRestoreWithPhotos() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        val dao = db.horseInspectionDao()
+
+        // 1. Create a dummy photo file
+        val tempDir = File(context.cacheDir, "test_photos").apply { mkdirs() }
+        val dummyPhoto = File(tempDir, "TEST_PHOTO_1.jpg")
+        dummyPhoto.writeText("fake image bytes content")
+
+        val inspection = HorseInspection(
+            protocolNumber = "DF-ZIP-TEST-2026",
+            photoPath = dummyPhoto.absolutePath,
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Ceilândia (RA IX)",
+            species = "Cavalo"
+        )
+
+        // 2. Export to a temporary zip file
+        val backupZipFile = File(context.cacheDir, "test_backup.zip")
+        val zipUri = android.net.Uri.fromFile(backupZipFile)
+        val exportResult = com.example.util.DatabaseBackupManager.exportToZipUri(
+            context = context,
+            uri = zipUri,
+            inspections = listOf(inspection)
+        )
+        assertTrue(exportResult.isSuccess)
+        val backupResult = exportResult.getOrNull()
+        assertNotNull(backupResult)
+        assertEquals(1, backupResult?.recordsCount)
+        assertEquals(1, backupResult?.photosCount)
+        assertTrue(backupZipFile.exists() && backupZipFile.length() > 0)
+
+        // 3. Clear database and restore from the zip
+        dao.deleteAllInspections()
+        assertEquals(0, dao.getAllInspectionsList().size)
+
+        val importResult = com.example.util.DatabaseBackupManager.importFromBackupUri(
+            context = context,
+            uri = zipUri,
+            dao = dao
+        )
+        assertTrue(importResult.isSuccess)
+        val restoredResult = importResult.getOrNull()
+        assertEquals(1, restoredResult?.recordsCount)
+        assertEquals(1, restoredResult?.photosCount)
+
+        val restoredList = dao.getAllInspectionsList()
+        assertEquals(1, restoredList.size)
+        val restoredItem = restoredList[0]
+        assertEquals("DF-ZIP-TEST-2026", restoredItem.protocolNumber)
+        assertTrue("O caminho da foto restaurada deve existir", File(restoredItem.photoPath).exists())
+        assertEquals("fake image bytes content", File(restoredItem.photoPath).readText())
+
+        db.close()
     }
 }

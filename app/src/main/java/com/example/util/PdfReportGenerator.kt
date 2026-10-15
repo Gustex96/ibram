@@ -23,11 +23,11 @@ import java.util.Locale
 object PdfReportGenerator {
 
     /**
-     * Decodes and scales an image efficiently to target resolution (~1200px max dimension),
+     * Decodes and scales an image efficiently to target resolution (~900px max dimension),
      * preventing multi-megabyte uncompressed bitmaps inside the PDF while preserving
-     * razor-sharp 300 DPI print quality in 500x500 point boxes.
+     * razor-sharp print quality and exact aspect ratio.
      */
-    private fun decodeOptimizedBitmap(filePath: String, targetMaxDimension: Int = 1200): Bitmap? {
+    private fun decodeOptimizedBitmap(filePath: String, targetMaxDimension: Int = 900): Bitmap? {
         val file = File(filePath)
         if (!file.exists() || (file.length() == 0L)) return null
 
@@ -50,7 +50,21 @@ object PdfReportGenerator {
                 inSampleSize = sampleSize
                 inPreferredConfig = Bitmap.Config.RGB_565 // Drastically reduces memory and PDF size
             }
-            BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
+            val decoded = BitmapFactory.decodeFile(file.absolutePath, decodeOptions) ?: return null
+
+            val currentMax = maxOf(decoded.width, decoded.height)
+            if (currentMax > targetMaxDimension) {
+                val scale = targetMaxDimension.toFloat() / currentMax
+                val targetW = (decoded.width * scale).toInt().coerceAtLeast(1)
+                val targetH = (decoded.height * scale).toInt().coerceAtLeast(1)
+                val scaled = Bitmap.createScaledBitmap(decoded, targetW, targetH, true)
+                if (scaled != decoded) {
+                    decoded.recycle()
+                }
+                scaled
+            } else {
+                decoded
+            }
         } catch (_: Exception) {
             null
         }
@@ -438,16 +452,20 @@ object PdfReportGenerator {
         }
 
         // SECTION 6: RESUMO FOTOGRÁFICO
+        val photoChunks = allPhotos.chunked(2)
+        val totalPages = 1 + photoChunks.size
+
         y = drawSectionHeader(canvas, "6. REGISTRO FOTOGRÁFICO GEORREFERENCIADO (${allPhotos.size} FOTO(S))", margin, y, contentWidth)
         if (allPhotos.isEmpty()) {
             canvas.drawText("[Nenhuma fotografia anexada nesta ocorrência]", col1X, y, valuePaint)
             y += 16f
+        } else if (allPhotos.size == 1) {
+            val photoNote = "✓ 1 fotografia georreferenciada anexada na Folha 2 em alta resolução (proporção ajustada)."
+            canvas.drawText(photoNote, col1X, y, valuePaint)
+            y += 16f
         } else {
-            val photoNote = if (allPhotos.size == 1) {
-                "✓ 1 fotografia georreferenciada anexada na Folha 2 em alta resolução (proporção 500x500)."
-            } else {
-                "✓ ${allPhotos.size} fotografias georreferenciadas anexadas nas Folhas seguintes em alta resolução (proporção 500x500)."
-            }
+            val pageRange = if (photoChunks.size == 1) "na Folha 2" else "nas Folhas 2 a $totalPages"
+            val photoNote = "✓ ${allPhotos.size} fotografias georreferenciadas enfileiradas com espaçamento $pageRange (otimização de páginas e proporção preservada)."
             canvas.drawText(photoNote, col1X, y, valuePaint)
             y += 16f
         }
@@ -468,7 +486,7 @@ object PdfReportGenerator {
         }
 
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
-        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório de Apoio"
+        val genText = "Folha 1 de $totalPages | Levantamento expedido em ${sdfGen.format(Date())} | Relatório de Apoio"
         canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
         val legalNote = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
         canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
@@ -482,28 +500,33 @@ object PdfReportGenerator {
 
         document.finishPage(page)
 
-        // PAGE 2 (AND BEYOND): FOTOGRAFIAS EM PROPORÇÃO 500x500
+        // PHOTO PAGES (ENFILEIRADAS COM ESPAÇAMENTO: 2 FOTOS POR PÁGINA)
         val borderPaint = Paint().apply {
             color = Color.rgb(203, 213, 225)
             style = Paint.Style.STROKE
-            strokeWidth = 1.5f
+            strokeWidth = 1f
+        }
+        val bgFramePaint = Paint().apply {
+            color = Color.rgb(248, 250, 252)
+            style = Paint.Style.FILL
         }
         val captionTitlePaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
-            textSize = 9.5f
+            textSize = 8.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
         val captionSubPaint = Paint().apply {
             color = Color.rgb(71, 85, 105)
-            textSize = 8.5f
+            textSize = 7.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
         }
 
-        if (allPhotos.isNotEmpty()) {
-            allPhotos.forEachIndexed { photoIndex, photoPath ->
-                val photoPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, photoIndex + 2).create()
+        if (photoChunks.isNotEmpty()) {
+            photoChunks.forEachIndexed { chunkIndex, chunk ->
+                val pageNumber = chunkIndex + 2
+                val photoPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
                 val photoPage = document.startPage(photoPageInfo)
                 val pCanvas = photoPage.canvas
                 pCanvas.drawColor(Color.WHITE)
@@ -515,53 +538,101 @@ object PdfReportGenerator {
                 var py = 32f
                 pCanvas.drawText("ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL", margin, py, headerSubPaint)
                 py += 15f
-                pCanvas.drawText("Levantamento: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | Foto ${photoIndex + 1} de ${allPhotos.size}", margin, py, headerSmallPaint)
+                val startIdx = (chunkIndex * 2) + 1
+                val endIdx = startIdx + chunk.size - 1
+                val rangeStr = if (startIdx == endIdx) "Foto $startIdx de ${allPhotos.size}" else "Fotos $startIdx a $endIdx de ${allPhotos.size}"
+                pCanvas.drawText("Levantamento: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | $rangeStr", margin, py, headerSmallPaint)
                 py += 20f
 
-                py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM ALTA DEFINIÇÃO (PROPORÇÃO 500x500)", margin, py, contentWidth)
+                py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO EM FILA (PROPORÇÃO AJUSTADA COM ALTA DEFINIÇÃO)", margin, py, contentWidth)
 
-                // 500 x 500 Photo Box (Centered on A4 width 595: (595 - 500) / 2 = 47.5f)
-                val targetBoxSize = 500f
-                val photoX = (pageWidth - targetBoxSize) / 2f
-                val photoRect = RectF(photoX, py, photoX + targetBoxSize, py + targetBoxSize)
+                val availableContentHeight = footerY - py - 12f
 
-                val optimizedBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 1200)
-                if (optimizedBitmap != null) {
-                    // Draw clean dark background for photo frame
-                    val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
-                    pCanvas.drawRect(photoRect, bgFramePaint)
+                if (chunk.size == 2) {
+                    val gap = 16f
+                    val itemTotalHeight = (availableContentHeight - gap) / 2f
 
-                    // Draw image scaled nicely into the 500x500 box preserving aspect ratio or fill
-                    val bRatio = optimizedBitmap.width.toFloat() / optimizedBitmap.height.toFloat()
-                    var dw = targetBoxSize
-                    var dh = dw / bRatio
-                    if (dh > targetBoxSize) {
-                        dh = targetBoxSize
-                        dw = dh * bRatio
+                    chunk.forEachIndexed { itemIdx, photoPath ->
+                        val globalPhotoIndex = (chunkIndex * 2) + itemIdx
+                        val itemStartY = py + (itemIdx * (itemTotalHeight + gap))
+
+                        // Tag / Header
+                        pCanvas.drawText("📸 FOTO ${globalPhotoIndex + 1} DE ${allPhotos.size} • REGISTRO FISCAL GEORREFERENCIADO", margin, itemStartY + 10f, captionTitlePaint)
+
+                        val boxTop = itemStartY + 16f
+                        val boxHeight = itemTotalHeight - 44f
+                        val boxWidth = contentWidth
+                        val boxRect = RectF(margin, boxTop, margin + boxWidth, boxTop + boxHeight)
+
+                        pCanvas.drawRoundRect(boxRect, 4f, 4f, bgFramePaint)
+
+                        val optimizedBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 900)
+                        if (optimizedBitmap != null) {
+                            val bRatio = optimizedBitmap.width.toFloat() / optimizedBitmap.height.toFloat()
+                            var dw = boxWidth - 12f
+                            var dh = dw / bRatio
+                            if (dh > boxHeight - 8f) {
+                                dh = boxHeight - 8f
+                                dw = dh * bRatio
+                            }
+                            val drawX = margin + ((boxWidth - dw) / 2f)
+                            val drawY = boxTop + ((boxHeight - dh) / 2f)
+                            val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+
+                            pCanvas.drawBitmap(optimizedBitmap, null, drawRect, null)
+                            pCanvas.drawRoundRect(boxRect, 4f, 4f, borderPaint)
+                        } else {
+                            pCanvas.drawRoundRect(boxRect, 4f, 4f, borderPaint)
+                            pCanvas.drawText("[Arquivo de fotografia não disponível no armazenamento]", margin + 16f, boxTop + (boxHeight / 2f), captionSubPaint)
+                        }
+
+                        // Caption bar below photo box
+                        val captionY = boxTop + boxHeight + 11f
+                        pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f°", inspection.latitude, inspection.longitude)}  |  🏛️ Região Administrativa: ${inspection.administrativeRegion}", margin, captionY, captionTitlePaint)
+                        pCanvas.drawText("🕒 Data/Hora: ${inspection.formattedCaptureDate}  |  Registro Georreferenciado • Preservação da Cadeia de Custódia", margin, captionY + 11f, captionSubPaint)
                     }
-                    val drawX = photoX + ((targetBoxSize - dw) / 2f)
-                    val drawY = py + ((targetBoxSize - dh) / 2f)
-                    val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
-
-                    pCanvas.drawBitmap(optimizedBitmap, null, drawRect, null)
-                    pCanvas.drawRect(photoRect, borderPaint)
                 } else {
-                    pCanvas.drawRect(photoRect, borderPaint)
-                    pCanvas.drawText("[Arquivo de fotografia não disponível no armazenamento]", photoX + 20f, py + 250f, valuePaint)
+                    // Single photo on this page
+                    val photoPath = chunk[0]
+                    val globalPhotoIndex = (chunkIndex * 2)
+
+                    pCanvas.drawText("📸 FOTO ${globalPhotoIndex + 1} DE ${allPhotos.size} • REGISTRO FISCAL GEORREFERENCIADO", margin, py + 12f, captionTitlePaint)
+
+                    val boxTop = py + 20f
+                    val boxHeight = if (allPhotos.size == 1) 450f else 320f
+                    val boxWidth = contentWidth
+                    val boxRect = RectF(margin, boxTop, margin + boxWidth, boxTop + boxHeight)
+
+                    pCanvas.drawRoundRect(boxRect, 4f, 4f, bgFramePaint)
+
+                    val optimizedBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 900)
+                    if (optimizedBitmap != null) {
+                        val bRatio = optimizedBitmap.width.toFloat() / optimizedBitmap.height.toFloat()
+                        var dw = boxWidth - 16f
+                        var dh = dw / bRatio
+                        if (dh > boxHeight - 12f) {
+                            dh = boxHeight - 12f
+                            dw = dh * bRatio
+                        }
+                        val drawX = margin + ((boxWidth - dw) / 2f)
+                        val drawY = boxTop + ((boxHeight - dh) / 2f)
+                        val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+
+                        pCanvas.drawBitmap(optimizedBitmap, null, drawRect, null)
+                        pCanvas.drawRoundRect(boxRect, 4f, 4f, borderPaint)
+                    } else {
+                        pCanvas.drawRoundRect(boxRect, 4f, 4f, borderPaint)
+                        pCanvas.drawText("[Arquivo de fotografia não disponível no armazenamento]", margin + 16f, boxTop + (boxHeight / 2f), captionSubPaint)
+                    }
+
+                    val captionY = boxTop + boxHeight + 13f
+                    pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f°", inspection.latitude, inspection.longitude)}  |  🏛️ Região Administrativa: ${inspection.administrativeRegion}", margin, captionY, captionTitlePaint)
+                    pCanvas.drawText("🕒 Data/Hora: ${inspection.formattedCaptureDate}  |  Registro Georreferenciado • Preservação da Cadeia de Custódia", margin, captionY + 12f, captionSubPaint)
                 }
-
-                py += targetBoxSize + 16f
-
-                // Caption details below the 500x500 image
-                pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f°", inspection.latitude, inspection.longitude)}", photoX, py, captionTitlePaint)
-                py += 13f
-                pCanvas.drawText("🏛️ Região Administrativa: ${inspection.administrativeRegion} • Data/Hora: ${inspection.formattedCaptureDate}", photoX, py, captionSubPaint)
-                py += 12f
-                pCanvas.drawText("Registro Fotográfico Georreferenciado • Apoio à Fiscalização", photoX, py, captionSubPaint)
 
                 // Footer for photo page
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
-                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico • Relatório de Apoio"
+                val pGenText = "Folha $pageNumber de $totalPages | Anexo Fotográfico • Relatório de Apoio"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)

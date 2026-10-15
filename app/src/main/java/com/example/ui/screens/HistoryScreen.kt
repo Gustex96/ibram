@@ -122,7 +122,7 @@ fun HistoryScreen(
     var showConfirmDeleteAllDialog by remember { mutableStateOf(false) }
 
     val createBackupLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
+        contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         if (uri != null) {
             viewModel.exportBackupToUri(uri) { success, msg ->
@@ -591,13 +591,13 @@ fun HistoryScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "Salvar Cópia no Celular (Exportar)",
+                                    text = "Salvar Cópia Completa no Celular (.ZIP com Fotos)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "Escolha onde salvar o arquivo de backup no seu celular (Downloads, Documentos, Pen Drive, etc.).",
+                                    text = "Exporta um pacote .zip contendo todas as vistorias e as fotografias originais com marca d'água para recuperação segura.",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -611,7 +611,7 @@ fun HistoryScreen(
                             .fillMaxWidth()
                             .clickable {
                                 showBackupDialog = false
-                                restoreBackupLauncher.launch(arrayOf("application/json", "*/*"))
+                                restoreBackupLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream", "application/json", "*/*"))
                             },
                         shape = RoundedCornerShape(10.dp),
                         colors = CardDefaults.cardColors(
@@ -632,13 +632,13 @@ fun HistoryScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "Restaurar Backup do Celular (Importar)",
+                                    text = "Restaurar Backup do Celular (.ZIP ou .JSON)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Selecione um arquivo de backup (.json) salvo no aparelho para restaurar os dados.",
+                                    text = "Selecione o arquivo de backup (.zip com fotos ou .json legado) para restaurar vistorias e fotos.",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
