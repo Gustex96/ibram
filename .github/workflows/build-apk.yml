@@ -1,0 +1,121 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - "ibram"
+      - "v*"
+  workflow_dispatch: # Permite disparar manualmente com 1 clique pela aba Actions do GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Compilar APK (Debug)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configurar o Java (JDK 21)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Configurar o Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Configurar o Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Garantir arquivo .env para o Secrets Gradle Plugin
+        run: |
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Garantir permissão de execução no Gradle Wrapper
+        run: |
+          if [ ! -f ./gradlew ]; then
+            gradle wrapper
+          fi
+          chmod +x ./gradlew
+
+      - name: Configurar debug.keystore fixo para consistência de assinatura nas atualizações
+        run: |
+          mkdir -p ~/.android
+          if [ -f debug.keystore ]; then
+            cp debug.keystore ~/.android/debug.keystore
+          elif [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > ~/.android/debug.keystore
+          elif [ -f my-upload-key.jks ]; then
+            cp my-upload-key.jks ~/.android/debug.keystore
+          fi
+          echo "Keystore para build de debug configurado em ~/.android/debug.keystore"
+
+      - name: Compilar o APK (Debug)
+        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon
+
+      - name: Verificar se o APK foi gerado
+        run: |
+          if [ ! -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            echo "Erro: app-debug.apk não foi encontrado no caminho esperado."
+            exit 1
+          fi
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Salvar APK como Artefato do Workflow
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Extrair notas de versão do version.json
+        id: release_notes
+        run: |
+          if [ -f version.json ]; then
+            NOTES=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('releaseNotes', 'Atualização do aplicativo LEVO'))")
+            VERSION_NAME=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('versionName', '1.2'))")
+            VERSION_CODE=$(python3 -c "import json; data=json.load(open('version.json')); print(data.get('versionCode', '5'))")
+          else
+            NOTES="Atualização automática do aplicativo LEVO."
+            VERSION_NAME="1.2"
+            VERSION_CODE="5"
+          fi
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Publicar / Atualizar Release no GitHub (tag 'ibram')
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ibram
+          target_commitish: ${{ github.sha }}
+          name: "Versão v${{ steps.release_notes.outputs.version_name }} (Build ${{ steps.release_notes.outputs.version_code }})"
+          body: |
+            ### 📋 LEVO - Levantamento Operacional
+            **Versão:** v${{ steps.release_notes.outputs.version_name }} (Build ${{ steps.release_notes.outputs.version_code }})
+
+            #### 📋 Novidades desta versão:
+            ${{ steps.release_notes.outputs.notes }}
+
+            ---
+            *Arquivo compilado e publicado automaticamente via GitHub Actions.*
+          files: app/build/outputs/apk/debug/app-debug.apk
+          make_latest: true
+          overwrite_files: true
+          token: ${{ secrets.GITHUB_TOKEN }}

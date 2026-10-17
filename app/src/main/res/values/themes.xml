@@ -1,6 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FiscalizacaoDF" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#00684A</item>
-        <item name="android:navigationBarColor">#F8FAFC</item>
-    </style>
+
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
 </resources>

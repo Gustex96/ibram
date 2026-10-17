@@ -1,0 +1,7 @@
+{
+  "versionCode": 8,
+  "versionName": "1.5",
+  "releaseNotes": "• Inclusão dos 5 Domínios de Bem-Estar Animal na aba Conhecimento (Nutrição, Ambiente, Saúde, Comportamento e Estado Mental)\n• Novo campo para requisição de apoio a outros órgãos (ex: Seagri, PMDF, DPDF, etc.) ou outras providências de apreensão\n• APK assinado com Keystore Oficial de Produção (Release - Fiscalização Ambiental DF) com tratamento anti-bloqueio Play Protect/Antivírus\n• Guia integrado de liberação da instalação sem restrições",
+  "apkUrl": "https://github.com/Gustex96/ibram/releases/download/ibram/app-release.apk",
+  "minRequiredVersion": 1
+}

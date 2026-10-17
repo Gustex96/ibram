@@ -1,6 +1,0 @@
-{
-  "name": "LEVO",
-  "description": "LEVO - Levantamento Operacional contra maus-tratos aos animais com fotos georreferenciadas e relatórios em PDF.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Fiscalização de Animais DF</string>
-    <string name="app_subtitle">Apoio Operacional ao Bem-Estar Animal</string>
+    <string name="app_name">LEVO</string>
+    <string name="app_description">Aplicativo institucional de apoio à fiscalização ambiental e auditoria de bem-estar animal no Distrito Federal (DIFIS-IV / IBRAM / GDF). Software seguro, sem fins lucrativos ou comerciais.</string>
 </resources>
