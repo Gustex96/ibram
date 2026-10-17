@@ -1,6 +1,6 @@
 {
-  "name": "LEVO",
-  "description": "LEVO - Levantamento Operacional contra maus-tratos aos animais com fotos georreferenciadas e relatórios em PDF.",
+  "name": "Fiscalização de Animais DF",
+  "description": "Aplicativo de apoio à fiscalização de bem-estar animal no Distrito Federal, com registro de vistorias, laudos fotográficos georreferenciados e avaliação zootécnica.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

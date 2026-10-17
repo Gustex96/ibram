@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <cache-path name="internal_cache" path="." />
-    <files-path name="internal_files" path="." />
-    <external-cache-path name="external_cache" path="." />
-    <external-files-path name="external_files" path="." />
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="reports" path="reports/" />
+    <cache-path name="photos" path="photos/" />
+    <files-path name="saved_photos" path="photos/" />
+    <external-files-path name="external_photos" path="photos/" />
 </paths>
