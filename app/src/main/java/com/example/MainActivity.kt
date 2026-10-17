@@ -87,13 +87,13 @@ fun MainAppContent(viewModel: InspectionViewModel) {
                 modifier = Modifier.testTag("bottom_nav_bar")
             ) {
                 NavigationBarItem(
-                    selected = selectedTab == 0 && (currentScreen is AppScreen.SpeciesSelection || currentScreen is AppScreen.NewInspection || currentScreen is AppScreen.AuditorProfile),
+                    selected = selectedTab == 0 && currentScreen is AppScreen.SpeciesSelection,
                     onClick = {
                         selectedTab = 0
                         currentScreen = AppScreen.SpeciesSelection
                     },
-                    icon = { Icon(Icons.Default.Pets, contentDescription = "Vistoria") },
-                    label = { Text("Espécies / Início") },
+                    icon = { Icon(Icons.Default.Pets, contentDescription = "Espécies") },
+                    label = { Text("Início", maxLines = 1) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF00684A),
                         selectedTextColor = Color(0xFF00684A),
@@ -102,13 +102,28 @@ fun MainAppContent(viewModel: InspectionViewModel) {
                 )
 
                 NavigationBarItem(
-                    selected = selectedTab == 1 || currentScreen is AppScreen.History || currentScreen is AppScreen.InspectionDetail,
+                    selected = selectedTab == 1 && currentScreen is AppScreen.NewInspection,
                     onClick = {
                         selectedTab = 1
+                        currentScreen = AppScreen.NewInspection
+                    },
+                    icon = { Icon(Icons.Default.AddCircle, contentDescription = "Nova Vistoria") },
+                    label = { Text("Vistoria", maxLines = 1) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF00684A),
+                        selectedTextColor = Color(0xFF00684A),
+                        indicatorColor = Color(0xFFE8F5E9)
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = selectedTab == 2 && (currentScreen is AppScreen.History || currentScreen is AppScreen.InspectionDetail),
+                    onClick = {
+                        selectedTab = 2
                         currentScreen = AppScreen.History
                     },
                     icon = { Icon(Icons.Default.History, contentDescription = "Histórico") },
-                    label = { Text("Histórico") },
+                    label = { Text("Histórico", maxLines = 1) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF00684A),
                         selectedTextColor = Color(0xFF00684A),
@@ -117,13 +132,13 @@ fun MainAppContent(viewModel: InspectionViewModel) {
                 )
 
                 NavigationBarItem(
-                    selected = selectedTab == 2 || currentScreen is AppScreen.Statistics,
+                    selected = selectedTab == 3 && currentScreen is AppScreen.Statistics,
                     onClick = {
-                        selectedTab = 2
+                        selectedTab = 3
                         currentScreen = AppScreen.Statistics
                     },
                     icon = { Icon(Icons.Default.BarChart, contentDescription = "Estatísticas") },
-                    label = { Text("Estatísticas") },
+                    label = { Text("Dados", maxLines = 1) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF00684A),
                         selectedTextColor = Color(0xFF00684A),
@@ -132,13 +147,13 @@ fun MainAppContent(viewModel: InspectionViewModel) {
                 )
 
                 NavigationBarItem(
-                    selected = selectedTab == 3,
+                    selected = selectedTab == 4 && currentScreen is AppScreen.AuditorProfile,
                     onClick = {
-                        selectedTab = 3
+                        selectedTab = 4
                         currentScreen = AppScreen.AuditorProfile
                     },
                     icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-                    label = { Text("Perfil") },
+                    label = { Text("Perfil", maxLines = 1) },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = Color(0xFF00684A),
                         selectedTextColor = Color(0xFF00684A),

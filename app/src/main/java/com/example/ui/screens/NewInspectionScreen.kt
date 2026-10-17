@@ -115,10 +115,15 @@ fun NewInspectionScreen(
     val hydration by viewModel.draftHydration.collectAsState()
     val posture by viewModel.draftPosture.collectAsState()
     val hoofDental by viewModel.draftHoofDental.collectAsState()
+    val otherAgencies by viewModel.draftOtherAgencies.collectAsState()
 
     var newTutorName by remember { mutableStateOf("") }
     var newTutorCpf by remember { mutableStateOf("") }
     var raExpanded by remember { mutableStateOf(false) }
+    var bcsExpanded by remember { mutableStateOf(false) }
+    var hydrationExpanded by remember { mutableStateOf(false) }
+    var postureExpanded by remember { mutableStateOf(false) }
+    var hoofDentalExpanded by remember { mutableStateOf(false) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
@@ -533,7 +538,243 @@ fun NewInspectionScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SECTION 4: Indicadores de Maus-Tratos (Res. CFMV nº 1.236/2018)
+        // SECTION 4: Avaliação Fisiológica e Zootécnica
+        val bcsOptions = listOf(
+            "1 - Caquético / Emaciação Severa",
+            "2 - Abaixo do Peso / Magro",
+            "3 - Ideal (Nutrição Adequada)",
+            "4 - Sobrepeso",
+            "5 - Obeso"
+        )
+        val hydrationOptions = listOf(
+            "Normal (Turgor cutâneo < 2s)",
+            "Desidratação Leve (2-4s)",
+            "Desidratação Moderada (4-6s)",
+            "Desidratação Severa / Olhos Enovoados (> 6s)"
+        )
+        val postureOptions = listOf(
+            "Alerta e Ativo",
+            "Apático / Letárgico",
+            "Claudicação / Dificuldade Locomotora",
+            "Prostrado / Decúbito Prolongado",
+            "Sinais Evidentes de Dor"
+        )
+        val hoofDentalOptions = listOf(
+            "Cascos íntegros / sem lesões aparentes",
+            "Cascos deformados / rachaduras",
+            "Ferrageamento irregular / desgastado",
+            "Desgaste dentário acentuado / feridas orais",
+            "Sem alterações evidentes"
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "4. Avaliação Fisiológica e Zootécnica",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = "Parâmetros clínicos e escore de integridade física do animal",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Escore de Condição Corporal (ECC)
+                ExposedDropdownMenuBox(
+                    expanded = bcsExpanded,
+                    onExpandedChange = { bcsExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = bodyCondition,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Escore de Condição Corporal (ECC)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bcsExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor().testTag("bcs_dropdown")
+                    )
+                    ExposedDropdownMenu(
+                        expanded = bcsExpanded,
+                        onDismissRequest = { bcsExpanded = false }
+                    ) {
+                        bcsOptions.forEach { opt ->
+                            DropdownMenuItem(
+                                text = { Text(opt, fontSize = 13.sp) },
+                                onClick = {
+                                    viewModel.draftBodyCondition.value = opt
+                                    bcsExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Estado de Hidratação
+                ExposedDropdownMenuBox(
+                    expanded = hydrationExpanded,
+                    onExpandedChange = { hydrationExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = hydration,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Estado de Hidratação") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = hydrationExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor().testTag("hydration_dropdown")
+                    )
+                    ExposedDropdownMenu(
+                        expanded = hydrationExpanded,
+                        onDismissRequest = { hydrationExpanded = false }
+                    ) {
+                        hydrationOptions.forEach { opt ->
+                            DropdownMenuItem(
+                                text = { Text(opt, fontSize = 13.sp) },
+                                onClick = {
+                                    viewModel.draftHydration.value = opt
+                                    hydrationExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Postura e Comportamento
+                ExposedDropdownMenuBox(
+                    expanded = postureExpanded,
+                    onExpandedChange = { postureExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = posture,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Postura e Comportamento") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = postureExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor().testTag("posture_dropdown")
+                    )
+                    ExposedDropdownMenu(
+                        expanded = postureExpanded,
+                        onDismissRequest = { postureExpanded = false }
+                    ) {
+                        postureOptions.forEach { opt ->
+                            DropdownMenuItem(
+                                text = { Text(opt, fontSize = 13.sp) },
+                                onClick = {
+                                    viewModel.draftPosture.value = opt
+                                    postureExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Condição de Cascos / Dentição
+                ExposedDropdownMenuBox(
+                    expanded = hoofDentalExpanded,
+                    onExpandedChange = { hoofDentalExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = hoofDental,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Cascos, Membros e Dentição") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = hoofDentalExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor().testTag("hoof_dental_dropdown")
+                    )
+                    ExposedDropdownMenu(
+                        expanded = hoofDentalExpanded,
+                        onDismissRequest = { hoofDentalExpanded = false }
+                    ) {
+                        hoofDentalOptions.forEach { opt ->
+                            DropdownMenuItem(
+                                text = { Text(opt, fontSize = 13.sp) },
+                                onClick = {
+                                    viewModel.draftHoofDental.value = opt
+                                    hoofDentalExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 5: Indicadores de Bem-Estar Adequado
+        val adequateOptions = listOf(
+            "Acesso contínuo à água limpa e fresca",
+            "Alimentação de boa qualidade e em quantidade adequada",
+            "Abrigo higienizado com proteção contra sol e chuva",
+            "Espaço físico amplo e seguro para locomoção",
+            "Controle sanitário, vacinação e vermifugação em dia",
+            "Comportamento dócil, sem sinais de dor ou medo"
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF00684A), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "5. Condições Favoráveis de Bem-Estar",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF00684A)
+                    )
+                }
+                Text(
+                    text = "Pontos positivos de manejo verificados durante a inspeção",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                adequateOptions.forEach { opt ->
+                    val selected = adequates.contains(opt)
+                    FilterChip(
+                        selected = selected,
+                        onClick = { viewModel.toggleAdequate(opt) },
+                        label = { Text(opt, fontSize = 12.sp) },
+                        leadingIcon = if (selected) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF00684A)) }
+                        } else null,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFE8F5E9),
+                            selectedLabelColor = Color(0xFF00684A)
+                        ),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 6: Indicadores de Maus-Tratos (Res. CFMV nº 1.236/2018)
         val mistreatmentOptions = listOf(
             "Desnutrição severa / Caquexia",
             "Desidratação evidente",
@@ -557,7 +798,7 @@ fun NewInspectionScreen(
                     Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "4. Constatação de Maus-Tratos",
+                        text = "6. Constatação de Maus-Tratos",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFC62828)
@@ -589,7 +830,7 @@ fun NewInspectionScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SECTION 5: Tutores / Responsáveis
+        // SECTION 7: Tutores / Responsáveis
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -598,7 +839,7 @@ fun NewInspectionScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "5. Identificação dos Tutores / Responsáveis",
+                    text = "7. Identificação dos Tutores / Responsáveis",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
@@ -669,7 +910,7 @@ fun NewInspectionScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SECTION 6: Notas de Campo
+        // SECTION 8: Notas de Campo
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -678,7 +919,7 @@ fun NewInspectionScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "6. Descrição dos Animais e Notas de Campo",
+                    text = "8. Descrição dos Animais, Órgãos Acionados e Notas de Campo",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
@@ -689,6 +930,14 @@ fun NewInspectionScreen(
                     onValueChange = { viewModel.draftDescription.value = it },
                     label = { Text("Descrição detalhada do animal (pelagem, marcas, porte)") },
                     modifier = Modifier.fillMaxWidth().testTag("animal_description_input"),
+                    minLines = 2
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = otherAgencies,
+                    onValueChange = { viewModel.draftOtherAgencies.value = it },
+                    label = { Text("Órgãos de apoio acionados (PMDF, BPMA, SEAGRI, DEMA...)") },
+                    modifier = Modifier.fillMaxWidth().testTag("other_agencies_input"),
                     minLines = 2
                 )
                 Spacer(modifier = Modifier.height(10.dp))
