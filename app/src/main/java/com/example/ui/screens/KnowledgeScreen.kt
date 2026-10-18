@@ -189,12 +189,7 @@ fun KnowledgeScreen(
             }
         }
 
-        // Seletor de Espécie
-        SpeciesSelectorTabs(
-            selectedSpecies = viewModel.selectedSpecies,
-            onSpeciesSelected = { viewModel.selectSpecies(it) },
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // Espécie ativa sincronizada com o topo do app (botão 'Trocar Espécie')
 
         // Abas da Base de Conhecimento
         TabRow(

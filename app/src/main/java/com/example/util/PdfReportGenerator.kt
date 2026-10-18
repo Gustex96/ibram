@@ -257,7 +257,7 @@ object PdfReportGenerator {
 
         // 1.4 Espécie Avaliada & Finalidade do Documento
         canvas.drawText("ESPÉCIE / CATEGORIA AVALIADA:", col1X, y, labelPaint)
-        val speciesInfoText = if (inspection.isDog) "${inspection.speciesEmoji} Cachorro (Canino)" else "${inspection.speciesEmoji} Cavalo"
+        val speciesInfoText = if (inspection.isDog) "${inspection.speciesEmoji} Cachorro" else "${inspection.speciesEmoji} Cavalo"
         canvas.drawText(speciesInfoText, col1X, y + 11f, audValPaint)
 
         canvas.drawText("FINALIDADE DO DOCUMENTO:", col2X, y, labelPaint)

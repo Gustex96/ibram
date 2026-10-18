@@ -218,13 +218,7 @@ fun StatisticsScreen(
             }
         }
 
-        // 2. Seletor de Espécie (Equinos / Caninos)
-        item {
-            SpeciesSelectorTabs(
-                selectedSpecies = viewModel.selectedSpecies,
-                onSpeciesSelected = { viewModel.selectSpecies(it) }
-            )
-        }
+        // Indicador de Espécie Ativa para as Estatísticas (alterada no topo pelo botão 'Trocar Espécie')
 
         // 3. Filtro de Período Temporal
         item {

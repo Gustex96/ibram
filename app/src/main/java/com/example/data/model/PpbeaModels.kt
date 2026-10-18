@@ -407,4 +407,61 @@ object PpbeaCriteriaRepository {
             answersMap = answers
         )
     }
+
+    /**
+     * Serializa o mapa de respostas em string persistível (chave:valor separadas por ;;)
+     */
+    fun mapToAnswersString(answers: Map<String, Boolean>): String {
+        return answers.entries.joinToString(";;") { "${it.key}:${it.value}" }
+    }
+
+    /**
+     * Reconstrói o mapa de respostas a partir da string persistida
+     */
+    fun parseAnswersString(serialized: String): Map<String, Boolean> {
+        if (serialized.isBlank()) return emptyMap()
+        val result = mutableMapOf<String, Boolean>()
+        serialized.split(";;").forEach { item ->
+            val parts = item.split(":")
+            if (parts.size == 2) {
+                val boolVal = parts[1].trim().toBooleanStrictOrNull()
+                if (boolVal != null) {
+                    result[parts[0].trim()] = boolVal
+                }
+            }
+        }
+        return result
+    }
+
+    /**
+     * Reconstrói ou recupera o mapa de respostas do protocolo PPBEA
+     */
+    fun reconstructAnswers(
+        serializedAnswers: String,
+        mistreatmentIndicators: List<String>,
+        adequateIndicators: List<String>
+    ): Map<String, Boolean> {
+        val parsed = parseAnswersString(serializedAnswers)
+        if (parsed.isNotEmpty()) return parsed
+
+        // Reconstrução inteligente a partir das listas de indicadores de campo se disponíveis
+        val reconstructed = mutableMapOf<String, Boolean>()
+        criteria.forEach { crit ->
+            val tagKeyword = crit.question.replace("?", "").trim()
+            val hasMistreatment = mistreatmentIndicators.any { 
+                it.contains(tagKeyword, ignoreCase = true) || it.contains(crit.badStateExplanation, ignoreCase = true) 
+            }
+            val hasAdequate = adequateIndicators.any { 
+                it.contains(tagKeyword, ignoreCase = true) || it.contains(crit.goodStateExplanation, ignoreCase = true) 
+            }
+
+            if (hasMistreatment) {
+                reconstructed[crit.id] = crit.simIsRuim
+            } else if (hasAdequate) {
+                reconstructed[crit.id] = !crit.simIsRuim
+            }
+        }
+        return reconstructed
+    }
 }
+

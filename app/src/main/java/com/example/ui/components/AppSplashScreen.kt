@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,19 +13,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,7 +96,7 @@ fun AppSplashScreen(
             contentScale = ContentScale.Crop
         )
 
-        // 2. Carrossel Multinavegação Material 3 Posicionado na Parte Inferior
+        // 2. Nome do Aplicativo com o Símbolo e Carrossel Multinavegação Material 3
         AnimatedVisibility(
             visible = isVisible,
             enter = fadeIn(tween(600)) + slideInVertically(
@@ -102,30 +107,113 @@ fun AppSplashScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp)
+                .padding(bottom = 20.dp)
         ) {
             val snapBehavior = rememberSnapFlingBehavior(lazyListState = carouselListState)
 
-            LazyRow(
-                state = carouselListState,
-                flingBehavior = snapBehavior,
-                contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("species_multi_browse_carousel")
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                items(speciesList, key = { it.id }) { species ->
-                    M3CarouselCard(
-                        species = species,
-                        onClick = {
-                            if (species == AnimalSpecies.OUTROS) {
-                                showOtherSpeciesDialog = true
-                            } else {
-                                onStart(species, null)
+                // Nome do aplicativo com o símbolo posicionado em cima do menu carrossel
+                Surface(
+                    color = Color(0xFF141E15).copy(alpha = 0.88f),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.2.dp, Color(0xFF69F0AE).copy(alpha = 0.65f)),
+                    shadowElevation = 10.dp,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .fillMaxWidth()
+                        .testTag("app_brand_header_above_carousel")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF1B4D36),
+                            border = BorderStroke(1.5.dp, Color(0xFF69F0AE)),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.app_protection_icon),
+                                    contentDescription = "Símbolo do Aplicativo LEVO",
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                )
                             }
                         }
-                    )
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "LEVO",
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White,
+                                    letterSpacing = 1.2.sp
+                                )
+
+                                Surface(
+                                    color = Color(0xFF2E7D32),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "AUDITORIA • DF",
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Text(
+                                text = "Selecione a espécie para iniciar a fiscalização:",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFC8E6C9)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Menu Carrossel
+                LazyRow(
+                    state = carouselListState,
+                    flingBehavior = snapBehavior,
+                    contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("species_multi_browse_carousel")
+                ) {
+                    items(speciesList, key = { it.id }) { species ->
+                        M3CarouselCard(
+                            species = species,
+                            onClick = {
+                                if (species == AnimalSpecies.OUTROS) {
+                                    showOtherSpeciesDialog = true
+                                } else {
+                                    onStart(species, null)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

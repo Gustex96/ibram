@@ -112,11 +112,50 @@ fun HomeScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Barra de Identificação do Auditor Fiscal Ativo
+        // 1. SISTEMA DE BUSCA ACIMA DA CAIXA "IDENTIFICAÇÃO DO AUDITOR" (CONFORME SEARCH BAR.PNG)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+            )
+        ) {
+            AppOutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.searchQuery.value = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("search_field"),
+                placeholder = { Text("Buscar por RA, tutor, levantamento ou notas...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.searchQuery.value = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp)
+            )
+        }
+
+        // 2. CAIXA "IDENTIFICAÇÃO DO AUDITOR"
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .clickable { showAuditorDialog = true }
                 .testTag("home_auditor_bar"),
@@ -181,63 +220,6 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-            }
-        }
-
-        // Species Selector Tabs (Cachorro, Cavalo, Gato, Galináceos e Outros)
-        SpeciesSelectorTabs(
-            selectedSpecies = viewModel.selectedSpecies,
-            onSpeciesSelected = { species ->
-                viewModel.selectSpecies(species)
-            },
-            onCustomSpeciesNamed = { name ->
-                viewModel.setCustomSpecies(name)
-            }
-        )
-
-        // Search Bar with Anexo F guide button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppOutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.searchQuery.value = it },
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("search_field"),
-                placeholder = { Text("Buscar por RA, tutor, levantamento ou notas...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca")
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = { showInfoDialog = true },
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .testTag("button_open_anexo_f")
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_owl),
-                    contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
-                        "Menu Conhecimento - Atlas Anatômico do Cavalo, 5 Domínios e Guia Técnico"
-                    else
-                        "Menu Conhecimento - Os 5 Domínios e Guia Técnico (${viewModel.selectedSpecies.displayName})",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(26.dp)
-                )
             }
         }
 

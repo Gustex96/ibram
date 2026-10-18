@@ -1227,6 +1227,174 @@ fun NewInspectionScreen(
                                 }
                             }
 
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 4 INDICADORES OFICIAIS DO PROTOCOLO PPBEA (ANEXO D - RES. CFMV 1.236/2018)
+                            Text(
+                                text = "Os 4 Indicadores de Bem-Estar Animal (Situação Boa vs Ruim):",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                // 1. Nutricional
+                                val nutStatus = draft.ppbeaDiagnosis?.nutricionalParecer
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = when (nutStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFFE8F5E9)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFF8E1)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFFFEBEE)
+                                        null -> MaterialTheme.colorScheme.surface
+                                    },
+                                    border = BorderStroke(1.dp, when (nutStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF81C784)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFD54F)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFEF9A9A)
+                                        null -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    })
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("🥣", fontSize = 15.sp)
+                                        Text("Nutrição", fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = nutStatus?.label ?: "Pendente",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = when (nutStatus) {
+                                                com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF2E7D32)
+                                                com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFF57C00)
+                                                com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFC62828)
+                                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // 2. Conforto
+                                val confStatus = draft.ppbeaDiagnosis?.confortoParecer
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = when (confStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFFE8F5E9)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFF8E1)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFFFEBEE)
+                                        null -> MaterialTheme.colorScheme.surface
+                                    },
+                                    border = BorderStroke(1.dp, when (confStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF81C784)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFD54F)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFEF9A9A)
+                                        null -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    })
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("🏠", fontSize = 15.sp)
+                                        Text("Conforto", fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = confStatus?.label ?: "Pendente",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = when (confStatus) {
+                                                com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF2E7D32)
+                                                com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFF57C00)
+                                                com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFC62828)
+                                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // 3. Saúde
+                                val saudeStatus = draft.ppbeaDiagnosis?.saudeParecer
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = when (saudeStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFFE8F5E9)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFF8E1)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFFFEBEE)
+                                        null -> MaterialTheme.colorScheme.surface
+                                    },
+                                    border = BorderStroke(1.dp, when (saudeStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF81C784)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFD54F)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFEF9A9A)
+                                        null -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    })
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("🩺", fontSize = 15.sp)
+                                        Text("Saúde", fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = saudeStatus?.label ?: "Pendente",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = when (saudeStatus) {
+                                                com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF2E7D32)
+                                                com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFF57C00)
+                                                com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFC62828)
+                                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // 4. Comportamental
+                                val compStatus = draft.ppbeaDiagnosis?.comportamentalParecer
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = when (compStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFFE8F5E9)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFF8E1)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFFFEBEE)
+                                        null -> MaterialTheme.colorScheme.surface
+                                    },
+                                    border = BorderStroke(1.dp, when (compStatus) {
+                                        com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF81C784)
+                                        com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFFFD54F)
+                                        com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFEF9A9A)
+                                        null -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    })
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("🧠", fontSize = 15.sp)
+                                        Text("Comport.", fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = compStatus?.label ?: "Pendente",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = when (compStatus) {
+                                                com.example.data.model.ParecerDomain.ADEQUADO -> Color(0xFF2E7D32)
+                                                com.example.data.model.ParecerDomain.REGULAR -> Color(0xFFF57C00)
+                                                com.example.data.model.ParecerDomain.INADEQUADO -> Color(0xFFC62828)
+                                                null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(10.dp))
 
                             // 1. BOTÃO PRINCIPAL: Caixa de Diálogo com Botões Switch (Sim/Não) e Resultado
@@ -1887,122 +2055,22 @@ fun NewInspectionScreen(
                 }
             }
 
-            // 5. SECTION: PERÍCIA EM BEM-ESTAR ANIMAL (PPBEA – ANEXO D) & NOTAS DE CAMPO
+            // 5. SECTION: DESCRIÇÃO DETALHADA DA OCORRÊNCIA & NOTAS DE CAMPO
             SectionHeader(
-                title = "5. Perícia de Bem-Estar Animal (PPBEA) & Notas de Campo",
-                description = "Checklist pericial formal com botões switch (ANEXO D – Res. CFMV 1.236/2018) e descrição detalhada da ocorrência."
+                title = "5. Descrição Detalhada da Ocorrência & Notas de Campo",
+                description = "Descrição detalhada dos fatos observados no local da fiscalização, situação dos animais e notas periciais."
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (draft.mistreatmentIndicators.isNotEmpty())
-                        Color(0xFFFFF8F8)
-                    else if (draft.adequateIndicators.isNotEmpty())
-                        Color(0xFFF6FBF7)
-                    else
-                        MaterialTheme.colorScheme.surface
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFEF9A9A)
-                    else if (draft.adequateIndicators.isNotEmpty()) Color(0xFFA5D6A7)
-                    else MaterialTheme.colorScheme.outlineVariant
-                )
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = if (draft.mistreatmentIndicators.isNotEmpty()) Icons.Default.Warning else Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = "ANEXO D – PROTOCOLO PPBEA",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.5.sp,
-                                    color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
-                                )
-                                Text(
-                                    text = "Perícia de Bem-Estar Animal • Caixa de Diálogo c/ Switches",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Surface(
-                            color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = "${draft.mistreatmentIndicators.size} Alertas • ${draft.adequateIndicators.size} Adequados",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Botão para Abrir a Caixa de Diálogo com Botões Switch e Diagnóstico
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { showPpbeaEvaluationDialog = true },
-                            modifier = Modifier
-                                .weight(1.2f)
-                                .testTag("btn_open_ppbea_eval_dialog_sec5"),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (draft.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) Color(0xFFC62828) else Color(0xFF1B5E20),
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tune,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Avaliação PPBEA (Switches)",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = { showPpbeaDialog = true },
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("btn_open_ppbea_dialog_sec5"),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text(
-                                text = "Checklist Domínios",
-                                fontSize = 11.5.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Notas de Campo e Descrição da Imagem:",
-                        fontSize = 12.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

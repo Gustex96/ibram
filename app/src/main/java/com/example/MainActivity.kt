@@ -38,7 +38,12 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -315,135 +320,150 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             }
                         },
                         actions = {
-                            // Botão de Luz e Cor do Background (Proteção Ocular / Sensibilidade nos Olhos)
-                            IconButton(
-                                onClick = { showVisualModeDialog = true },
-                                modifier = Modifier.testTag("action_visual_mode")
+                            // TOOLBAR INTEGRADA COM AS 4 OPÇÕES (CONFORME TOOLBAR.PNG):
+                            // 1. Mudança de claridade, 2. Atualização do app, 3. Conhecimento, 4. Símbolo aviso aos auditores
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .testTag("app_toolbar_actions_container")
                             ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = when (viewModel.visualComfortMode) {
-                                        VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.primaryContainer
-                                        VisualComfortMode.EYE_CARE -> ComposeColor(0xFFE2D6BE)
-                                        VisualComfortMode.DARK -> MaterialTheme.colorScheme.surfaceVariant
-                                    },
-                                    modifier = Modifier.size(34.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        val icon = when (viewModel.visualComfortMode) {
-                                            VisualComfortMode.LIGHT -> Icons.Default.LightMode
-                                            VisualComfortMode.EYE_CARE -> Icons.Default.Visibility
-                                            VisualComfortMode.DARK -> Icons.Default.DarkMode
-                                        }
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = "Controle de Cor e Luz do Aplicativo",
-                                            tint = when (viewModel.visualComfortMode) {
-                                                VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                VisualComfortMode.EYE_CARE -> ComposeColor(0xFF4A3E26)
-                                                VisualComfortMode.DARK -> MaterialTheme.colorScheme.primary
-                                            },
-                                            modifier = Modifier.size(19.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Botão para verificar atualizações no GitHub com indicador de alerta
-                            IconButton(
-                                onClick = {
-                                    if (viewModel.availableUpdate != null) {
-                                        viewModel.openUpdateDialog()
-                                    } else {
-                                        viewModel.checkForUpdates(isManualCheck = true)
-                                    }
-                                },
-                                modifier = Modifier.testTag("action_check_updates")
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = if (viewModel.availableUpdate != null)
-                                            MaterialTheme.colorScheme.errorContainer
-                                        else
-                                            MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(34.dp)
+                                    // 1. Opção: Mudança de claridade (sensibilidade nos olhos / proteção ocular)
+                                    IconButton(
+                                        onClick = { showVisualModeDialog = true },
+                                        modifier = Modifier.testTag("action_visual_mode")
                                     ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            if (viewModel.isCheckingUpdate) {
-                                                androidx.compose.material3.CircularProgressIndicator(
-                                                    modifier = Modifier.size(16.dp),
-                                                    strokeWidth = 2.dp,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            } else {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = when (viewModel.visualComfortMode) {
+                                                VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.primaryContainer
+                                                VisualComfortMode.EYE_CARE -> ComposeColor(0xFFE2D6BE)
+                                                VisualComfortMode.DARK -> MaterialTheme.colorScheme.surfaceVariant
+                                            },
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                val icon = when (viewModel.visualComfortMode) {
+                                                    VisualComfortMode.LIGHT -> Icons.Default.LightMode
+                                                    VisualComfortMode.EYE_CARE -> Icons.Default.Visibility
+                                                    VisualComfortMode.DARK -> Icons.Default.DarkMode
+                                                }
                                                 Icon(
-                                                    imageVector = if (viewModel.availableUpdate != null)
-                                                        Icons.Default.NewReleases
-                                                    else
-                                                        Icons.Default.SystemUpdate,
-                                                    contentDescription = "Verificar Atualizações no GitHub",
-                                                    tint = if (viewModel.availableUpdate != null)
-                                                        MaterialTheme.colorScheme.error
-                                                    else
-                                                        MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    imageVector = icon,
+                                                    contentDescription = "Mudança de claridade do aplicativo",
+                                                    tint = when (viewModel.visualComfortMode) {
+                                                        VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                        VisualComfortMode.EYE_CARE -> ComposeColor(0xFF4A3E26)
+                                                        VisualComfortMode.DARK -> MaterialTheme.colorScheme.primary
+                                                    },
                                                     modifier = Modifier.size(19.dp)
                                                 )
                                             }
                                         }
                                     }
-                                    // Badge indicador de alerta se nova versão estiver disponível
-                                    if (viewModel.availableUpdate != null) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .align(Alignment.TopEnd)
-                                                .background(Color.Red, CircleShape)
-                                        )
-                                    }
-                                }
-                            }
 
-                            IconButton(
-                                onClick = { selectedTab = 4 },
-                                modifier = Modifier.testTag("action_info_dialog")
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_owl),
-                                            contentDescription = if (viewModel.selectedSpecies == AnimalSpecies.HORSE)
-                                                "Menu Conhecimento - Atlas Anatômico do Cavalo, 5 Domínios e Guia Técnico"
-                                            else
-                                                "Menu Conhecimento - Os 5 Domínios e Guia Técnico (${viewModel.selectedSpecies.displayName})",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                    // 2. Opção: Atualização do app
+                                    IconButton(
+                                        onClick = {
+                                            if (viewModel.availableUpdate != null) {
+                                                viewModel.openUpdateDialog()
+                                            } else {
+                                                viewModel.checkForUpdates(isManualCheck = true)
+                                            }
+                                        },
+                                        modifier = Modifier.testTag("action_check_updates")
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = if (viewModel.availableUpdate != null)
+                                                    MaterialTheme.colorScheme.errorContainer
+                                                else
+                                                    MaterialTheme.colorScheme.primaryContainer,
+                                                modifier = Modifier.size(34.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    if (viewModel.isCheckingUpdate) {
+                                                        androidx.compose.material3.CircularProgressIndicator(
+                                                            modifier = Modifier.size(16.dp),
+                                                            strokeWidth = 2.dp,
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    } else {
+                                                        Icon(
+                                                            imageVector = if (viewModel.availableUpdate != null)
+                                                                Icons.Default.NewReleases
+                                                            else
+                                                                Icons.Default.SystemUpdate,
+                                                            contentDescription = "Atualização do app",
+                                                            tint = if (viewModel.availableUpdate != null)
+                                                                MaterialTheme.colorScheme.error
+                                                            else
+                                                                MaterialTheme.colorScheme.onPrimaryContainer,
+                                                            modifier = Modifier.size(19.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            // Badge indicador de alerta se nova versão estiver disponível
+                                            if (viewModel.availableUpdate != null) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .align(Alignment.TopEnd)
+                                                        .background(Color.Red, CircleShape)
+                                                )
+                                            }
+                                        }
                                     }
-                                }
-                            }
 
-                            // Botão do Aviso Institucional DIFIS-IV / IBRAM
-                            IconButton(
-                                onClick = { showInstitutionalNoticeDialog = true },
-                                modifier = Modifier.testTag("action_institutional_notice")
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.Shield,
-                                            contentDescription = "Aviso Institucional DIFIS-IV • IBRAM",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(19.dp)
-                                        )
+                                    // 3. Opção: Conhecimento
+                                    IconButton(
+                                        onClick = { selectedTab = 4 },
+                                        modifier = Modifier.testTag("action_info_dialog")
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.ic_owl),
+                                                    contentDescription = "Menu Conhecimento - Protocolos e Guias Técnicos",
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // 4. Opção: Símbolo aviso aos auditores
+                                    IconButton(
+                                        onClick = { showInstitutionalNoticeDialog = true },
+                                        modifier = Modifier.testTag("action_institutional_notice")
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Shield,
+                                                    contentDescription = "Símbolo aviso aos auditores - Aviso Institucional DIFIS-IV • IBRAM",
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(19.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -527,6 +547,88 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                 onOpenDialog = { viewModel.openUpdateDialog() },
                                 onDismissBanner = { viewModel.dismissUpdateBanner() }
                             )
+                        }
+                    }
+
+                    // BARRA NO TOPO EM TODAS AS ABAS: "Trocar Espécie" levando de volta para o menu carrossel
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .testTag("top_species_bar"),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                val speciesIcon = when (viewModel.selectedSpecies) {
+                                    AnimalSpecies.HORSE -> "🐴"
+                                    AnimalSpecies.DOG -> "🐕"
+                                    AnimalSpecies.CAT -> "🐈"
+                                    AnimalSpecies.POULTRY -> "🐔"
+                                    AnimalSpecies.OUTROS -> "🐾"
+                                }
+                                Text(text = speciesIcon, fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Espécie: ",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        val customName = viewModel.customSpeciesName
+                                        Text(
+                                            text = if (viewModel.selectedSpecies == AnimalSpecies.OUTROS && !customName.isNullOrBlank())
+                                                customName
+                                            else
+                                                viewModel.selectedSpecies.displayName,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Text(
+                                        text = "Fiscalização ativa em campo",
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Botão no topo em todas as abas: "Trocar Espécie" levando ao menu carrossel
+                            Button(
+                                onClick = { showSplashScreen = true },
+                                modifier = Modifier.testTag("btn_top_switch_species"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Trocar Espécie",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 

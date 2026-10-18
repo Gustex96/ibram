@@ -57,8 +57,21 @@ data class HorseInspection(
     val auditorName: String = "",
     // Equipe responsável pela diligência
     val inspectionTeam: String = "Equipe de Apoio em Fiscalização",
+    // Respostas serializadas dos critérios do Protocolo PPBEA (chave:booleano separadas por ;;)
+    val ppbeaAnswersData: String = "",
     val createdAt: Long = System.currentTimeMillis(),
 ) {
+    val ppbeaAnswersMap: Map<String, Boolean>
+        get() = PpbeaCriteriaRepository.reconstructAnswers(ppbeaAnswersData, mistreatmentList, adequateList)
+
+    val ppbeaDiagnosis: PpbeaDiagnosis?
+        get() {
+            val map = ppbeaAnswersMap
+            return if (map.isNotEmpty()) {
+                PpbeaCriteriaRepository.evaluate(map)
+            } else null
+        }
+
     val isDog: Boolean
         get() = species.equals("Cachorro", ignoreCase = true) || species.equals("dog", ignoreCase = true)
 

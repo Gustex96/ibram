@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -68,9 +71,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.DfConstants
+import com.example.data.model.EnquadramentoMausTratos
 import com.example.data.model.HorseInspection
+import com.example.data.model.ParecerDomain
+import com.example.data.model.PpbeaCriteriaRepository
+import com.example.data.model.PpbeaDiagnosis
 import com.example.data.model.TutorEntry
 import com.example.ui.components.MistreatmentChecklistView
+import com.example.ui.components.PpbeaEvaluationDialog
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
 
@@ -101,7 +109,8 @@ fun EditInspectionDialog(
         tutorName: String,
         tutorCpf: String,
         additionalTutors: String,
-        auditorName: String
+        auditorName: String,
+        ppbeaAnswersData: String
     ) -> Unit
 ) {
     var auditorName by remember { mutableStateOf(inspection.auditorName) }
@@ -126,6 +135,20 @@ fun EditInspectionDialog(
     var safetyRiskAssessment by remember { mutableStateOf(inspection.safetyRiskAssessment) }
     val context = LocalContext.current
     val isDog = inspection.isDog
+
+    // Estados para o Protocolo de Perícia em Bem-Estar Animal (PPBEA – Anexo D / Res. CFMV 1.236/2018)
+    var ppbeaAnswers by remember {
+        mutableStateOf(inspection.ppbeaAnswersMap)
+    }
+    var ppbeaDiagnosis by remember {
+        mutableStateOf(
+            if (inspection.ppbeaAnswersMap.isNotEmpty()) {
+                PpbeaCriteriaRepository.evaluate(inspection.ppbeaAnswersMap)
+            } else null
+        )
+    }
+    var showPpbeaEvaluationDialog by remember { mutableStateOf(false) }
+
     var tutorsList by remember {
         mutableStateOf(
             if (inspection.allTutors.isNotEmpty()) inspection.allTutors
@@ -598,6 +621,165 @@ fun EditInspectionDialog(
                                     onClearAllAdequate = { adequateIndicators = emptyList() },
                                     species = inspection.species,
                                     initialTab = if (mistreatedHorseCount > 0) 0 else 1
+                                )
+                            }
+                        }
+                    }
+
+                    // PROTOCOLO DE PERÍCIA EM BEM-ESTAR ANIMAL (PPBEA – ANEXO D / RES. CFMV Nº 1.236/2018)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF1F8F5)
+                        ),
+                        border = BorderStroke(1.2.dp, Color(0xFF2E7D32).copy(alpha = 0.5f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Assignment,
+                                        contentDescription = null,
+                                        tint = Color(0xFF1B5E20),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Protocolo PPBEA (4 Indicadores & Critérios)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Permite revisar e corrigir qualquer critério marcado incorretamente pelo fiscal nos 4 indicadores (Nutricional, Conforto, Saúde e Comportamental), corrigindo equívocos de campo.",
+                                fontSize = 11.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 15.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Grid com os 4 Indicadores Oficiais
+                            val nutStatus = ppbeaDiagnosis?.nutricionalParecer ?: ParecerDomain.ADEQUADO
+                            val confStatus = ppbeaDiagnosis?.confortoParecer ?: ParecerDomain.ADEQUADO
+                            val saudeStatus = ppbeaDiagnosis?.saudeParecer ?: ParecerDomain.ADEQUADO
+                            val compStatus = ppbeaDiagnosis?.comportamentalParecer ?: ParecerDomain.ADEQUADO
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                // Nutricional
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(nutStatus.colorHex).copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, Color(nutStatus.colorHex).copy(alpha = 0.6f))
+                                ) {
+                                    Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("🥕 Nutrição", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(nutStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(nutStatus.colorHex))
+                                    }
+                                }
+
+                                // Conforto
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(confStatus.colorHex).copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, Color(confStatus.colorHex).copy(alpha = 0.6f))
+                                ) {
+                                    Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("🏠 Conforto", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(confStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(confStatus.colorHex))
+                                    }
+                                }
+
+                                // Saúde
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(saudeStatus.colorHex).copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, Color(saudeStatus.colorHex).copy(alpha = 0.6f))
+                                ) {
+                                    Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("🩺 Saúde", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(saudeStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(saudeStatus.colorHex))
+                                    }
+                                }
+
+                                // Comportamental
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(compStatus.colorHex).copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, Color(compStatus.colorHex).copy(alpha = 0.6f))
+                                ) {
+                                    Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("🧠 Comport.", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(compStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(compStatus.colorHex))
+                                    }
+                                }
+                            }
+
+                            if (ppbeaDiagnosis != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(ppbeaDiagnosis!!.grauBemEstar.colorHex).copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, Color(ppbeaDiagnosis!!.grauBemEstar.colorHex).copy(alpha = 0.5f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Grau de Bem-Estar: ${ppbeaDiagnosis!!.grauBemEstar.label.uppercase()}",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(ppbeaDiagnosis!!.grauBemEstar.colorHex)
+                                        )
+                                        Text(
+                                            text = if (ppbeaDiagnosis!!.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) "⚠️ Configura Maus-Tratos"
+                                            else if (ppbeaDiagnosis!!.ocorrenciaMausTratos == EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO) "📋 Recomendações c/ Retorno"
+                                            else "✅ Não Configura",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(ppbeaDiagnosis!!.grauBemEstar.colorHex)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Botão para abrir o diálogo de edição do protocolo PPBEA com switches Sim/Não
+                            Button(
+                                onClick = { showPpbeaEvaluationDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF1B5E20)
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(vertical = 10.dp)
+                            ) {
+                                Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Editar Protocolo PPBEA (Corrigir Critérios/Switches)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp
                                 )
                             }
                         }
@@ -1091,7 +1273,15 @@ fun EditInspectionDialog(
                             val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
                             val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
                             val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
-                            onSave(notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, alertIndicatorsToSave, adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, prim.name, prim.cpf, add, auditorName)
+                            val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(ppbeaAnswers)
+                            onSave(
+                                notes, ra, quadra, conjunto, numero, horseDescription,
+                                horseCount, mistreatedHorseCount, alertIndicatorsToSave,
+                                adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
+                                requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
+                                otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
+                                prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave
+                            )
                         },
                         modifier = Modifier.weight(1.3f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -1104,6 +1294,46 @@ fun EditInspectionDialog(
                 }
             }
         }
+    }
+
+    if (showPpbeaEvaluationDialog) {
+        PpbeaEvaluationDialog(
+            initialDiagnosis = ppbeaDiagnosis,
+            onDismiss = { showPpbeaEvaluationDialog = false },
+            onSaveDiagnosis = { diagnosis ->
+                ppbeaDiagnosis = diagnosis
+                ppbeaAnswers = diagnosis.answersMap
+
+                val newMistreatments = mistreatmentIndicators.toMutableList()
+                val newAdequates = adequateIndicators.toMutableList()
+
+                diagnosis.answersMap.forEach { (criterionId, isYes) ->
+                    val criterion = PpbeaCriteriaRepository.criteria.find { it.id == criterionId }
+                    if (criterion != null) {
+                        val isRuim = if (criterion.simIsRuim) isYes else !isYes
+                        val tag = "[${criterion.domain.title}] ${criterion.question.replace("?", "")}"
+                        if (isRuim) {
+                            if (!newMistreatments.contains(tag)) newMistreatments.add(tag)
+                            newAdequates.remove(tag)
+                        } else {
+                            if (!newAdequates.contains(tag)) newAdequates.add(tag)
+                            newMistreatments.remove(tag)
+                        }
+                    }
+                }
+
+                mistreatmentIndicators = newMistreatments
+                adequateIndicators = newAdequates
+
+                if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS && mistreatedHorseCount == 0) {
+                    mistreatedHorseCount = horseCount
+                } else if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS && newMistreatments.isEmpty()) {
+                    mistreatedHorseCount = 0
+                }
+
+                showPpbeaEvaluationDialog = false
+            }
+        )
     }
 
     if (showRaSelector) {

@@ -808,6 +808,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     riskJustification = justification,
                     safetyRiskAssessment = safetyAssessment,
                     imageNotes = current.imageNotes,
+                    ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
                     tutorName = primTutor.name,
                     tutorCpf = primTutor.cpf,
                     additionalTutors = addTutors
@@ -908,6 +909,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         riskJustification = justification,
                         safetyRiskAssessment = safetyAssessment,
                         imageNotes = current.imageNotes,
+                        ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
                         tutorName = primTutor.name,
                         tutorCpf = primTutor.cpf,
                         additionalTutors = addTutors
@@ -952,6 +954,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newTutorName: String,
         newTutorCpf: String,
         newAdditionalTutors: String = original.additionalTutors,
+        newPpbeaAnswersData: String = original.ppbeaAnswersData,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
@@ -987,7 +990,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 safetyRiskAssessment = safetyAssessment,
                 tutorName = newTutorName,
                 tutorCpf = CpfValidator.format(newTutorCpf),
-                additionalTutors = newAdditionalTutors
+                additionalTutors = newAdditionalTutors,
+                ppbeaAnswersData = newPpbeaAnswersData
             )
 
             repository.updateInspection(updated)
