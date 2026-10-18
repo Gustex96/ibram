@@ -562,18 +562,34 @@ private fun PpbeaSwitchItemCard(
                 )
             }
 
-            // BOTÃO SWITCH CONFORME SOLICITADO PELO AUDITOR
-            Switch(
-                checked = isChecked,
-                onCheckedChange = { onToggle() },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = if (isMistreatment) Color(0xFFC62828) else Color(0xFF2E7D32),
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                modifier = Modifier.testTag("switch_toggle_${text.hashCode()}")
-            )
+            // BOTÃO SWITCH CONFORME SOLICITADO PELO AUDITOR COM RÓTULOS SIM E NÃO
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 4.dp)
+            ) {
+                Text(
+                    text = if (isChecked) "SIM" else "NÃO",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isChecked) {
+                        if (isMistreatment) Color(0xFFC62828) else Color(0xFF2E7D32)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Switch(
+                    checked = isChecked,
+                    onCheckedChange = { onToggle() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = if (isMistreatment) Color(0xFFC62828) else Color(0xFF2E7D32),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.testTag("switch_toggle_${text.hashCode()}")
+                )
+            }
         }
     }
 }

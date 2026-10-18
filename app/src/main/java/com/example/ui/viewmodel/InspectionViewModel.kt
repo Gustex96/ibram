@@ -70,6 +70,7 @@ data class InspectionDraftState(
     val isWatermarking: Boolean = false,
     val isSaving: Boolean = false,
     val protocolNumber: String = generateProtocol(),
+    val ppbeaDiagnosis: com.example.data.model.PpbeaDiagnosis? = null,
 ) {
     val isDog: Boolean
         get() = DfConstants.isDogSpecies(species)
@@ -589,6 +590,44 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun clearAllAdequateIndicators() {
         draft.value = draft.value.copy(adequateIndicators = emptyList())
+    }
+
+    fun setPpbeaDiagnosis(diagnosis: com.example.data.model.PpbeaDiagnosis) {
+        val newMistreatments = draft.value.mistreatmentIndicators.toMutableList()
+        val newAdequates = draft.value.adequateIndicators.toMutableList()
+
+        // Sincroniza indicadores derivados dos critérios respondidos no ANEXO D
+        diagnosis.answersMap.forEach { (criterionId, isYes) ->
+            val criterion = com.example.data.model.PpbeaCriteriaRepository.criteria.find { it.id == criterionId }
+            if (criterion != null) {
+                val isRuim = if (criterion.simIsRuim) isYes else !isYes
+                val tag = "[${criterion.domain.title}] ${criterion.question.replace("?", "")}"
+                if (isRuim) {
+                    if (!newMistreatments.contains(tag)) newMistreatments.add(tag)
+                    newAdequates.remove(tag)
+                } else {
+                    if (!newAdequates.contains(tag)) newAdequates.add(tag)
+                    newMistreatments.remove(tag)
+                }
+            }
+        }
+
+        val updatedMistreatedCount = if (diagnosis.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS && draft.value.mistreatedHorseCount == 0) {
+            draft.value.horseCount
+        } else {
+            draft.value.mistreatedHorseCount
+        }
+
+        draft.value = draft.value.copy(
+            ppbeaDiagnosis = diagnosis,
+            mistreatmentIndicators = newMistreatments,
+            adequateIndicators = newAdequates,
+            mistreatedHorseCount = updatedMistreatedCount
+        )
+    }
+
+    fun clearPpbeaDiagnosis() {
+        draft.value = draft.value.copy(ppbeaDiagnosis = null)
     }
 
     fun updateRequiresSeagriApprehension(required: Boolean) {

@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
@@ -140,6 +141,7 @@ fun NewInspectionScreen(
     var showLiveCamera by rememberSaveable { mutableStateOf(false) }
     var showAnatomyDialog by rememberSaveable { mutableStateOf(false) }
     var showPpbeaDialog by rememberSaveable { mutableStateOf(false) }
+    var showPpbeaEvaluationDialog by rememberSaveable { mutableStateOf(false) }
 
     BackHandler {
         onNavigateBack()
@@ -1227,15 +1229,15 @@ fun NewInspectionScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Botão para Abrir a Caixa de Diálogo com Botões Switch
+                            // 1. BOTÃO PRINCIPAL: Caixa de Diálogo com Botões Switch (Sim/Não) e Resultado
                             Button(
-                                onClick = { showPpbeaDialog = true },
+                                onClick = { showPpbeaEvaluationDialog = true },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .testTag("btn_open_ppbea_dialog"),
+                                    .testTag("btn_open_ppbea_evaluation_dialog"),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                    containerColor = if (draft.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) Color(0xFFC62828) else Color(0xFF1B5E20),
                                     contentColor = Color.White
                                 )
                             ) {
@@ -1246,9 +1248,109 @@ fun NewInspectionScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Abrir Checklist PPBEA (Caixa de Diálogo c/ Switches)",
+                                    text = if (draft.ppbeaDiagnosis != null) "Editar Avaliação & Diagnóstico (ANEXO D)" else "Abrir Avaliação PPBEA (Switches Sim/Não)",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // 2. Card de Diagnóstico Geral Realizado Conforme image.png
+                            if (draft.ppbeaDiagnosis != null) {
+                                val diag = draft.ppbeaDiagnosis!!
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = when (diag.grauBemEstar) {
+                                        com.example.data.model.GrauBemEstar.MUITO_BAIXO, com.example.data.model.GrauBemEstar.BAIXO -> Color(0xFFFFEBEE)
+                                        com.example.data.model.GrauBemEstar.REGULAR -> Color(0xFFFFF8E1)
+                                        com.example.data.model.GrauBemEstar.ALTO, com.example.data.model.GrauBemEstar.MUITO_ALTO -> Color(0xFFE8F5E9)
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.2.dp, Color(diag.grauBemEstar.colorHex)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("card_ppbea_diagnosis_summary")
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(text = "⚖️", fontSize = 14.sp)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = "Diagnóstico: ${diag.grauBemEstar.label.uppercase()}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color(diag.grauBemEstar.colorHex)
+                                                )
+                                            }
+
+                                            Surface(
+                                                color = if (diag.gerouBoletimOcorrencia) Color(0xFFFFCDD2) else Color(0xFFC8E6C9),
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (diag.gerouBoletimOcorrencia) "BO POLICIAL" else "SEM BO",
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (diag.gerouBoletimOcorrencia) Color(0xFFB71C1C) else Color(0xFF1B5E20),
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = diag.ocorrenciaMausTratos.label,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(diag.ocorrenciaMausTratos.colorHex)
+                                        )
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Pareceres: Nutrição [${diag.nutricionalParecer.label}] • Conforto [${diag.confortoParecer.label}] • Saúde [${diag.saudeParecer.label}] • Comportamento [${diag.comportamentalParecer.label}]",
+                                            fontSize = 10.5.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            TextButton(
+                                                onClick = { viewModel.clearPpbeaDiagnosis() },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                            ) {
+                                                Text("Limpar Diagnóstico", fontSize = 11.sp, color = Color(0xFFC62828))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // 3. Botão Secundário: Checklist Rápido de Indicadores
+                            OutlinedButton(
+                                onClick = { showPpbeaDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("btn_open_ppbea_dialog"),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Filtrar por Domínio (Checklist Rápido)",
+                                    fontSize = 11.5.sp
                                 )
                             }
 
@@ -1854,28 +1956,47 @@ fun NewInspectionScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Button(
-                        onClick = { showPpbeaDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("btn_open_ppbea_dialog_sec5"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
-                            contentColor = Color.White
-                        )
+                    // Botão para Abrir a Caixa de Diálogo com Botões Switch e Diagnóstico
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Abrir Checklist PPBEA (Caixa de Diálogo c/ Switches)",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Button(
+                            onClick = { showPpbeaEvaluationDialog = true },
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .testTag("btn_open_ppbea_eval_dialog_sec5"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (draft.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) Color(0xFFC62828) else Color(0xFF1B5E20),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Avaliação PPBEA (Switches)",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showPpbeaDialog = true },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("btn_open_ppbea_dialog_sec5"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text(
+                                text = "Checklist Domínios",
+                                fontSize = 11.5.sp
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -2160,6 +2281,18 @@ fun NewInspectionScreen(
             },
             onDismiss = { showPpbeaDialog = false },
             onConfirm = { showPpbeaDialog = false }
+        )
+    }
+
+    // CAIXA DE DIÁLOGO DE AVALIAÇÃO PPBEA COM SWITCHES SIM/NÃO, RESULTADO E DIAGNÓSTICO GERAL (IMAGE.PNG)
+    if (showPpbeaEvaluationDialog) {
+        com.example.ui.components.PpbeaEvaluationDialog(
+            initialDiagnosis = draft.ppbeaDiagnosis,
+            onDismiss = { showPpbeaEvaluationDialog = false },
+            onSaveDiagnosis = { diagnosis ->
+                viewModel.setPpbeaDiagnosis(diagnosis)
+                showPpbeaEvaluationDialog = false
+            }
         )
     }
 
