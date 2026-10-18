@@ -138,11 +138,28 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         draft.value = draft.value.copy(auditorName = clean)
     }
 
+    var customSpeciesName by mutableStateOf<String?>(null)
+        private set
+
     fun selectSpecies(species: AnimalSpecies) {
         selectedSpecies = species
-        selectedSpeciesFilter.value = species.displayName
+        if (species != AnimalSpecies.OUTROS) {
+            customSpeciesName = null
+        }
+        val targetName = customSpeciesName ?: species.displayName
+        selectedSpeciesFilter.value = targetName
         if (draft.value.allPhotoPaths.isEmpty()) {
-            draft.value = draft.value.copy(species = species.displayName)
+            draft.value = draft.value.copy(species = targetName)
+        }
+    }
+
+    fun setCustomSpecies(name: String) {
+        val clean = name.trim()
+        if (clean.isNotBlank()) {
+            customSpeciesName = clean
+            selectedSpecies = AnimalSpecies.OUTROS
+            selectedSpeciesFilter.value = clean
+            draft.value = draft.value.copy(species = clean)
         }
     }
 
@@ -564,6 +581,14 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setAdequateIndicators(indicators: List<String>) {
         draft.value = draft.value.copy(adequateIndicators = indicators)
+    }
+
+    fun clearAllMistreatmentAlerts() {
+        draft.value = draft.value.copy(mistreatmentIndicators = emptyList())
+    }
+
+    fun clearAllAdequateIndicators() {
+        draft.value = draft.value.copy(adequateIndicators = emptyList())
     }
 
     fun updateRequiresSeagriApprehension(required: Boolean) {

@@ -96,8 +96,13 @@ fun StatisticsScreen(
 
     val filteredInspections = remember(allInspections, species, selectedPeriodFilter) {
         val speciesFiltered = when (species) {
-            AnimalSpecies.HORSE -> allInspections.filter { !it.isDog }
+            AnimalSpecies.HORSE -> allInspections.filter { !it.isDog && (it.species.isBlank() || it.species.equals("Cavalo", ignoreCase = true) || it.species.equals("horse", ignoreCase = true)) }
             AnimalSpecies.DOG -> allInspections.filter { it.isDog }
+            AnimalSpecies.CAT -> allInspections.filter { it.species.equals("Gato", ignoreCase = true) || it.species.equals("cat", ignoreCase = true) }
+            AnimalSpecies.POULTRY -> allInspections.filter { it.species.equals("Galináceos", ignoreCase = true) || it.species.equals("poultry", ignoreCase = true) }
+            AnimalSpecies.OUTROS -> allInspections.filter {
+                !it.isDog && !it.species.equals("Cavalo", ignoreCase = true) && !it.species.equals("Gato", ignoreCase = true) && !it.species.equals("Galináceos", ignoreCase = true)
+            }
         }
 
         val now = System.currentTimeMillis()

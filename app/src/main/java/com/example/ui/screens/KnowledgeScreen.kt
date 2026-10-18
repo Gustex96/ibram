@@ -137,27 +137,53 @@ fun KnowledgeScreen(
                     )
                 }
 
-                if (isHorse && selectedTab == 1) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Botão para abrir o Manual Oficial do CRMV-MS (ANEXO D - PPBEA)
                     IconButton(
                         onClick = {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
+                                val manualUrl = "https://crmvms.org.br/wp-content/uploads/2022/08/MANUAL-DE-VERIFICACAO-INICIAL-DE-MAUS-TRATOS-A-CAES-E-GATOS.pdf"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(manualUrl)).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 context.startActivity(intent)
                             } catch (_: Exception) {
-                                Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Não foi possível abrir o link do Manual.", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier
                             .size(36.dp)
-                            .testTag("knowledge_open_pdf_atlas")
+                            .testTag("knowledge_open_pdf_manual")
                     ) {
                         Icon(
                             imageVector = Icons.Default.OpenInNew,
-                            contentDescription = "Abrir Atlas em PDF",
+                            contentDescription = "Abrir Manual de Verificação PPBEA (PDF)",
                             tint = MaterialTheme.colorScheme.primary
                         )
+                    }
+
+                    if (isHorse && selectedTab == 1) {
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("knowledge_open_pdf_atlas")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Abrir Atlas em PDF",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }

@@ -26,6 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,15 +52,27 @@ enum class AnimalSpecies(
     val displayName: String,
     val subtitle: String,
     @DrawableRes val iconRes: Int,
+    @DrawableRes val realImageRes: Int,
     val emoji: String,
     val isCurrentlyActive: Boolean,
     val badgeText: String?
 ) {
+    CAT(
+        id = "cat",
+        displayName = "Gato",
+        subtitle = "Felinos e felídeos",
+        iconRes = R.drawable.ic_species_cat,
+        realImageRes = R.drawable.real_species_cat,
+        emoji = "🐱",
+        isCurrentlyActive = true,
+        badgeText = "Ativo"
+    ),
     DOG(
         id = "dog",
         displayName = "Cachorro",
         subtitle = "Cães e caninos",
         iconRes = R.drawable.ic_species_dog,
+        realImageRes = R.drawable.real_species_dog,
         emoji = "🐕",
         isCurrentlyActive = true,
         badgeText = "Ativo"
@@ -66,9 +82,30 @@ enum class AnimalSpecies(
         displayName = "Cavalo",
         subtitle = "Equinos & Carroças",
         iconRes = R.drawable.ic_species_horse,
+        realImageRes = R.drawable.real_species_horse,
         emoji = "🐎",
         isCurrentlyActive = true,
         badgeText = "Ativo"
+    ),
+    POULTRY(
+        id = "poultry",
+        displayName = "Galináceos",
+        subtitle = "Aves, Galos & Galinhas",
+        iconRes = R.drawable.ic_species_rooster,
+        realImageRes = R.drawable.real_species_rooster,
+        emoji = "🐓",
+        isCurrentlyActive = true,
+        badgeText = "Ativo"
+    ),
+    OUTROS(
+        id = "others",
+        displayName = "Outros",
+        subtitle = "Espécies Diversas",
+        iconRes = R.drawable.app_protection_icon,
+        realImageRes = R.drawable.real_species_others,
+        emoji = "🐾",
+        isCurrentlyActive = true,
+        badgeText = "Personalizar"
     )
 }
 
@@ -80,8 +117,11 @@ enum class AnimalSpecies(
 fun SpeciesSelectorTabs(
     selectedSpecies: AnimalSpecies,
     onSpeciesSelected: (AnimalSpecies) -> Unit,
+    onCustomSpeciesNamed: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    var showCustomDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -117,25 +157,41 @@ fun SpeciesSelectorTabs(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Barra com os cards das espécies (Cachorro e Cavalo)
-        Row(
+        // Barra com os cards de todas as espécies disponíveis
+        androidx.compose.foundation.lazy.LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AnimalSpecies.entries.forEach { species ->
+            items(AnimalSpecies.entries.size) { index ->
+                val species = AnimalSpecies.entries[index]
                 val isSelected = species == selectedSpecies
 
                 SpeciesCard(
                     species = species,
                     isSelected = isSelected,
                     onClick = {
-                        onSpeciesSelected(species)
+                        if (species == AnimalSpecies.OUTROS) {
+                            showCustomDialog = true
+                        } else {
+                            onSpeciesSelected(species)
+                        }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.width(96.dp)
                 )
             }
         }
+    }
+
+    if (showCustomDialog) {
+        FloatingOtherSpeciesDialog(
+            onDismiss = { showCustomDialog = false },
+            onConfirm = { typedName ->
+                onCustomSpeciesNamed?.invoke(typedName)
+                onSpeciesSelected(AnimalSpecies.OUTROS)
+                showCustomDialog = false
+            }
+        )
     }
 }
 

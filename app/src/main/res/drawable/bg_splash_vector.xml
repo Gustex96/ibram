@@ -1,215 +1,206 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="360dp"
-    android:height="640dp"
+    android:height="740dp"
     android:viewportWidth="360"
-    android:viewportHeight="640">
+    android:viewportHeight="740">
 
-    <!-- Fundo do Céu - Tons Suaves e Ecológicos do Cerrado de Brasília -->
+    <!-- 1. CÉU EM TOM BEGE / AREIA MATUTINO DO CERRADO (LEVO) -->
     <path
-        android:fillColor="#EAF5F1"
-        android:pathData="M0,0h360v640h-360z" />
+        android:fillColor="#ECE8DC"
+        android:pathData="M0,0h360v740h-360z" />
 
-    <!-- Gradiente Suave de Céu Matutino -->
+    <!-- Traços Sutis de Nuvens / Brisa do Cerrado -->
     <path
-        android:fillColor="#F6FBF7"
-        android:pathData="M0,0h360v220h-360z" />
+        android:strokeColor="#DFD8C8"
+        android:strokeWidth="1.5"
+        android:pathData="M20,235 C50,233 75,236 100,235" />
     <path
-        android:fillColor="#FFFDE7"
-        android:pathData="M0,180 C80,170 280,170 360,180 L360,320 L0,320 Z"
-        android:alpha="0.75" />
+        android:strokeColor="#DFD8C8"
+        android:strokeWidth="1.2"
+        android:pathData="M280,265 C305,263 325,265 345,264" />
 
-    <!-- Sol Radiante do Alvorecer do Planalto Central -->
+    <!-- 2. SOL DOURADO RADIANTE DO PLANALTO -->
     <path
-        android:fillColor="#FFE082"
-        android:alpha="0.30"
-        android:pathData="M180,210m-80,0a80,80 0,1,0 160,0a80,80 0,1,0 -160,0" />
-    <path
-        android:fillColor="#FFF59D"
-        android:alpha="0.55"
-        android:pathData="M180,210m-60,0a60,60 0,1,0 120,0a60,60 0,1,0 -120,0" />
-    <path
-        android:fillColor="#FFE082"
-        android:alpha="0.85"
-        android:pathData="M180,210m-42,0a42,42 0,1,0 84,0a42,42 0,1,0 -84,0" />
+        android:fillColor="#EDB847"
+        android:pathData="M265,250m-28,0a28,28 0,1,0 56,0a28,28 0,1,0 -56,0" />
 
-    <!-- Pássaros Voando no Horizonte do Cerrado -->
+    <!-- 3. PÁSSAROS LIVRES NO HORIZONTE -->
     <path
-        android:fillColor="#2E7D32"
-        android:alpha="0.55"
-        android:pathData="M70,120 C76,114 83,114 88,120 C93,114 100,114 106,120 C99,122 93,118 88,121 C83,118 77,122 70,120 Z" />
+        android:strokeColor="#4A5844"
+        android:strokeWidth="1.8"
+        android:pathData="M175,262 C178,258 181,258 184,262 C187,258 190,258 193,262" />
     <path
-        android:fillColor="#2E7D32"
-        android:alpha="0.45"
-        android:pathData="M230,105 C235,100 241,100 245,105 C249,100 255,100 260,105 C254,107 249,103 245,106 C241,103 236,107 230,105 Z" />
-    <path
-        android:fillColor="#2E7D32"
-        android:alpha="0.35"
-        android:pathData="M255,122 C259,118 264,118 267,122 C270,118 275,118 279,122 C274,124 270,120 267,123 C264,120 260,124 255,122 Z" />
+        android:strokeColor="#4A5844"
+        android:strokeWidth="1.6"
+        android:pathData="M196,256 C199,253 202,253 205,256 C208,253 211,253 214,256" />
 
-    <!-- Cordilheira / Chapada Distante do DF (Verde Suave Menta) -->
+    <!-- 4. SERRAS E CHAPADAS AO LONGE (TONS SAGE / VERDE NÉVOA) -->
     <path
-        android:fillColor="#A5D6A7"
-        android:alpha="0.75"
-        android:pathData="M0,320 C50,305 110,310 170,295 C230,280 290,295 360,305 L360,640 L0,640 Z" />
+        android:fillColor="#9CB49F"
+        android:pathData="M0,320 C60,305 130,312 200,298 C260,285 315,302 360,312 L360,740 L0,740 Z" />
+    <path
+        android:fillColor="#7B9980"
+        android:pathData="M0,345 C70,332 150,338 220,324 C280,312 325,326 360,336 L360,740 L0,740 Z" />
+    <path
+        android:fillColor="#5C7C63"
+        android:pathData="M0,372 C80,358 160,366 240,350 C290,340 330,352 360,360 L360,740 L0,740 Z" />
 
-    <!-- Silhuetas de Vegetação e Árvores Nativas Distantes -->
+    <!-- 5. PLATÔS DE TERRA EM TONS TERRACOTA E ARGILA DO CERRADO -->
     <path
-        android:fillColor="#388E3C"
-        android:alpha="0.65"
-        android:pathData="M38,308 C40,295 35,285 40,272 C48,272 55,290 52,308 Z" />
+        android:fillColor="#D18351"
+        android:pathData="M0,400 C90,388 180,396 270,382 C315,375 342,382 360,388 L360,740 L0,740 Z" />
     <path
-        android:fillColor="#43A047"
-        android:alpha="0.65"
-        android:pathData="M43,275m-10,0a10,10 0,1,0 20,0a10,10 0,1,0 -20,0" />
-    <path
-        android:fillColor="#4CAF50"
-        android:alpha="0.65"
-        android:pathData="M50,270m-8,0a8,8 0,1,0 16,0a8,8 0,1,0 -16,0" />
+        android:fillColor="#C67442"
+        android:pathData="M0,432 C80,418 170,426 260,408 C310,398 340,404 360,410 L360,740 L0,740 Z" />
 
-    <!-- Colina Intermediária do Planalto (Verde Esmeralda Vivo) -->
+    <!-- 6. ESTRADA / CAMINHO DE TERRA SINUOSO QUE CORTA O CERRADO -->
     <path
-        android:fillColor="#66BB6A"
-        android:pathData="M0,370 C70,350 150,362 230,345 C290,332 330,340 360,350 L360,640 L0,640 Z" />
+        android:fillColor="#DFA869"
+        android:pathData="M230,395 C200,415 160,435 155,455 C150,470 170,480 230,482 C210,482 175,475 178,460 C182,442 215,420 238,400 Z" />
 
-    <!-- Tronco e Copa de Árvore Típica do Cerrado à Direita -->
+    <!-- Palmeiras Buriti Distantes à Direita -->
     <path
-        android:fillColor="#3E2723"
-        android:alpha="0.85"
-        android:pathData="M312,355 C310,325 302,310 296,285 C304,285 316,315 320,355 Z" />
+        android:strokeColor="#2E4A35"
+        android:strokeWidth="2.5"
+        android:pathData="M335,395 L335,355" />
     <path
-        android:fillColor="#2E7D32"
-        android:pathData="M294,282m-18,0a18,18 0,1,0 36,0a18,18 0,1,0 -36,0" />
+        android:fillColor="#2E4A35"
+        android:pathData="M335,355 C320,348 310,352 305,358 C315,354 326,353 335,355 Z" />
     <path
-        android:fillColor="#388E3C"
-        android:pathData="M308,272m-15,0a15,15 0,1,0 30,0a15,15 0,1,0 -30,0" />
-    <path
-        android:fillColor="#43A047"
-        android:pathData="M318,284m-13,0a13,13 0,1,0 26,0a13,13 0,1,0 -26,0" />
+        android:fillColor="#2E4A35"
+        android:pathData="M335,355 C345,348 355,352 360,358 C350,354 342,353 335,355 Z" />
 
-    <!-- Colina Principal em Primeiro Plano (Verde Floresta Nobre) -->
+    <!-- 7. ÁRVORE TÍPICA DO CERRADO À ESQUERDA (TRONCO TORCIDO & COPA VERDE) -->
     <path
-        android:fillColor="#2E7D32"
-        android:pathData="M0,435 C80,410 170,418 260,398 C310,388 340,392 360,398 L360,640 L0,640 Z" />
+        android:fillColor="#3D3028"
+        android:pathData="M78,485 C75,445 68,430 60,405 C54,385 64,365 72,350 L80,352 C72,368 64,385 68,405 C76,430 83,445 86,485 Z" />
+    <path
+        android:fillColor="#3D3028"
+        android:pathData="M65,395 C75,385 88,382 98,378 L96,373 C86,377 73,380 63,392 Z" />
+    <!-- Folhagens Verdes em Camadas -->
+    <path
+        android:fillColor="#355B41"
+        android:pathData="M60,375m-25,0a25,25 0,1,0 50,0a25,25 0,1,0 -50,0" />
+    <path
+        android:fillColor="#477353"
+        android:pathData="M48,365m-18,0a18,18 0,1,0 36,0a18,18 0,1,0 -36,0" />
+    <path
+        android:fillColor="#355B41"
+        android:pathData="M95,365m-20,0a20,20 0,1,0 40,0a20,20 0,1,0 -40,0" />
+    <path
+        android:fillColor="#477353"
+        android:pathData="M102,358m-14,0a14,14 0,1,0 28,0a14,14 0,1,0 -28,0" />
+    <path
+        android:fillColor="#5A8A67"
+        android:pathData="M72,350m-16,0a16,16 0,1,0 32,0a16,16 0,1,0 -32,0" />
 
-    <!-- Base do Terreno Inferior -->
+    <!-- 8. IPÊ AMARELO FLORIDO À DIREITA -->
     <path
-        android:fillColor="#1B5E20"
-        android:pathData="M0,485 C90,465 190,470 280,450 C320,442 350,445 360,450 L360,640 L0,640 Z" />
+        android:fillColor="#3D3028"
+        android:pathData="M298,485 C295,445 288,430 282,410 C278,395 285,380 292,370 L298,372 C292,382 286,395 290,410 C296,430 303,445 306,485 Z" />
+    <!-- Copa Florada Amarelo-Ouro Intenso do Ipê -->
+    <path
+        android:fillColor="#E6A323"
+        android:pathData="M290,370m-28,0a28,28 0,1,0 56,0a28,28 0,1,0 -56,0" />
+    <path
+        android:fillColor="#F6BC36"
+        android:pathData="M280,360m-20,0a20,20 0,1,0 40,0a20,20 0,1,0 -40,0" />
+    <path
+        android:fillColor="#FFCA42"
+        android:pathData="M302,362m-18,0a18,18 0,1,0 36,0a18,18 0,1,0 -36,0" />
+    <path
+        android:fillColor="#F6BC36"
+        android:pathData="M290,348m-16,0a16,16 0,1,0 32,0a16,16 0,1,0 -32,0" />
 
-    <!-- ======================================================== -->
-    <!-- CAVALO VETORIAL ESTILIZADO EM DESTAQUE NA CRISTA DA COLINA -->
-    <!-- "Estilo menos real, mas mantendo a essência nobre e forte" -->
-    <!-- ======================================================== -->
+    <!-- 9. LOBO-GUARÁ (CANIS BRACHYURUS) CAMINHANDO NO CERRADO -->
+    <!-- Patas traseira e dianteira opostas (pretas compridas) -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M234,482 L236,522 L240,522 L238,482 Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M272,482 L274,522 L278,522 L276,482 Z" />
 
-    <!-- Membros Posteriores e Anteriores Opostos (Sombra e Profundidade) -->
+    <!-- Cauda Espessa com Ponta Branca -->
     <path
-        android:fillColor="#133624"
-        android:pathData="M236,440 L239,485 L245,485 L244,444 Z" />
+        android:fillColor="#C7662B"
+        android:pathData="M228,474 C220,480 216,495 220,512 L225,512 C223,498 226,486 232,476 Z" />
     <path
-        android:fillColor="#133624"
-        android:pathData="M162,442 L159,485 L165,485 L168,442 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M220,505 C219,508 219,512 222,514 L225,514 C224,510 223,507 222,505 Z" />
 
-    <!-- Cauda Fluida do Cavalo -->
+    <!-- Pata Traseira Proximal -->
     <path
-        android:fillColor="#153E2A"
-        android:pathData="M250,418 C265,432 272,458 267,485 C262,472 258,448 248,432 Z" />
+        android:fillColor="#C7662B"
+        android:pathData="M236,468 C238,480 240,495 242,525 L247,525 C246,495 244,478 241,468 Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M240,490 L242,525 L247,525 L245,490 Z" />
 
-    <!-- Membro Posterior Proximal (Pata Traseira Forte) -->
+    <!-- Corpo / Dorso do Lobo-Guará -->
     <path
-        android:fillColor="#1E4D36"
-        android:pathData="M245,422 C252,442 250,462 248,492 L255,492 C258,462 260,438 252,418 Z" />
+        android:fillColor="#C7662B"
+        android:pathData="M236,466 C248,464 262,464 274,468 C278,472 278,482 272,484 C260,484 246,484 236,480 Z" />
+    <!-- Crina Escura Dorsal Típica -->
+    <path
+        android:fillColor="#262626"
+        android:pathData="M260,465 C266,465 272,467 274,470 L271,472 C268,469 264,468 260,467 Z" />
 
-    <!-- Membro Anterior Proximal (Pata Dianteira Firme) -->
+    <!-- Pata Dianteira Proximal -->
     <path
-        android:fillColor="#1E4D36"
-        android:pathData="M173,435 L171,492 L178,492 L181,435 Z" />
+        android:fillColor="#C7662B"
+        android:pathData="M268,472 C270,485 271,500 272,525 L277,525 C276,500 275,482 273,472 Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M270,490 L272,525 L277,525 L275,490 Z" />
 
-    <!-- Cascos Marcados em Vetor -->
+    <!-- Pescoço e Cabeça com Orelhas Grandes Erguidas -->
     <path
-        android:fillColor="#0A1E14"
-        android:pathData="M171,488h7v4h-7z" />
+        android:fillColor="#C7662B"
+        android:pathData="M272,472 C276,465 282,460 286,456 L292,458 C287,465 282,472 278,476 Z" />
+    <!-- Orelhas Grandes Típicas -->
     <path
-        android:fillColor="#0A1E14"
-        android:pathData="M248,488h7v4h-7z" />
+        android:fillColor="#C7662B"
+        android:pathData="M284,456 L287,446 L290,456 Z" />
+    <!-- Focinho Longo e Preto -->
+    <path
+        android:fillColor="#C7662B"
+        android:pathData="M288,458 L296,460 L292,464 Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M294,459 L298,460 L295,463 Z" />
+    <!-- Garganta Branca -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M282,466 C284,464 287,464 288,466 C286,468 284,468 282,466 Z" />
 
-    <!-- Corpo, Dorso, Pescoço Arqueado e Cabeça Nobre do Cavalo -->
+    <!-- 10. TERRENO E CAMPO VERDE-OLIVA EM PRIMEIRO PLANO (BASE DO CARROSSEL) -->
     <path
-        android:fillColor="#1E4D36"
-        android:pathData="M170,435 C164,415 167,395 174,375 C177,360 174,345 169,335 C165,328 157,335 151,342 C145,348 139,352 134,352 C131,352 132,358 137,360 C144,362 151,358 157,352 C161,365 169,375 177,385 C184,410 194,430 214,435 C229,435 241,430 247,420 C254,410 251,390 239,385 C224,380 204,385 194,375 C187,368 184,350 187,335 C189,325 185,320 182,318 C180,324 178,330 177,335 Z" />
+        android:fillColor="#5A6A45"
+        android:pathData="M0,500 C80,485 170,495 260,478 C310,470 340,475 360,480 L360,740 L0,740 Z" />
+    <path
+        android:fillColor="#52613D"
+        android:pathData="M0,530 C90,515 180,522 270,508 C315,500 345,505 360,510 L360,740 L0,740 Z" />
 
-    <!-- Orelha Estilizada Erguida e Atenta -->
+    <!-- Gramíneas e Pequenos Arbustos no Pasto -->
     <path
-        android:fillColor="#2A6648"
-        android:pathData="M182,318 L185,306 L188,318 Z" />
+        android:fillColor="#3D4B2A"
+        android:pathData="M45,535 L48,518 L52,535 Z" />
+    <path
+        android:fillColor="#3D4B2A"
+        android:pathData="M50,538 L54,520 L58,538 Z" />
+    <path
+        android:fillColor="#3D4B2A"
+        android:pathData="M110,525 L113,510 L117,525 Z" />
+    <path
+        android:fillColor="#3D4B2A"
+        android:pathData="M320,530 L323,512 L327,530 Z" />
+    <path
+        android:fillColor="#3D4B2A"
+        android:pathData="M325,532 L329,516 L333,532 Z" />
 
-    <!-- Crina Fluida Estilizada em Camadas Dinâmicas -->
+    <!-- Fundo Contínuo da Área do Carrossel (Tonalidade Verde-Oliva Conforme Mockup LEVO.png) -->
     <path
-        android:fillColor="#388E3C"
-        android:pathData="M182,318 C190,325 196,338 194,350 C190,342 186,332 180,325 Z" />
-    <path
-        android:fillColor="#43A047"
-        android:pathData="M187,335 C195,345 198,360 196,370 C192,360 188,350 184,340 Z" />
-    <path
-        android:fillColor="#66BB6A"
-        android:pathData="M192,355 C198,365 202,378 199,385 C196,378 193,370 190,360 Z" />
-
-    <!-- Brilho / Olho Vetorial e Focinho -->
-    <path
-        android:fillColor="#A5D6A7"
-        android:pathData="M144,346m-2.5,0a2.5,2.5 0,1,0 5,0a2.5,2.5 0,1,0 -5,0" />
-
-    <!-- Detalhe da Musculatura Estilizada (Geometria Moderna) -->
-    <path
-        android:fillColor="#2A6648"
-        android:alpha="0.75"
-        android:pathData="M178,395 C182,410 188,422 196,428 C190,422 182,410 178,395 Z" />
-    <path
-        android:fillColor="#2A6648"
-        android:alpha="0.75"
-        android:pathData="M232,400 C238,410 242,420 243,428 C238,420 234,410 232,400 Z" />
-
-    <!-- Gramíneas e Vegetação Rasteira do Cerrado em Destaque -->
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M125,510 L130,482 L136,510 Z" />
-    <path
-        android:fillColor="#4CAF50"
-        android:pathData="M134,515 L140,486 L145,515 Z" />
-    <path
-        android:fillColor="#81C784"
-        android:pathData="M143,518 L148,495 L152,518 Z" />
-
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M265,502 L269,478 L275,502 Z" />
-    <path
-        android:fillColor="#4CAF50"
-        android:pathData="M276,508 L282,482 L287,508 Z" />
-
-    <!-- Palmeira Buriti Típica de Veredas do DF no Canto Inferior Direito -->
-    <path
-        android:fillColor="#153E2A"
-        android:pathData="M338,590 C333,530 328,490 324,460 L329,460 C334,490 339,530 344,590 Z" />
-    <!-- Frondes em Leque da Palmeira -->
-    <path
-        android:fillColor="#2E7D32"
-        android:pathData="M324,460 C300,450 282,455 272,465 C287,460 306,458 324,460 Z" />
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M324,460 C310,440 295,435 282,440 C296,440 310,445 324,460 Z" />
-    <path
-        android:fillColor="#43A047"
-        android:pathData="M324,460 C320,430 314,420 304,420 C314,425 321,440 324,460 Z" />
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M324,460 C334,430 344,420 354,420 C344,425 334,440 324,460 Z" />
-    <path
-        android:fillColor="#2E7D32"
-        android:pathData="M324,460 C344,440 358,435 364,440 C354,440 340,445 324,460 Z" />
-
-    <!-- Camada de Gradiente Sombreado Inferior para Contraste do Texto -->
-    <path
-        android:fillColor="#0D2E17"
-        android:alpha="0.90"
-        android:pathData="M0,560 L360,530 L360,640 L0,640 Z" />
+        android:fillColor="#52613D"
+        android:pathData="M0,540h360v200h-360z" />
 </vector>

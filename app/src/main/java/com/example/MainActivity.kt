@@ -604,10 +604,15 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
         }
     }
 
-        // Tela de Abertura / Início com imagem de fundo vetorizada, ícone do app e botão Iniciar
+        // Tela de Abertura / Início com imagem de fundo do Cerrado e Carrossel Multinavegação M3 com fotos reais
         if (showSplashScreen) {
             AppSplashScreen(
-                onStart = {
+                initialSpecies = viewModel.selectedSpecies,
+                onStart = { chosenSpecies, customName ->
+                    viewModel.selectSpecies(chosenSpecies)
+                    if (!customName.isNullOrBlank()) {
+                        viewModel.setCustomSpecies(customName)
+                    }
                     showSplashScreen = false
                     showInstitutionalNoticeDialog = true
                 }

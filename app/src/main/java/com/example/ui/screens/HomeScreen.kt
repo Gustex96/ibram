@@ -184,11 +184,14 @@ fun HomeScreen(
             }
         }
 
-        // Species Selector Tabs (Cachorro e Cavalo)
+        // Species Selector Tabs (Cachorro, Cavalo, Gato, Galináceos e Outros)
         SpeciesSelectorTabs(
             selectedSpecies = viewModel.selectedSpecies,
             onSpeciesSelected = { species ->
                 viewModel.selectSpecies(species)
+            },
+            onCustomSpeciesNamed = { name ->
+                viewModel.setCustomSpecies(name)
             }
         )
 

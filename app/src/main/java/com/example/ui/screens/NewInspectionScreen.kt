@@ -14,6 +14,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,6 +57,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,6 +77,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import com.example.ui.components.AppOutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -134,6 +139,7 @@ fun NewInspectionScreen(
     var previewPhotoPath by remember { mutableStateOf<String?>(null) }
     var showLiveCamera by rememberSaveable { mutableStateOf(false) }
     var showAnatomyDialog by rememberSaveable { mutableStateOf(false) }
+    var showPpbeaDialog by rememberSaveable { mutableStateOf(false) }
 
     BackHandler {
         onNavigateBack()
@@ -903,11 +909,11 @@ fun NewInspectionScreen(
                 }
             }
 
-            // 3. SECTION: QUANTIDADE DE ANIMAIS
+            // 3. SECTION: QUANTIDADE DE ANIMAIS & AVALIAÇÃO PPBEA
             val isDog = draft.isDog
             SectionHeader(
-                title = if (isDog) "3. Quantidade de Cães / Cachorros" else "3. Quantidade de Cavalos",
-                description = if (isDog) "Número de caninos identificados na ocorrência." else "Número de equinos identificados na ocorrência."
+                title = if (isDog) "3. Quantidade de Cães & Avaliação PPBEA" else "3. Quantidade de Animais & Avaliação PPBEA",
+                description = "Contagem dos animais e perícia pericial de bem-estar animal com botões switch (ANEXO D – PPBEA)."
             )
 
             Card(
@@ -1153,27 +1159,200 @@ fun NewInspectionScreen(
                         }
                     }
 
-                    // Forensic Welfare Checklist (Res. CFMV 1.236/2018 & CRMV-MS)
-                    // Exibido diretamente caso haja equinos com sinais de maus-tratos ou indicadores assinalados
-                    val isChecklistVisible = draft.mistreatedHorseCount > 0 || draft.adequateIndicators.isNotEmpty() || draft.mistreatmentIndicators.isNotEmpty()
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    AnimatedVisibility(
-                        visible = isChecklistVisible,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
+                    // CAMPO 3: AVALIAÇÃO DE BEM-ESTAR ANIMAL (ANEXO D - PPBEA - RESOLUÇÃO CFMV 1.236/2018)
+                    // Formato: Caixa de Diálogo com Botões Switch
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp)),
+                        color = if (draft.mistreatmentIndicators.isNotEmpty())
+                            Color(0xFFFFF5F5)
+                        else if (draft.adequateIndicators.isNotEmpty())
+                            Color(0xFFF1F8F4)
+                        else
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFEF9A9A)
+                            else if (draft.adequateIndicators.isNotEmpty()) Color(0xFFA5D6A7)
+                            else MaterialTheme.colorScheme.outlineVariant
+                        )
                     ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(14.dp))
-                            MistreatmentChecklistView(
-                                selectedAlertIndicators = draft.mistreatmentIndicators,
-                                onToggleAlertIndicator = { viewModel.toggleMistreatmentIndicator(it) },
-                                onClearAllAlerts = { viewModel.setMistreatmentIndicators(emptyList()) },
-                                selectedAdequateIndicators = draft.adequateIndicators,
-                                onToggleAdequateIndicator = { viewModel.toggleAdequateIndicator(it) },
-                                onClearAllAdequate = { viewModel.setAdequateIndicators(emptyList()) },
-                                species = draft.species,
-                                initialTab = if (draft.mistreatedHorseCount > 0) 0 else 1
-                            )
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = if (draft.mistreatmentIndicators.isNotEmpty()) Icons.Default.Warning else Icons.Default.Shield,
+                                        contentDescription = null,
+                                        tint = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = "ANEXO D – Protocolo PPBEA",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.5.sp,
+                                            color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                        )
+                                        Text(
+                                            text = "Perícia em Bem-Estar Animal • Res. CFMV 1.236/2018",
+                                            fontSize = 10.5.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "${draft.mistreatmentIndicators.size} Alertas • ${draft.adequateIndicators.size} Adequados",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Botão para Abrir a Caixa de Diálogo com Botões Switch
+                            Button(
+                                onClick = { showPpbeaDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("btn_open_ppbea_dialog"),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Abrir Checklist PPBEA (Caixa de Diálogo c/ Switches)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Preview dos Indicadores Selecionados
+                            if (draft.mistreatmentIndicators.isNotEmpty() || draft.adequateIndicators.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Indicadores assinalados na ocorrência (toque no X para remover):",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                // Alertas de Maus-Tratos assinalados
+                                draft.mistreatmentIndicators.forEach { alertItem ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFFFEBEE),
+                                        border = BorderStroke(0.5.dp, Color(0xFFEF9A9A))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(text = "⚠️", fontSize = 12.sp)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = alertItem,
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFFB71C1C),
+                                                    lineHeight = 14.sp
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { viewModel.toggleMistreatmentIndicator(alertItem) },
+                                                modifier = Modifier.size(22.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "Remover indicador",
+                                                    tint = Color(0xFFC62828),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Condições Adequadas assinaladas
+                                draft.adequateIndicators.forEach { adItem ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFE8F5E9),
+                                        border = BorderStroke(0.5.dp, Color(0xFFA5D6A7))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(text = "✅", fontSize = 12.sp)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = adItem,
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF2E7D32),
+                                                    lineHeight = 14.sp
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { viewModel.toggleAdequateIndicator(adItem) },
+                                                modifier = Modifier.size(22.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "Remover indicador",
+                                                    tint = Color(0xFF2E7D32),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1606,32 +1785,130 @@ fun NewInspectionScreen(
                 }
             }
 
-            // SECTION: NOTAS DE CAMPO & DESCRIÇÃO
+            // 5. SECTION: PERÍCIA EM BEM-ESTAR ANIMAL (PPBEA – ANEXO D) & NOTAS DE CAMPO
             SectionHeader(
-                title = "Notas de Campo e Descrição da Imagem",
-                description = "Descreva as condições dos animais, perigos e cenário observado."
+                title = "5. Perícia de Bem-Estar Animal (PPBEA) & Notas de Campo",
+                description = "Checklist pericial formal com botões switch (ANEXO D – Res. CFMV 1.236/2018) e descrição detalhada da ocorrência."
             )
 
-            AppOutlinedTextField(
-                value = draft.imageNotes,
-                onValueChange = { viewModel.updateImageNotes(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("image_notes_field"),
-                placeholder = {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (draft.mistreatmentIndicators.isNotEmpty())
+                        Color(0xFFFFF8F8)
+                    else if (draft.adequateIndicators.isNotEmpty())
+                        Color(0xFFF6FBF7)
+                    else
+                        MaterialTheme.colorScheme.surface
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFEF9A9A)
+                    else if (draft.adequateIndicators.isNotEmpty()) Color(0xFFA5D6A7)
+                    else MaterialTheme.colorScheme.outlineVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (draft.mistreatmentIndicators.isNotEmpty()) Icons.Default.Warning else Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "ANEXO D – PROTOCOLO PPBEA",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                )
+                                Text(
+                                    text = "Perícia de Bem-Estar Animal • Caixa de Diálogo c/ Switches",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Surface(
+                            color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "${draft.mistreatmentIndicators.size} Alertas • ${draft.adequateIndicators.size} Adequados",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = { showPpbeaDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("btn_open_ppbea_dialog_sec5"),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Abrir Checklist PPBEA (Caixa de Diálogo c/ Switches)",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        if (isDog) "Ex: Dois cães confinados em espaço exíguo sem água limpa, acúmulo de dejetos, sinais evidentes de desnutrição..."
-                        else "Ex: Dois cavalos pastando soltos próximos à pista da marginal, arame quebrado, sem água fresca aparente..."
+                        text = "Notas de Campo e Descrição da Imagem:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                },
-                minLines = 3,
-                maxLines = 6,
-                shape = RoundedCornerShape(12.dp)
-            )
+                    Spacer(modifier = Modifier.height(6.dp))
 
-            // 5. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
+                    AppOutlinedTextField(
+                        value = draft.imageNotes,
+                        onValueChange = { viewModel.updateImageNotes(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("image_notes_field"),
+                        placeholder = {
+                            Text(
+                                if (isDog) "Ex: Dois cães confinados em espaço exíguo sem água limpa, acúmulo de dejetos, sinais evidentes de desnutrição..."
+                                else "Ex: Dois cavalos pastando soltos próximos à pista da marginal, arame quebrado, sem água fresca aparente..."
+                            )
+                        },
+                        minLines = 3,
+                        maxLines = 6,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+
+            // 6. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
             SectionHeader(
-                title = "5. Identificação dos Tutores & CPFs",
+                title = "6. Identificação dos Tutores & CPFs",
                 description = "Cadastre um ou múltiplos tutores e CPFs dos responsáveis identificados na ação fiscal."
             )
 
@@ -1860,6 +2137,30 @@ fun NewInspectionScreen(
                 }
             }
         }
+    }
+
+    // CAIXA DE DIÁLOGO COM BOTÕES SWITCH (ANEXO D - PPBEA - RES. CFMV 1.236/2018)
+    if (showPpbeaDialog) {
+        val currentSpeciesName = if (draft.isDog) "Cachorro" else draft.species
+        com.example.ui.components.PpbeaSwitchDialog(
+            species = currentSpeciesName,
+            selectedAlertIndicators = draft.mistreatmentIndicators,
+            onToggleAlertIndicator = { item ->
+                viewModel.toggleMistreatmentIndicator(item)
+            },
+            onClearAllAlerts = {
+                viewModel.clearAllMistreatmentAlerts()
+            },
+            selectedAdequateIndicators = draft.adequateIndicators,
+            onToggleAdequateIndicator = { item ->
+                viewModel.toggleAdequateIndicator(item)
+            },
+            onClearAllAdequate = {
+                viewModel.clearAllAdequateIndicators()
+            },
+            onDismiss = { showPpbeaDialog = false },
+            onConfirm = { showPpbeaDialog = false }
+        )
     }
 
     // Região Administrativa Picker Dialog
