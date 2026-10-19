@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.example.model.HorseAnatomyData
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
@@ -38,7 +40,9 @@ import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -100,6 +104,8 @@ fun HomeScreen(
     viewModel: InspectionViewModel,
     onNavigateToNewInspection: () -> Unit,
     onNavigateToDetail: (Long) -> Unit,
+    onSwitchSpecies: () -> Unit = {},
+    onOpenAuditorDialog: () -> Unit = {}
 ) {
     val inspections by viewModel.filteredInspections.collectAsStateWithLifecycle()
     val allInspections by viewModel.allInspections.collectAsStateWithLifecycle()
@@ -110,122 +116,113 @@ fun HomeScreen(
     val currentAuditor = viewModel.auditorIdentification
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF4FAF6))
     ) {
-        // 1. SISTEMA DE BUSCA ACIMA DA CAIXA "IDENTIFICAÇÃO DO AUDITOR" (CONFORME SEARCH BAR.PNG)
-        Surface(
+        // BARRA UNIFICADA DE BUSCA E BOTÃO "TROCAR ESPÉCIE" (EM 1 LINHA - CONFORME MOCKUP)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-            )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            AppOutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.searchQuery.value = it },
+            // Campo de Busca (Esquerda, weight(1f))
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("search_field"),
-                placeholder = { Text("Buscar por RA, tutor, levantamento ou notas...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca")
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp)
-            )
-        }
-
-        // 2. CAIXA "IDENTIFICAÇÃO DO AUDITOR"
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable { showAuditorDialog = true }
-                .testTag("home_auditor_bar"),
-            color = if (currentAuditor.isNotBlank())
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                if (currentAuditor.isNotBlank())
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                else
-                    MaterialTheme.colorScheme.outlineVariant
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 12.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Badge,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.searchQuery.value = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("search_field"),
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF1E293B)
+                        ),
+                        decorationBox = { innerTextField ->
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "Buscar RA, tutor ou ID...",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF94A3B8),
+                                    maxLines = 1
+                                )
+                            }
+                            innerTextField()
+                        }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = if (currentAuditor.isNotBlank())
-                                "Auditor Fiscal: $currentAuditor"
-                            else
-                                "Identificação do Auditor: Não informada",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "Toque para alterar nome / matrícula para telas e relatórios",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { viewModel.searchQuery.value = "" },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Limpar busca",
+                                tint = Color(0xFF64748B),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar",
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
-                Surface(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(6.dp)
+            }
+
+            // Botão Elevado "Trocar Espécie" (Direita)
+            Surface(
+                onClick = onSwitchSpecies,
+                modifier = Modifier
+                    .height(44.dp)
+                    .testTag("btn_top_switch_species"),
+                shape = CircleShape,
+                color = Color(0xFF14532D),
+                shadowElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Text(
-                        text = if (currentAuditor.isNotBlank()) "ATIVO" else "DEFINIR",
+                        text = "Trocar Espécie",
                         color = Color.White,
-                        fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Main List
+        // Main List com Cards Limpos e Espaçamento Conforme Mockup
         if (inspections.isEmpty()) {
             EmptyState(
                 hasAny = allInspections.isNotEmpty(),
@@ -234,8 +231,8 @@ fun HomeScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(inspections, key = { _, item -> item.id }) { index, inspection ->
                     InspectionItemCard(
@@ -375,102 +372,89 @@ fun InspectionItemCard(
     onClick: () -> Unit,
     onExportPdf: () -> Unit
 ) {
-    val isEven = index % 2 == 0
-    val cardBgColor = if (isEven) {
-        MaterialTheme.colorScheme.surface
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-    }
-
-    ElevatedCard(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                RoundedCornerShape(14.dp)
-            )
             .clickable(onClick = onClick)
             .testTag("inspection_card_${inspection.id}"),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = cardBgColor
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 3.dp
-        )
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(14.dp)
         ) {
-            // CABEÇALHO DO CARD: Número de protocolo em destaque, Espécie e Botão de Ação Rápida PDF
+            // Topo do Card: Pílula Código + Data/Hora Compacta + Botão Exportar PDF
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f).padding(end = 4.dp)
+                // Esquerda: Código do Levantamento (pílula verde-menta)
+                Surface(
+                    color = Color(0xFFA7F3D0).copy(alpha = 0.9f),
+                    shape = CircleShape
                 ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = "Levantamento: ${inspection.protocolNumber}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.5.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = "${inspection.speciesEmoji} ${inspection.speciesDisplay}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                        )
-                    }
+                    Text(
+                        text = inspection.protocolNumber,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF022C22),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        maxLines = 1
+                    )
                 }
 
-                IconButton(
-                    onClick = onExportPdf,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .testTag("export_pdf_btn_${inspection.id}")
+                // Centro / Direita: Data e Hora compactas sem os segundos + Botão PDF
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PictureAsPdf,
-                        contentDescription = "Exportar PDF",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                    Text(
+                        text = inspection.formattedDateCompact,
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B),
+                        maxLines = 1
                     )
+
+                    // Extrema Direita: Botão de exportar PDF
+                    Surface(
+                        onClick = onExportPdf,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("export_pdf_btn_${inspection.id}"),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFECFDF5),
+                        border = BorderStroke(1.dp, Color(0xFFA7F3D0))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.PictureAsPdf,
+                                contentDescription = "Exportar PDF",
+                                tint = Color(0xFF14532D),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // CORPO DO CARD: Foto e Dados Operacionais Lado a Lado
+            // Corpo do Card: Miniatura da imagem + Dados Operacionais
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Coluna Esquerda: Thumbnail da foto
+                // Esquerda: Miniatura da imagem (w-20 h-20 / 80.dp)
                 Box(
                     modifier = Modifier
-                        .size(86.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0F172A))
                 ) {
                     val photoFile = File(inspection.photoPath)
                     if (photoFile.exists()) {
@@ -485,7 +469,7 @@ fun InspectionItemCard(
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = Color(0xFF10B981),
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -500,7 +484,7 @@ fun InspectionItemCard(
                             Text(
                                 text = inspection.allPhotoPaths.size.toString(),
                                 color = Color.White,
-                                fontSize = 10.sp,
+                                fontSize = 9.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                             )
@@ -510,12 +494,12 @@ fun InspectionItemCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Coluna Direita: Informações de RA, Endereço e Animais
+                // Direita: 3 Linhas com ícones específicos
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Região Administrativa (RA)
+                    // Linha 1 (RA): ícone MapPin + texto em destaque
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -523,27 +507,21 @@ fun InspectionItemCard(
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "RA: ",
+                            text = "RA: ${inspection.administrativeRegion}",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = inspection.administrativeRegion,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            color = Color(0xFF0F172A),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    // Endereço Residencial logo abaixo do campo RA
+                    // Linha 2 (Endereço): ícone Home + End. Residencial
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -551,149 +529,81 @@ fun InspectionItemCard(
                         Icon(
                             imageVector = Icons.Default.Home,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = Color(0xFF475569),
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "End. Residencial: ",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = inspection.residentialAddress,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            text = "End. Residencial: ${inspection.residentialAddress}",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF475569),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    // Quantitativo de Animais e Alertas de Maus-Tratos
+                    // Linha 3 (Tutor): ícone User + Tutor
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 2.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            val animalUnit = if (inspection.isDog) "cão(ães)" else "animal(is)"
-                            Text(
-                                text = "${inspection.speciesEmoji} ${inspection.horseCount} $animalUnit",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-
-                        if (inspection.mistreatedHorseCount > 0) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                color = Color(0xFFFEE2E2),
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "⚠️ ${inspection.mistreatedHorseCount} com sinais",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFB91C1C),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Auditor Fiscal Responsável da Vistoria
-                    val cardAuditor = inspection.auditorName.ifBlank { currentAuditorName }
-                    if (cardAuditor.isNotBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Badge,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Auditor: $cardAuditor",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    // Tutor / Responsável
-                    if (inspection.tutorName.isNotBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Tutor: ${inspection.tutorName}",
-                                fontSize = 11.5.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color(0xFF334155),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Tutor: ${inspection.tutorName.ifBlank { "Não informado" }}",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF334155),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // RODAPÉ DO CARD: Data em formato HORIZONTAL, sem corte, bem dividida
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Rodapé do Card: Pílulas de Quantidade e Sinais de Maus-Tratos
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                // Pílula 1 (Quantidade de animais): fundo amarelo suave
+                Surface(
+                    color = Color(0xFFFDE68A).copy(alpha = 0.85f),
+                    shape = CircleShape
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+                    val animalUnit = if (inspection.horseCount == 1) "animal" else "animais"
+                    Text(
+                        text = "${inspection.speciesEmoji} ${inspection.horseCount} $animalUnit",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF451A03),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        maxLines = 1
+                    )
+                }
+
+                // Pílula 2 (Sinais de maus-tratos): fundo vermelho rosado
+                if (inspection.mistreatedHorseCount > 0) {
+                    Surface(
+                        color = Color(0xFFFECDD3).copy(alpha = 0.85f),
+                        shape = CircleShape
+                    ) {
                         Text(
-                            text = "Data da Fiscalização:",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "⚠️ ${inspection.mistreatedHorseCount} com sinais",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF881337),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            maxLines = 1
                         )
                     }
-
-                    Text(
-                        text = inspection.formattedCaptureDate,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
                 }
             }
         }

@@ -120,6 +120,12 @@ data class HorseInspection(
             return sdf.format(Date(captureTimestamp))
         }
 
+    val formattedDateCompact: String
+        get() {
+            val sdf = SimpleDateFormat("dd/MM/yyyy '•' HH:mm", java.util.Locale("pt", "BR"))
+            return sdf.format(Date(captureTimestamp))
+        }
+
     val formattedShortDate: String
         get() {
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))

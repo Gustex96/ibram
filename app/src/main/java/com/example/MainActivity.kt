@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dashboard
@@ -259,277 +262,283 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                 )
             }
             else -> {
+            var showAuditorDialog by rememberSaveable { mutableStateOf(false) }
+
             Scaffold(
+                containerColor = Color(0xFFF4FAF6),
                 topBar = {
-                    TopAppBar(
-                        title = {
+                    Surface(
+                        color = Color(0xFFF4FAF6),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            // Esquerda: Logo Circular + Coluna (Título, Auditor, Espécie)
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { showSplashScreen = true }
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
                                 Image(
                                     painter = painterResource(id = R.drawable.logo_meio_ambiente),
                                     contentDescription = "Logo Meio Ambiente",
                                     modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(RoundedCornerShape(6.dp)),
-                                    contentScale = ContentScale.Fit
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .clickable { showSplashScreen = true },
+                                    contentScale = ContentScale.Crop
                                 )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Levantamento Operacional",
-                                            fontWeight = FontWeight.Bold,
-                                            style = MaterialTheme.typography.titleMedium
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(8.dp)
+
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    // 1. Título
+                                    Text(
+                                        text = "Levantamento Operacional",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 19.sp,
+                                        color = Color(0xFF0F172A),
+                                        lineHeight = 22.sp
+                                    )
+
+                                    // 2. Campo Auditor: pílula clicável
+                                    val auditorName = viewModel.auditorIdentification.ifBlank { "Não informado" }
+                                    Surface(
+                                        onClick = { showAuditorDialog = true },
+                                        shape = CircleShape,
+                                        color = Color(0xFFD1FAE5).copy(alpha = 0.7f),
+                                        modifier = Modifier.testTag("header_auditor_pill")
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp)
                                         ) {
                                             Text(
-                                                text = "APOIO FISCAL",
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                text = "Auditor: $auditorName • ",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF334155)
+                                            )
+                                            Text(
+                                                text = "Definir",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF14532D)
                                             )
                                         }
                                     }
-                                    if (viewModel.auditorIdentification.isNotBlank()) {
+
+                                    // 3. Espécie Selecionada: pílula verde-menta
+                                    val speciesName = if (viewModel.selectedSpecies == AnimalSpecies.OUTROS && !viewModel.customSpeciesName.isNullOrBlank())
+                                        viewModel.customSpeciesName!!
+                                    else
+                                        viewModel.selectedSpecies.displayName
+                                    val speciesEmoji = when (viewModel.selectedSpecies) {
+                                        AnimalSpecies.HORSE -> "🐎"
+                                        AnimalSpecies.DOG -> "🐕"
+                                        AnimalSpecies.CAT -> "🐈"
+                                        AnimalSpecies.POULTRY -> "🐔"
+                                        AnimalSpecies.OUTROS -> "🐾"
+                                    }
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                                        modifier = Modifier.testTag("header_species_pill")
+                                    ) {
                                         Text(
-                                            text = "👤 Auditor: ${viewModel.auditorIdentification}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
+                                            text = "$speciesEmoji Espécie: $speciesName",
+                                            fontSize = 11.5.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            fontSize = 11.sp,
-                                            maxLines = 1
-                                        )
-                                    } else {
-                                        Text(
-                                            text = "Apoio em Fiscalização & Monitoramento Animal",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontSize = 11.sp
+                                            color = Color(0xFF022C22),
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                                         )
                                     }
                                 }
                             }
-                        },
-                        actions = {
-                            // TOOLBAR INTEGRADA COM AS 4 OPÇÕES (CONFORME TOOLBAR.PNG):
-                            // 1. Mudança de claridade, 2. Atualização do app, 3. Conhecimento, 4. Símbolo aviso aos auditores
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-                                modifier = Modifier
-                                    .padding(end = 8.dp)
-                                    .testTag("app_toolbar_actions_container")
+
+                            // Direita: Apenas 2 botões circulares (Sol/Lua e Escudo/Segurança)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(top = 2.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                // 1. Alternar tema (Sol/Lua)
+                                Surface(
+                                    onClick = { showVisualModeDialog = true },
+                                    shape = CircleShape,
+                                    color = Color(0xFFD1FAE5),
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .testTag("action_visual_mode")
                                 ) {
-                                    // 1. Opção: Mudança de claridade (sensibilidade nos olhos / proteção ocular)
-                                    IconButton(
-                                        onClick = { showVisualModeDialog = true },
-                                        modifier = Modifier.testTag("action_visual_mode")
-                                    ) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = when (viewModel.visualComfortMode) {
-                                                VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.primaryContainer
-                                                VisualComfortMode.EYE_CARE -> ComposeColor(0xFFE2D6BE)
-                                                VisualComfortMode.DARK -> MaterialTheme.colorScheme.surfaceVariant
-                                            },
-                                            modifier = Modifier.size(34.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                val icon = when (viewModel.visualComfortMode) {
-                                                    VisualComfortMode.LIGHT -> Icons.Default.LightMode
-                                                    VisualComfortMode.EYE_CARE -> Icons.Default.Visibility
-                                                    VisualComfortMode.DARK -> Icons.Default.DarkMode
-                                                }
-                                                Icon(
-                                                    imageVector = icon,
-                                                    contentDescription = "Mudança de claridade do aplicativo",
-                                                    tint = when (viewModel.visualComfortMode) {
-                                                        VisualComfortMode.LIGHT -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                        VisualComfortMode.EYE_CARE -> ComposeColor(0xFF4A3E26)
-                                                        VisualComfortMode.DARK -> MaterialTheme.colorScheme.primary
-                                                    },
-                                                    modifier = Modifier.size(19.dp)
-                                                )
-                                            }
+                                    Box(contentAlignment = Alignment.Center) {
+                                        val icon = when (viewModel.visualComfortMode) {
+                                            VisualComfortMode.LIGHT -> Icons.Default.LightMode
+                                            VisualComfortMode.EYE_CARE -> Icons.Default.Visibility
+                                            VisualComfortMode.DARK -> Icons.Default.DarkMode
                                         }
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = "Alternar claridade",
+                                            tint = Color(0xFF065F46),
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
+                                }
 
-                                    // 2. Opção: Atualização do app
-                                    IconButton(
-                                        onClick = {
-                                            if (viewModel.availableUpdate != null) {
-                                                viewModel.openUpdateDialog()
-                                            } else {
-                                                viewModel.checkForUpdates(isManualCheck = true)
-                                            }
-                                        },
-                                        modifier = Modifier.testTag("action_check_updates")
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = if (viewModel.availableUpdate != null)
-                                                    MaterialTheme.colorScheme.errorContainer
-                                                else
-                                                    MaterialTheme.colorScheme.primaryContainer,
-                                                modifier = Modifier.size(34.dp)
+                                // 2. Escudo / Segurança (Aviso aos auditores)
+                                Surface(
+                                    onClick = { showInstitutionalNoticeDialog = true },
+                                    shape = CircleShape,
+                                    color = Color(0xFFD1FAE5),
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .testTag("action_institutional_notice")
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Shield,
+                                            contentDescription = "Aviso aos Auditores",
+                                            tint = Color(0xFF065F46),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                bottomBar = {
+                    // BARRA DE NAVEGAÇÃO INFERIOR (#EFF8F2, 64dp, 5 ITENS ALINHADOS CONFORME MOCKUP)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp),
+                        color = Color(0xFFEFF8F2),
+                        border = BorderStroke(1.dp, Color(0xFFA7F3D0).copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val navItems = listOf(
+                                Triple(0, "Painel", Icons.Default.Dashboard),
+                                Triple(1, "Histórico", Icons.Default.PhotoLibrary),
+                                Triple(2, "Dados", Icons.Default.BarChart),
+                                Triple(3, "Relatórios", Icons.Default.PictureAsPdf),
+                                Triple(4, "Guia", null)
+                            )
+
+                            navItems.forEach { (tabIdx, label, iconVector) ->
+                                val isSelected = selectedTab == tabIdx
+                                val itemTag = when (tabIdx) {
+                                    0 -> "nav_tab_home"
+                                    1 -> "nav_tab_history"
+                                    2 -> "nav_tab_stats"
+                                    3 -> "nav_tab_reports"
+                                    else -> "nav_tab_knowledge"
+                                }
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clickable { selectedTab = tabIdx }
+                                        .testTag(itemTag)
+                                ) {
+                                    if (isSelected) {
+                                        Surface(
+                                            color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                                            shape = CircleShape,
+                                            modifier = Modifier.padding(bottom = 2.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp),
+                                                contentAlignment = Alignment.Center
                                             ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    if (viewModel.isCheckingUpdate) {
-                                                        androidx.compose.material3.CircularProgressIndicator(
-                                                            modifier = Modifier.size(16.dp),
-                                                            strokeWidth = 2.dp,
-                                                            color = MaterialTheme.colorScheme.primary
-                                                        )
-                                                    } else {
-                                                        Icon(
-                                                            imageVector = if (viewModel.availableUpdate != null)
-                                                                Icons.Default.NewReleases
-                                                            else
-                                                                Icons.Default.SystemUpdate,
-                                                            contentDescription = "Atualização do app",
-                                                            tint = if (viewModel.availableUpdate != null)
-                                                                MaterialTheme.colorScheme.error
-                                                            else
-                                                                MaterialTheme.colorScheme.onPrimaryContainer,
-                                                            modifier = Modifier.size(19.dp)
-                                                        )
-                                                    }
+                                                if (iconVector != null) {
+                                                    Icon(
+                                                        imageVector = iconVector,
+                                                        contentDescription = label,
+                                                        tint = Color(0xFF14532D),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.ic_owl),
+                                                        contentDescription = label,
+                                                        tint = Color(0xFF14532D),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
                                                 }
                                             }
-                                            // Badge indicador de alerta se nova versão estiver disponível
-                                            if (viewModel.availableUpdate != null) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(10.dp)
-                                                        .align(Alignment.TopEnd)
-                                                        .background(Color.Red, CircleShape)
-                                                )
-                                            }
                                         }
-                                    }
-
-                                    // 3. Opção: Conhecimento
-                                    IconButton(
-                                        onClick = { selectedTab = 4 },
-                                        modifier = Modifier.testTag("action_info_dialog")
-                                    ) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            modifier = Modifier.size(34.dp)
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(bottom = 2.dp, top = 3.dp)
+                                                .size(22.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Box(contentAlignment = Alignment.Center) {
+                                            if (iconVector != null) {
+                                                Icon(
+                                                    imageVector = iconVector,
+                                                    contentDescription = label,
+                                                    tint = Color(0xFF475569),
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            } else {
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.ic_owl),
-                                                    contentDescription = "Menu Conhecimento - Protocolos e Guias Técnicos",
-                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    contentDescription = label,
+                                                    tint = Color(0xFF475569),
                                                     modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         }
                                     }
 
-                                    // 4. Opção: Símbolo aviso aos auditores
-                                    IconButton(
-                                        onClick = { showInstitutionalNoticeDialog = true },
-                                        modifier = Modifier.testTag("action_institutional_notice")
-                                    ) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer,
-                                            modifier = Modifier.size(34.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Shield,
-                                                    contentDescription = "Símbolo aviso aos auditores - Aviso Institucional DIFIS-IV • IBRAM",
-                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    modifier = Modifier.size(19.dp)
-                                                )
-                                            }
-                                        }
-                                    }
+                                    Text(
+                                        text = label,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color(0xFF14532D) else Color(0xFF64748B),
+                                        maxLines = 1
+                                    )
                                 }
                             }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    )
-                },
-                bottomBar = {
-                    NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 8.dp
-                    ) {
-                        NavigationBarItem(
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            icon = { Icon(Icons.Default.Dashboard, contentDescription = "Painel") },
-                            label = { Text("Painel", fontSize = 11.sp) },
-                            modifier = Modifier.testTag("nav_tab_home")
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = "Histórico") },
-                            label = { Text("Histórico", fontSize = 11.sp) },
-                            modifier = Modifier.testTag("nav_tab_history")
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 2,
-                            onClick = { selectedTab = 2 },
-                            icon = { Icon(Icons.Default.BarChart, contentDescription = "Estatísticas") },
-                            label = { Text("Estatísticas", fontSize = 11.sp) },
-                            modifier = Modifier.testTag("nav_tab_stats")
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 3,
-                            onClick = { selectedTab = 3 },
-                            icon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Relatórios") },
-                            label = { Text("Relatórios", fontSize = 11.sp) },
-                            modifier = Modifier.testTag("nav_tab_reports")
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 4,
-                            onClick = { selectedTab = 4 },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_owl),
-                                    contentDescription = "Conhecimento",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            label = { Text("Conhecimento", fontSize = 11.sp) },
-                            modifier = Modifier.testTag("nav_tab_knowledge")
-                        )
+                        }
                     }
                 },
                 floatingActionButton = {
                     if (selectedTab == 0 || selectedTab == 1) {
-                        FloatingActionButton(
+                        Surface(
                             onClick = { viewModel.navigateTo("NEW_INSPECTION") },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.testTag("main_add_fab")
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF14532D),
+                            shadowElevation = 6.dp,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .testTag("main_add_fab")
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Nova Fiscalização")
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Nova Fiscalização",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -550,88 +559,6 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                         }
                     }
 
-                    // BARRA NO TOPO EM TODAS AS ABAS: "Trocar Espécie" levando de volta para o menu carrossel
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .testTag("top_species_bar"),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 7.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                val speciesIcon = when (viewModel.selectedSpecies) {
-                                    AnimalSpecies.HORSE -> "🐴"
-                                    AnimalSpecies.DOG -> "🐕"
-                                    AnimalSpecies.CAT -> "🐈"
-                                    AnimalSpecies.POULTRY -> "🐔"
-                                    AnimalSpecies.OUTROS -> "🐾"
-                                }
-                                Text(text = speciesIcon, fontSize = 20.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Espécie: ",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        val customName = viewModel.customSpeciesName
-                                        Text(
-                                            text = if (viewModel.selectedSpecies == AnimalSpecies.OUTROS && !customName.isNullOrBlank())
-                                                customName
-                                            else
-                                                viewModel.selectedSpecies.displayName,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    Text(
-                                        text = "Fiscalização ativa em campo",
-                                        fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            // Botão no topo em todas as abas: "Trocar Espécie" levando ao menu carrossel
-                            Button(
-                                onClick = { showSplashScreen = true },
-                                modifier = Modifier.testTag("btn_top_switch_species"),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.SwapHoriz,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Trocar Espécie",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -641,7 +568,9 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             0 -> HomeScreen(
                                 viewModel = viewModel,
                                 onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") },
-                                onNavigateToDetail = { id -> viewModel.navigateTo("DETAIL", id) }
+                                onNavigateToDetail = { id -> viewModel.navigateTo("DETAIL", id) },
+                                onSwitchSpecies = { showSplashScreen = true },
+                                onOpenAuditorDialog = { showAuditorDialog = true }
                             )
                             1 -> HistoryScreen(
                                 viewModel = viewModel,
@@ -659,6 +588,55 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                         }
                     }
                 }
+            }
+
+            if (showAuditorDialog) {
+                var tempName by remember { mutableStateOf(viewModel.auditorIdentification) }
+                AlertDialog(
+                    onDismissRequest = { showAuditorDialog = false },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Badge, contentDescription = null, tint = Color(0xFF14532D))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Identificação do Auditor", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Informe seu nome ou matrícula para identificação nas vistorias e relatórios oficiais:",
+                                fontSize = 12.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            com.example.ui.components.AppOutlinedTextField(
+                                value = tempName,
+                                onValueChange = { tempName = it },
+                                modifier = Modifier.fillMaxWidth().testTag("dialog_auditor_input"),
+                                label = { Text("Auditor Fiscal / Agente") },
+                                placeholder = { Text("Ex: Auditor Silva • Matr. 123.456-X") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.setAuditorId(tempName)
+                                showAuditorDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF14532D))
+                        ) {
+                            Text("Salvar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAuditorDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
 
             if (showVisualModeDialog) {

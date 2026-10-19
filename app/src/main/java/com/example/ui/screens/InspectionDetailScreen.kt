@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -414,6 +417,161 @@ fun InspectionDetailScreen(
                         text = descText,
                         fontSize = 13.sp
                     )
+                }
+            }
+
+            // 2.1 Protocolo de Perícia em Bem-Estar Animal (PPBEA – Resolução CFMV nº 1.236/2018)
+            val ppbeaDiag = inspection.ppbeaDiagnosis
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8F5)),
+                border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFF2E7D32).copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Assignment,
+                                contentDescription = null,
+                                tint = Color(0xFF1B5E20),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Protocolo PPBEA (4 Indicadores & Diagnóstico)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFF1B5E20)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { showEditDialog = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar PPBEA",
+                                tint = Color(0xFF1B5E20),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Fundamentado na Res. CFMV nº 1.236/2018 e Manual CRMV-MS",
+                        fontSize = 10.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val nutStatus = ppbeaDiag?.nutricionalParecer ?: com.example.data.model.ParecerDomain.ADEQUADO
+                    val confStatus = ppbeaDiag?.confortoParecer ?: com.example.data.model.ParecerDomain.ADEQUADO
+                    val saudeStatus = ppbeaDiag?.saudeParecer ?: com.example.data.model.ParecerDomain.ADEQUADO
+                    val compStatus = ppbeaDiag?.comportamentalParecer ?: com.example.data.model.ParecerDomain.ADEQUADO
+
+                    // Grid dos 4 Indicadores
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(nutStatus.colorHex).copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(nutStatus.colorHex).copy(alpha = 0.6f))
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("🥕 Nutrição", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(nutStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(nutStatus.colorHex))
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(confStatus.colorHex).copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(confStatus.colorHex).copy(alpha = 0.6f))
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("🏠 Conforto", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(confStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(confStatus.colorHex))
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(saudeStatus.colorHex).copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(saudeStatus.colorHex).copy(alpha = 0.6f))
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("🩺 Saúde", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(saudeStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(saudeStatus.colorHex))
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(compStatus.colorHex).copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(compStatus.colorHex).copy(alpha = 0.6f))
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("🧠 Comport.", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(compStatus.label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(compStatus.colorHex))
+                            }
+                        }
+                    }
+
+                    if (ppbeaDiag != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(ppbeaDiag.grauBemEstar.colorHex).copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(ppbeaDiag.grauBemEstar.colorHex).copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Grau de Bem-Estar: ${ppbeaDiag.grauBemEstar.label.uppercase()}",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(ppbeaDiag.grauBemEstar.colorHex)
+                                )
+                                Text(
+                                    text = if (ppbeaDiag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) "⚠️ Configura Maus-Tratos"
+                                    else if (ppbeaDiag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO) "📋 Recomendações c/ Retorno"
+                                    else "✅ Não Configura",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(ppbeaDiag.grauBemEstar.colorHex)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showEditDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Abrir Avaliação PPBEA (Revisar/Editar)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -864,7 +1022,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -890,6 +1048,7 @@ fun InspectionDetailScreen(
                     newTutorName = tutor,
                     newTutorCpf = cpf,
                     newAdditionalTutors = additionalTutors,
+                    newPpbeaAnswersData = ppbeaAnswersData,
                     onSuccess = {
                         showEditDialog = false
                     }
