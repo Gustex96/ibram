@@ -1,0 +1,18 @@
+Refatore cirurgicamente apenas a função de geração do PDF e da marca d'água das fotos (mantendo toda a lógica do app intacta):
+
+1. CORREÇÕES DE TEXTO E NUMERAÇÃO NA FOLHA 1:
+- Corrija o salto de numeração (que pulava do item 4 para o 6): mantenha sempre a sequência correta `1. Dados de Localização & GPS`, `2. Quantificação e Avaliação PPBEA`, `3. Providências Operacionais, BO e Apoio`, `4. Identificação dos Tutores`, `5. Diagnóstico Geral & Parecer Técnico` e `6. Registro Fotográfico Georreferenciado`.
+- Troque `"1 animal(is)"` por singular/plural dinâmico (`count === 1 ? '1 animal' : `${count} animais``).
+- Remova a expressão `"proporção 500x500"` das Folhas 1 e 2, usando `"em alta resolução"`.
+- Adicione paginação `"Folha X de Y"` no rodapé de todas as páginas (inclusive na Folha 1).
+
+2. ENRIQUECIMENTO PERICIAL (SEÇÕES 1, 2, 3 e 5 DO PDF):
+- Na Seção 1, torne as coordenadas GPS um link clicável (`https://www.google.com/maps?q=${lat},${lng}`).
+- Na Seção 2, antes da lista de constatações, desenhe uma linha/tabela resumo com o status dos 4 domínios (`Nutrição`, `Conforto`, `Saúde`, `Comportamento`: `ADEQUADO` em verde ou `IRREGULAR` em vermelho).
+- Na Seção 3, adicione o campo `"BOLETIM DE OCORRÊNCIA (BO): SIM / NÃO"` ao lado de SEAGRI e PMDF/BPMA.
+- Na Seção 5, exiba uma caixa destacada com o `"Grau de Bem-Estar Animal"`, o `"Enquadramento (Configura / Não configura maus-tratos)"` e o texto do parecer/observações.
+
+3. CORREÇÃO DA MARCA D'ÁGUA E LAYOUT DAS FOTOS (FOLHA 2):
+- Na tarja escura da marca d'água (Canvas), ajuste a fonte e a margem direita do texto `"REF: DF-MAUS-TRATOS-..."` para nunca cortar os últimos dígitos na borda da imagem.
+- Abaixo da foto na Folha 2, remova a repetição tripla de RA/Data/Coordenadas (já presentes no topo da página e dentro da tarja da foto), exibindo apenas uma legenda limpa (`"Evidência Fotográfica #1 — Protocolo ${id}"`).
+- Se houver 2 ou mais fotos, organize até 2 fotos por página (ou grade 2x2) para não gerar páginas excessivas.

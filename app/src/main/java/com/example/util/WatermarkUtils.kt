@@ -259,18 +259,27 @@ object WatermarkUtils {
         var currentY = bannerTop + bannerPadding + titleTextSize
         canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, currentY, titlePaint)
 
-        // Draw protocol on the right side if space allows
+        // Draw protocol on the right side with guaranteed safety margin to prevent edge clipping
+        val protoText = "REF: $protocol"
         val protoPaint = Paint().apply {
             color = Color.rgb(148, 163, 184) // Slate 400
-            textSize = smallTextSize
+            textSize = smallTextSize * 0.85f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
             isAntiAlias = true
         }
-        val protoBounds = Rect()
-        protoPaint.getTextBounds(protocol, 0, protocol.length, protoBounds)
-        val protoX = width - bannerPadding - protoBounds.width()
-        if (protoX > bannerPadding + 300 * scaleFactor) {
-            canvas.drawText("REF: $protocol", protoX, currentY, protoPaint)
+        val titleWidth = titlePaint.measureText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO")
+        val rightMargin = (bannerPadding * 2.2f).coerceAtLeast(32f * scaleFactor)
+        val maxProtoWidth = (width - rightMargin - bannerPadding - titleWidth - (16f * scaleFactor)).coerceAtLeast(width * 0.35f)
+        while (protoPaint.measureText(protoText) > maxProtoWidth && protoPaint.textSize > 6.5f * scaleFactor) {
+            protoPaint.textSize -= 0.5f
+        }
+        val protoWidth = protoPaint.measureText(protoText)
+        val protoX = width - rightMargin - protoWidth
+        if (protoX > bannerPadding + titleWidth + (12f * scaleFactor)) {
+            canvas.drawText(protoText, protoX, currentY, protoPaint)
+        } else {
+            val safeX = (width - rightMargin - protoWidth).coerceAtLeast(bannerPadding)
+            canvas.drawText(protoText, safeX, currentY - (titleTextSize * 0.3f), protoPaint)
         }
 
         // Draw information lines
