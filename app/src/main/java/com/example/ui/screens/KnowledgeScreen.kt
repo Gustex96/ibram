@@ -3,10 +3,13 @@ package com.example.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,18 +24,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +45,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -55,12 +60,12 @@ import com.example.model.HorseAnatomyData
 import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.FiveDomainsView
 import com.example.ui.components.HorseAnatomyAtlasView
-import com.example.ui.components.SpeciesSelectorTabs
 import com.example.ui.viewmodel.InspectionViewModel
 
 /**
  * Aba Conhecimento: Apresenta os 5 Domínios que devem ser garantidos aos animais,
  * o Atlas Anatômico do Cavalo (exclusivo para equinos) e os Guias Técnicos Operacionais.
+ * Refatorada para a paleta verde institucional e cartões brancos limpos.
  */
 @Composable
 fun KnowledgeScreen(
@@ -86,35 +91,36 @@ fun KnowledgeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .background(Color(0xFFF4FAF6))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .testTag("screen_knowledge")
     ) {
-        // Cabeçalho da Aba Conhecimento
-        ElevatedCard(
+        // 1. Cabeçalho Institucional de Conhecimento (Card Branco Refinado)
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-            ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 1.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(42.dp)
+                    color = Color(0xFF14532D),
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_owl),
                             contentDescription = "Base de Conhecimento",
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -124,22 +130,38 @@ fun KnowledgeScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "BASE DE CONHECIMENTO",
+                        text = "GUIA & CONHECIMENTO",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.5.sp,
+                        color = Color(0xFF14532D),
                         letterSpacing = 0.5.sp
                     )
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFD1FAE5),
+                        modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
+                    ) {
+                        Text(
+                            text = "Garantias Fundamentais & PPBEA",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF14532D),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
                     Text(
-                        text = "Garantias Fundamentais & Parâmetros de Fiscalização",
+                        text = "Parâmetros técnicos para avaliação de bem-estar",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF64748B)
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     // Botão para abrir o Manual Oficial do CRMV-MS (ANEXO D - PPBEA)
-                    IconButton(
+                    Surface(
                         onClick = {
                             try {
                                 val manualUrl = "https://crmvms.org.br/wp-content/uploads/2022/08/MANUAL-DE-VERIFICACAO-INICIAL-DE-MAUS-TRATOS-A-CAES-E-GATOS.pdf"
@@ -151,19 +173,24 @@ fun KnowledgeScreen(
                                 Toast.makeText(context, "Não foi possível abrir o link do Manual.", Toast.LENGTH_SHORT).show()
                             }
                         },
+                        shape = CircleShape,
+                        color = Color(0xFFD1FAE5),
                         modifier = Modifier
                             .size(36.dp)
                             .testTag("knowledge_open_pdf_manual")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.OpenInNew,
-                            contentDescription = "Abrir Manual de Verificação PPBEA (PDF)",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Abrir Manual PPBEA (PDF)",
+                                tint = Color(0xFF14532D),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     if (isHorse && selectedTab == 1) {
-                        IconButton(
+                        Surface(
                             onClick = {
                                 try {
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(HorseAnatomyData.ATLAS_DOCUMENT_URL)).apply {
@@ -174,81 +201,135 @@ fun KnowledgeScreen(
                                     Toast.makeText(context, "Não foi possível abrir o link do Atlas.", Toast.LENGTH_SHORT).show()
                                 }
                             },
+                            shape = CircleShape,
+                            color = Color(0xFFD1FAE5),
                             modifier = Modifier
                                 .size(36.dp)
                                 .testTag("knowledge_open_pdf_atlas")
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.OpenInNew,
-                                contentDescription = "Abrir Atlas em PDF",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.PictureAsPdf,
+                                    contentDescription = "Abrir Atlas em PDF",
+                                    tint = Color(0xFF14532D),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Espécie ativa sincronizada com o topo do app (botão 'Trocar Espécie')
-
-        // Abas da Base de Conhecimento
-        TabRow(
-            selectedTabIndex = selectedTab,
+        // 2. Seletor de Abas Estilo Pílula Verde Institucional
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 10.dp)
+                .padding(bottom = 10.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White,
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 1.dp
         ) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = {
-                    Text(
-                        text = "5 Domínios",
-                        fontSize = 12.sp,
-                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                modifier = Modifier.testTag("tab_knowledge_five_domains")
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                // Aba 1: 5 Domínios
+                val isTab0 = selectedTab == 0
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("tab_knowledge_five_domains")
+                        .clickable { selectedTab = 0 },
+                    shape = RoundedCornerShape(9.dp),
+                    color = if (isTab0) Color(0xFFA7F3D0).copy(alpha = 0.85f) else Color.Transparent
+                ) {
+                    Box(
+                        modifier = Modifier.padding(vertical = 9.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "5 Domínios",
+                            fontSize = 12.sp,
+                            fontWeight = if (isTab0) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isTab0) Color(0xFF022C22) else Color(0xFF64748B)
+                        )
+                    }
+                }
 
-            if (isHorse) {
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Text(
-                            text = "Atlas Equino",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    modifier = Modifier.testTag("tab_knowledge_horse_atlas")
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = {
-                        Text(
-                            text = "Guia Prático",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    modifier = Modifier.testTag("tab_knowledge_anexo_f")
-                )
-            } else {
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Text(
-                            text = "Guia Canino",
-                            fontSize = 12.sp,
-                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    modifier = Modifier.testTag("tab_knowledge_anexo_f")
-                )
+                if (isHorse) {
+                    // Aba 2: Atlas Equino
+                    val isTab1 = selectedTab == 1
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("tab_knowledge_horse_atlas")
+                            .clickable { selectedTab = 1 },
+                        shape = RoundedCornerShape(9.dp),
+                        color = if (isTab1) Color(0xFFA7F3D0).copy(alpha = 0.85f) else Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 9.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Atlas Equino",
+                                fontSize = 12.sp,
+                                fontWeight = if (isTab1) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isTab1) Color(0xFF022C22) else Color(0xFF64748B)
+                            )
+                        }
+                    }
+
+                    // Aba 3: Guia Prático
+                    val isTab2 = selectedTab == 2
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("tab_knowledge_anexo_f")
+                            .clickable { selectedTab = 2 },
+                        shape = RoundedCornerShape(9.dp),
+                        color = if (isTab2) Color(0xFFA7F3D0).copy(alpha = 0.85f) else Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 9.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Guia Prático",
+                                fontSize = 12.sp,
+                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isTab2) Color(0xFF022C22) else Color(0xFF64748B)
+                            )
+                        }
+                    }
+                } else {
+                    // Aba 2: Guia Canino
+                    val isTab1 = selectedTab == 1
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("tab_knowledge_anexo_f")
+                            .clickable { selectedTab = 1 },
+                        shape = RoundedCornerShape(9.dp),
+                        color = if (isTab1) Color(0xFFA7F3D0).copy(alpha = 0.85f) else Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 9.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Guia Canino",
+                                fontSize = 12.sp,
+                                fontWeight = if (isTab1) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isTab1) Color(0xFF022C22) else Color(0xFF64748B)
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -270,7 +351,7 @@ fun KnowledgeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             items(allCategories, key = { it.id }) { cat ->
                                 val isSelected = cat.id == selectedCategoryId
@@ -279,8 +360,15 @@ fun KnowledgeScreen(
                                     onClick = { selectedCategoryId = cat.id },
                                     label = { Text(cat.title, fontSize = 11.5.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        selectedContainerColor = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                                        selectedLabelColor = Color(0xFF022C22),
+                                        containerColor = Color.White,
+                                        labelColor = Color(0xFF475569)
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        borderColor = if (isSelected) Color(0xFF14532D).copy(alpha = 0.3f) else Color(0xFFE2E8F0),
+                                        enabled = true,
+                                        selected = isSelected
                                     )
                                 )
                             }
@@ -291,29 +379,30 @@ fun KnowledgeScreen(
                     if (activeCategory != null) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 88.dp)
                         ) {
                             items(activeCategory.items) { item ->
-                                Card(
+                                Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    )
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    shadowElevation = 1.dp
                                 ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
                                         Text(
                                             text = item.title,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary
+                                            fontSize = 13.5.sp,
+                                            color = Color(0xFF14532D)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = item.description,
                                             fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            lineHeight = 16.sp
+                                            color = Color(0xFF334155),
+                                            lineHeight = 16.5.sp
                                         )
                                     }
                                 }

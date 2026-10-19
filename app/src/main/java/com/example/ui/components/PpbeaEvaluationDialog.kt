@@ -170,7 +170,7 @@ fun PpbeaEvaluationDialog(
 
                                 Column {
                                     Text(
-                                        text = "ANEXO D – PROTOCOLO PPBEA",
+                                        text = "PROTOCOLO PPBEA – ANEXO D",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 13.5.sp,
                                         color = Color.White,

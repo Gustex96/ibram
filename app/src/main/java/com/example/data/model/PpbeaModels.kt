@@ -87,7 +87,7 @@ object PpbeaCriteriaRepository {
         PpbeaCriterion(
             id = "nut_magro",
             domain = PpbeaDomain.NUTRICIONAL,
-            question = "Animal apresenta escore corporal baixo (Muito magro ou Magro - ECC 1 ou 2)?",
+            question = "Animal apresenta escore corporal baixo (Muito magro ou Magro)?",
             goodStateExplanation = "Escore corporal ideal ou adequado (costelas palpáveis sem ossos proeminentes)",
             badStateExplanation = "Caquexia, emaciação severa ou costelas/vértebras salientes",
             simIsRuim = true,
@@ -123,7 +123,7 @@ object PpbeaCriteriaRepository {
         PpbeaCriterion(
             id = "nut_obeso",
             domain = PpbeaDomain.NUTRICIONAL,
-            question = "Animal com sobrepeso excessivo ou obesidade mórbida (ECC 5)?",
+            question = "Animal com sobrepeso excessivo ou obesidade mórbida?",
             goodStateExplanation = "Peso corporal compatível com o porte e idade da espécie",
             badStateExplanation = "Depósito massivo de gordura dificultando locomoção e respiração",
             simIsRuim = true,

@@ -13,7 +13,12 @@ import android.graphics.pdf.PdfDocument
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.R
+import com.example.data.model.EnquadramentoMausTratos
+import com.example.data.model.GrauBemEstar
 import com.example.data.model.HorseInspection
+import com.example.data.model.ParecerDomain
+import com.example.data.model.PpbeaCriteriaRepository
+import com.example.data.model.PpbeaDiagnosis
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -56,6 +61,210 @@ object PdfReportGenerator {
         }
     }
 
+    fun cleanEccTerms(text: String): String {
+        return text
+            .replace(Regex("""\s*[-–]\s*ECC\s*1\s*(ou|a|e)\s*2""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\(ECC\s*1\s*(ou|a|e)\s*2\s*.*?\)|ECC\s*1\s*(ou|a|e)\s*2""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*[-–]\s*ECC\s*1""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\(ECC\s*1\)|ECC\s*1""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\(ECC\s*5\)|ECC\s*5""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\(ECC\s*[^)]+\)""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*[-–]\s*ECC\s*\d+(\s*(a|ou|e)\s*\d+)?\s*[-–]?""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\bECC\s*\d+(\s*(a|ou|e)\s*\d+)?""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\bECC\b""", RegexOption.IGNORE_CASE), "")
+            .replace("  ", " ")
+            .trim()
+    }
+
+    private class TextPageManager(
+        val document: PdfDocument,
+        val pageWidth: Int = 595,
+        val pageHeight: Int = 842,
+        val margin: Float = 36f,
+        val contentWidth: Float = 523f,
+        val protocolNumber: String,
+        val auditorName: String,
+        val context: Context
+    ) {
+        var currentPageNumber = 1
+        var pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, currentPageNumber).create()
+        var currentPage = document.startPage(pageInfo)
+        var canvas = currentPage.canvas
+        val footerY = pageHeight - 48f
+        var y = 32f
+
+        init {
+            drawPageDecorations(isFirstPage = true)
+        }
+
+        fun ensureSpace(neededHeight: Float) {
+            if (y + neededHeight > footerY - 12f) {
+                drawFooter()
+                document.finishPage(currentPage)
+                currentPageNumber++
+                pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, currentPageNumber).create()
+                currentPage = document.startPage(pageInfo)
+                canvas = currentPage.canvas
+                y = 32f
+                drawPageDecorations(isFirstPage = false)
+            }
+        }
+
+        private fun drawPageDecorations(isFirstPage: Boolean) {
+            canvas.drawColor(Color.WHITE)
+            val greenBarPaint = Paint().apply { color = Color.rgb(0, 104, 74); style = Paint.Style.FILL }
+            val blueBarPaint = Paint().apply { color = Color.rgb(0, 100, 149); style = Paint.Style.FILL }
+            canvas.drawRect(0f, 0f, pageWidth.toFloat(), 12f, greenBarPaint)
+            canvas.drawRect(0f, 12f, pageWidth.toFloat(), 16f, blueBarPaint)
+
+            if (isFirstPage) {
+                val logoWidth = 46f
+                val logoHeight = 46f
+                try {
+                    val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_meio_ambiente)
+                    if (logoBitmap != null) {
+                        val logoRect = RectF(margin, y, margin + logoWidth, y + logoHeight)
+                        canvas.drawBitmap(logoBitmap, null, logoRect, null)
+                    }
+                } catch (_: Exception) {}
+
+                val textStartX = margin + logoWidth + 12f
+                val headerTitlePaint = Paint().apply {
+                    color = Color.rgb(0, 104, 74)
+                    textSize = 12f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                canvas.drawText("RELATÓRIO DE APOIO • FISCALIZAÇÃO AMBIENTAL", textStartX, y + 14f, headerTitlePaint)
+
+                val headerSubPaint = Paint().apply {
+                    color = Color.rgb(15, 23, 42)
+                    textSize = 9.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                canvas.drawText("LEVANTAMENTO OPERACIONAL E MONITORAMENTO DE CAMPO", textStartX, y + 27f, headerSubPaint)
+
+                val headerSmallPaint = Paint().apply {
+                    color = Color.rgb(100, 116, 139)
+                    textSize = 7.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
+                canvas.drawText("DOCUMENTO INDEPENDENTE PARA FINS DE APOIO • SEM VÍNCULO OFICIAL COM O GDF", textStartX, y + 39f, headerSmallPaint)
+
+                y += 50f
+
+                val badgeBgPaint = Paint().apply {
+                    color = Color.rgb(241, 245, 249)
+                    style = Paint.Style.FILL
+                }
+                val badgeRect = RectF(margin, y, margin + contentWidth, y + 22f)
+                canvas.drawRoundRect(badgeRect, 4f, 4f, badgeBgPaint)
+
+                val docNamePaint = Paint().apply {
+                    color = Color.rgb(0, 104, 74)
+                    textSize = 9.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                canvas.drawText("LEVANTAMENTO DE CAMPO • RELATÓRIO GERAL", margin + 10f, y + 15f, docNamePaint)
+
+                val protocolPaint = Paint().apply {
+                    color = Color.rgb(15, 23, 42)
+                    textSize = 9f
+                    typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val protoText = "Nº $protocolNumber"
+                val protoWidth = protocolPaint.measureText(protoText)
+                canvas.drawText(protoText, margin + contentWidth - protoWidth - 10f, y + 15f, protocolPaint)
+
+                y += 28f
+            } else {
+                val contPaint = Paint().apply {
+                    color = Color.rgb(0, 104, 74)
+                    textSize = 9.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                canvas.drawText("LEVANTAMENTO DE CAMPO Nº $protocolNumber (FOLHA CONTINUAÇÃO)", margin, y + 14f, contPaint)
+                y += 24f
+            }
+        }
+
+        fun drawFooter() {
+            val linePaint = Paint().apply {
+                color = Color.rgb(203, 213, 225)
+                strokeWidth = 1f
+            }
+            canvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
+
+            val footerTextPaint = Paint().apply {
+                color = Color.rgb(148, 163, 184)
+                textSize = 7.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                isAntiAlias = true
+            }
+
+            val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale("pt", "BR"))
+            val genText = "Levantamento expedido em ${sdfGen.format(Date())} • Folha $currentPageNumber"
+            canvas.drawText(genText, margin, footerY + 12f, footerTextPaint)
+            val legalNote = "Documento gerado por aplicativo para fins de apoio, sem vínculo oficial com o GDF."
+            canvas.drawText(legalNote, margin, footerY + 22f, footerTextPaint)
+
+            val signLineX = margin + contentWidth - 200f
+            canvas.drawLine(signLineX, footerY + 18f, margin + contentWidth, footerY + 18f, linePaint)
+            val auditorSignLabel = if (auditorName.isNotBlank()) auditorName else "Auditor Fiscal de Campo"
+            canvas.drawText(auditorSignLabel, signLineX + 6f, footerY + 28f, footerTextPaint)
+            canvas.drawText("Auditor Fiscal / Agente Responsável", signLineX + 6f, footerY + 38f, footerTextPaint)
+        }
+
+        fun finishCurrentPage() {
+            drawFooter()
+            document.finishPage(currentPage)
+        }
+    }
+
+    private fun drawWrappedText(
+        pageManager: TextPageManager,
+        text: String,
+        x: Float,
+        maxWidth: Float,
+        paint: Paint,
+        lineSpacing: Float
+    ) {
+        val paragraphs = text.split("\n")
+        for (paragraph in paragraphs) {
+            val trimmed = paragraph.trim()
+            if (trimmed.isEmpty()) {
+                pageManager.ensureSpace(lineSpacing)
+                pageManager.y += lineSpacing * 0.6f
+                continue
+            }
+            val words = trimmed.split(Regex("\\s+"))
+            var currentLine = StringBuilder()
+
+            for (word in words) {
+                val potentialLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+                val textWidth = paint.measureText(potentialLine)
+                if (textWidth <= maxWidth) {
+                    currentLine = StringBuilder(potentialLine)
+                } else {
+                    pageManager.ensureSpace(lineSpacing + 2f)
+                    pageManager.canvas.drawText(currentLine.toString(), x, pageManager.y, paint)
+                    pageManager.y += lineSpacing
+                    currentLine = StringBuilder(word)
+                }
+            }
+            if (currentLine.isNotEmpty()) {
+                pageManager.ensureSpace(lineSpacing + 2f)
+                pageManager.canvas.drawText(currentLine.toString(), x, pageManager.y, paint)
+                pageManager.y += lineSpacing
+            }
+        }
+    }
+
     fun generateSingleInspectionPdf(context: Context, inspection: HorseInspection): File? {
         val document = PdfDocument()
         val pageWidth = 595
@@ -64,87 +273,7 @@ object PdfReportGenerator {
         val contentWidth = pageWidth - (margin * 2)
 
         val allPhotos = inspection.allPhotoPaths
-
-        // PAGE 1: DADOS TÉCNICOS & LEVANTAMENTO OPERACIONAL
-        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
-        val page = document.startPage(pageInfo)
-        val canvas = page.canvas
-        canvas.drawColor(Color.WHITE)
-
-        // Top decorative bar
-        val greenBarPaint = Paint().apply { color = Color.rgb(0, 104, 74); style = Paint.Style.FILL }
-        val blueBarPaint = Paint().apply { color = Color.rgb(0, 100, 149); style = Paint.Style.FILL }
-        canvas.drawRect(0f, 0f, pageWidth.toFloat(), 12f, greenBarPaint)
-        canvas.drawRect(0f, 12f, pageWidth.toFloat(), 16f, blueBarPaint)
-
-        var y = 32f
-
-        // Logo Meio Ambiente
-        val logoWidth = 48f
-        val logoHeight = 48f
-        try {
-            val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_meio_ambiente)
-            if (logoBitmap != null) {
-                val logoRect = RectF(margin, y, margin + logoWidth, y + logoHeight)
-                canvas.drawBitmap(logoBitmap, null, logoRect, null)
-            }
-        } catch (_: Exception) {}
-
-        // Header text
-        val textStartX = margin + logoWidth + 12f
-        val headerTitlePaint = Paint().apply {
-            color = Color.rgb(0, 104, 74)
-            textSize = 12.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        canvas.drawText("RELATÓRIO DE APOIO", textStartX, y + 14f, headerTitlePaint)
-
-        val headerSubPaint = Paint().apply {
-            color = Color.rgb(15, 23, 42)
-            textSize = 9.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        canvas.drawText("LEVANTAMENTO OPERACIONAL E MONITORAMENTO DE CAMPO", textStartX, y + 27f, headerSubPaint)
-
-        val headerSmallPaint = Paint().apply {
-            color = Color.rgb(100, 116, 139)
-            textSize = 7.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            isAntiAlias = true
-        }
-        canvas.drawText("DOCUMENTO INDEPENDENTE PARA FINS DE APOIO • SEM VÍNCULO OFICIAL COM O GDF", textStartX, y + 39f, headerSmallPaint)
-
-        y += 52f
-
-        // Document Badge - LEVANTAMENTO DE CAMPO
-        val badgeBgPaint = Paint().apply {
-            color = Color.rgb(241, 245, 249)
-            style = Paint.Style.FILL
-        }
-        val badgeRect = RectF(margin, y, margin + contentWidth, y + 24f)
-        canvas.drawRoundRect(badgeRect, 5f, 5f, badgeBgPaint)
-
-        val docNamePaint = Paint().apply {
-            color = Color.rgb(0, 104, 74)
-            textSize = 9.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        canvas.drawText("LEVANTAMENTO DE CAMPO", margin + 10f, y + 16f, docNamePaint)
-
-        val protocolPaint = Paint().apply {
-            color = Color.rgb(15, 23, 42)
-            textSize = 9f
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        val protoText = "Nº ${inspection.protocolNumber}"
-        val protoWidth = protocolPaint.measureText(protoText)
-        canvas.drawText(protoText, margin + contentWidth - protoWidth - 10f, y + 16f, protocolPaint)
-
-        y += 32f
+        val isDog = inspection.isDog
 
         val labelPaint = Paint().apply {
             color = Color.rgb(100, 116, 139)
@@ -159,30 +288,34 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
+        val pageManager = TextPageManager(
+            document = document,
+            pageWidth = pageWidth,
+            pageHeight = pageHeight,
+            margin = margin,
+            contentWidth = contentWidth,
+            protocolNumber = inspection.protocolNumber,
+            auditorName = inspection.auditorName,
+            context = context
+        )
+
         val col1X = margin + 8f
         val col2X = margin + (contentWidth / 2f) + 8f
 
-        // SECTION 1: LOCALIZAÇÃO, ENDEREÇO DA AÇÃO FISCAL & GEORREFERENCIAMENTO
-        y = drawSectionHeader(canvas, "1. DADOS DE LOCALIZAÇÃO, ENDEREÇO DA AÇÃO FISCAL & GPS", margin, y, contentWidth)
+        // SECTION 1: LOCALIZAÇÃO, ENDEREÇO DA AÇÃO FISCAL & GPS
+        pageManager.ensureSpace(28f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "1. DADOS DE LOCALIZAÇÃO, ENDEREÇO DA AÇÃO FISCAL & GPS", margin, pageManager.y, contentWidth)
 
-        // 1.1 Região Administrativa & Data/Hora (Duas colunas alinhadas)
-        canvas.drawText("REGIÃO ADMINISTRATIVA (RA):", col1X, y, labelPaint)
-        canvas.drawText(inspection.administrativeRegion, col1X, y + 11f, valuePaint)
+        // 1.1 Região Administrativa & Data/Hora
+        pageManager.ensureSpace(26f)
+        pageManager.canvas.drawText("REGIÃO ADMINISTRATIVA (RA):", col1X, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(inspection.administrativeRegion, col1X, pageManager.y + 11f, valuePaint)
 
-        canvas.drawText("DATA E HORA DO REGISTRO:", col2X, y, labelPaint)
-        canvas.drawText(inspection.formattedCaptureDate, col2X, y + 11f, valuePaint)
-        y += 24f
+        pageManager.canvas.drawText("DATA E HORA DO REGISTRO:", col2X, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(inspection.formattedCaptureDate, col2X, pageManager.y + 11f, valuePaint)
+        pageManager.y += 24f
 
-        // 1.2 Endereço Residencial / Logradouro (Bloco destacado com delimitador visual exclusivo)
-        val addrBoxPaint = Paint().apply {
-            color = Color.rgb(248, 250, 252)
-            style = Paint.Style.FILL
-        }
-        val addrBorderPaint = Paint().apply {
-            color = Color.rgb(226, 232, 240)
-            style = Paint.Style.STROKE
-            strokeWidth = 0.8f
-        }
+        // 1.2 Endereço Residencial / Logradouro
         val addrParts = mutableListOf<String>()
         if (inspection.quadra.isNotBlank()) addrParts.add("Quadra: ${inspection.quadra}")
         if (inspection.conjunto.isNotBlank()) addrParts.add("Conjunto: ${inspection.conjunto}")
@@ -193,24 +326,13 @@ object PdfReportGenerator {
             "Área / logradouro público em ${inspection.administrativeRegion} (Sem numeração específica informada)"
         }
 
-        val addrLabelPaint = Paint().apply {
-            color = Color.rgb(71, 85, 105)
-            textSize = 7.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-        val addrTextPaint = Paint(valuePaint).apply {
-            textSize = 8.5f
-        }
-
-        // Divide o endereço em linhas sem cortar palavras para nunca sobrepor outros campos
         val addrWords = fullAddrText.split(" ")
         val addrLines = mutableListOf<String>()
         var currLine = StringBuilder()
         val maxAddrW = contentWidth - 20f
         for (w in addrWords) {
             val cand = if (currLine.isEmpty()) w else "$currLine $w"
-            if (addrTextPaint.measureText(cand) <= maxAddrW) {
+            if (valuePaint.measureText(cand) <= maxAddrW) {
                 currLine = StringBuilder(cand)
             } else {
                 if (currLine.isNotEmpty()) addrLines.add(currLine.toString())
@@ -220,21 +342,34 @@ object PdfReportGenerator {
         if (currLine.isNotEmpty()) addrLines.add(currLine.toString())
         val effectiveLines = if (addrLines.isEmpty()) listOf(fullAddrText) else addrLines
 
-        val boxTop = y - 2f
         val boxHeight = 14f + (effectiveLines.size * 11.5f) + 4f
-        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBoxPaint)
-        canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBorderPaint)
+        pageManager.ensureSpace(boxHeight + 10f)
 
-        canvas.drawText("ENDEREÇO RESIDENCIAL / LOGRADOURO DA AÇÃO FISCAL:", col1X, y + 8f, addrLabelPaint)
-        var addrDrawY = y + 19.5f
+        val addrBoxPaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
+        val addrBorderPaint = Paint().apply { color = Color.rgb(226, 232, 240); style = Paint.Style.STROKE; strokeWidth = 0.8f }
+        val boxTop = pageManager.y - 2f
+        pageManager.canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBoxPaint)
+        pageManager.canvas.drawRoundRect(RectF(margin, boxTop, margin + contentWidth, boxTop + boxHeight), 4f, 4f, addrBorderPaint)
+
+        val addrLabelPaint = Paint().apply {
+            color = Color.rgb(71, 85, 105)
+            textSize = 7.5f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            isAntiAlias = true
+        }
+        val addrTextPaint = Paint(valuePaint).apply { textSize = 8.5f }
+
+        pageManager.canvas.drawText("ENDEREÇO RESIDENCIAL / LOGRADOURO DA AÇÃO FISCAL:", col1X, pageManager.y + 8f, addrLabelPaint)
+        var addrDrawY = pageManager.y + 19.5f
         for (line in effectiveLines) {
-            canvas.drawText(line, col1X, addrDrawY, addrTextPaint)
+            pageManager.canvas.drawText(line, col1X, addrDrawY, addrTextPaint)
             addrDrawY += 11.5f
         }
-        y = boxTop + boxHeight + 8f
+        pageManager.y = boxTop + boxHeight + 8f
 
-        // 1.3 Coordenadas Geográficas (GPS) & Auditor Fiscal (Totalmente isolados do endereço residencial)
-        canvas.drawText("COORDENADAS GEOGRÁFICAS (GPS):", col1X, y, labelPaint)
+        // 1.3 Coordenadas Geográficas (GPS) & Auditor Fiscal
+        pageManager.ensureSpace(26f)
+        pageManager.canvas.drawText("COORDENADAS GEOGRÁFICAS (GPS):", col1X, pageManager.y, labelPaint)
         val coordsText = String.format(Locale.US, "%.6f°, %.6f° (SIRGAS 2000 / WGS 84)", inspection.latitude, inspection.longitude)
         val gpsValPaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
@@ -242,9 +377,9 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText(coordsText, col1X, y + 11f, gpsValPaint)
+        pageManager.canvas.drawText(coordsText, col1X, pageManager.y + 11f, gpsValPaint)
 
-        canvas.drawText("AUDITOR FISCAL RESPONSÁVEL:", col2X, y, labelPaint)
+        pageManager.canvas.drawText("AUDITOR FISCAL RESPONSÁVEL:", col2X, pageManager.y, labelPaint)
         val auditorReportName = if (inspection.auditorName.isNotBlank()) inspection.auditorName else "Auditor Fiscal de Campo (Equipe Operacional)"
         val audValPaint = Paint().apply {
             color = Color.rgb(0, 104, 74)
@@ -252,29 +387,31 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText(auditorReportName, col2X, y + 11f, audValPaint)
-        y += 24f
+        pageManager.canvas.drawText(auditorReportName, col2X, pageManager.y + 11f, audValPaint)
+        pageManager.y += 24f
 
         // 1.4 Espécie Avaliada & Finalidade do Documento
-        canvas.drawText("ESPÉCIE / CATEGORIA AVALIADA:", col1X, y, labelPaint)
+        pageManager.ensureSpace(26f)
+        pageManager.canvas.drawText("ESPÉCIE / CATEGORIA AVALIADA:", col1X, pageManager.y, labelPaint)
         val speciesInfoText = if (inspection.isDog) "${inspection.speciesEmoji} Cachorro" else "${inspection.speciesEmoji} Cavalo"
-        canvas.drawText(speciesInfoText, col1X, y + 11f, audValPaint)
+        pageManager.canvas.drawText(speciesInfoText, col1X, pageManager.y + 11f, audValPaint)
 
-        canvas.drawText("FINALIDADE DO DOCUMENTO:", col2X, y, labelPaint)
-        canvas.drawText("Apoio em Fiscalização / Bem-Estar Animal", col2X, y + 11f, valuePaint)
-        y += 26f
+        pageManager.canvas.drawText("FINALIDADE DO DOCUMENTO:", col2X, pageManager.y, labelPaint)
+        pageManager.canvas.drawText("Apoio em Fiscalização / Bem-Estar Animal", col2X, pageManager.y + 11f, valuePaint)
+        pageManager.y += 26f
 
-        // SECTION 2: QUANTIFICAÇÃO DOS ANIMAIS E CONSTATAÇÕES DE CAMPO (SEM NÍVEIS DE RISCO)
-        val isDog = inspection.isDog
-        val s2Title = if (isDog) "2. QUANTIFICAÇÃO DOS CANINOS E CONSTATAÇÕES DE CAMPO" else "2. QUANTIFICAÇÃO DOS ANIMAIS E CONSTATAÇÕES DE CAMPO"
-        y = drawSectionHeader(canvas, s2Title, margin, y, contentWidth)
+        // SECTION 2: QUANTIFICAÇÃO DOS ANIMAIS & PROTOCOLO PPBEA – ANEXO D
+        val s2Title = if (isDog) "2. QUANTIFICAÇÃO DOS CANINOS & PROTOCOLO PPBEA – ANEXO D" else "2. QUANTIFICAÇÃO DOS ANIMAIS & PROTOCOLO PPBEA – ANEXO D"
+        pageManager.ensureSpace(28f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, s2Title, margin, pageManager.y, contentWidth)
 
+        pageManager.ensureSpace(26f)
         val quantLabel = if (isDog) "QUANTIDADE TOTAL DE CÃES:" else "QUANTIDADE TOTAL DE ANIMAIS:"
-        canvas.drawText(quantLabel, col1X, y, labelPaint)
+        pageManager.canvas.drawText(quantLabel, col1X, pageManager.y, labelPaint)
         val quantUnit = if (isDog) "cão(ães)" else "animal(is)"
-        canvas.drawText("${inspection.horseCount} $quantUnit", col1X, y + 11f, valuePaint)
+        pageManager.canvas.drawText("${inspection.horseCount} $quantUnit", col1X, pageManager.y + 11f, valuePaint)
 
-        canvas.drawText("SINAIS DE MAUS-TRATOS:", col2X, y, labelPaint)
+        pageManager.canvas.drawText("SINAIS DE MAUS-TRATOS:", col2X, pageManager.y, labelPaint)
         val countText = if (inspection.mistreatedHorseCount > 0) {
             "${inspection.mistreatedHorseCount} $quantUnit com sinais observados"
         } else {
@@ -286,201 +423,275 @@ object PdfReportGenerator {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText(countText, col2X, y + 11f, countValPaint)
-        y += 25f
+        pageManager.canvas.drawText(countText, col2X, pageManager.y + 11f, countValPaint)
+        pageManager.y += 25f
 
-        if (inspection.horseDescription.isNotBlank()) {
-            val descLabel = if (isDog) "DESCRIÇÃO DO(S) CÃO(ÃES) / SINAIS FÍSICOS:" else "DESCRIÇÃO DO(S) ANIMAL(IS):"
-            canvas.drawText(descLabel, col1X, y, labelPaint)
-            y += 10f
-            y = drawWrappedText(canvas, inspection.horseDescription, col1X, y, contentWidth - 16f, valuePaint, 11f)
-            y += 4f
-        }
+        // Bloco de Diagnóstico PPBEA (se preenchido)
+        val diag = inspection.ppbeaDiagnosis
+        if (diag != null) {
+            pageManager.ensureSpace(52f)
+            val diagBoxPaint = Paint().apply { color = Color.rgb(241, 248, 245); style = Paint.Style.FILL }
+            val diagBorderPaint = Paint().apply { color = Color.rgb(167, 243, 208); style = Paint.Style.STROKE; strokeWidth = 0.8f }
+            val diagTop = pageManager.y - 2f
+            val diagHeight = 46f
+            pageManager.canvas.drawRoundRect(RectF(margin, diagTop, margin + contentWidth, diagTop + diagHeight), 4f, 4f, diagBoxPaint)
+            pageManager.canvas.drawRoundRect(RectF(margin, diagTop, margin + contentWidth, diagTop + diagHeight), 4f, 4f, diagBorderPaint)
 
-        if (inspection.mistreatmentList.isNotEmpty()) {
-            val alertLabelPaint = Paint().apply {
-                color = Color.rgb(198, 40, 40)
+            val diagHeaderPaint = Paint().apply {
+                color = Color.rgb(0, 104, 74)
+                textSize = 8.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            pageManager.canvas.drawText("PROTOCOLO PPBEA – ANEXO D (RES. CFMV Nº 1.236/2018):", col1X, pageManager.y + 8f, diagHeaderPaint)
+
+            val hexVal = diag.grauBemEstar.colorHex.toInt()
+            val grauColor = Color.rgb(
+                (hexVal shr 16) and 0xFF,
+                (hexVal shr 8) and 0xFF,
+                hexVal and 0xFF
+            )
+            val grauValPaint = Paint().apply {
+                color = grauColor
+                textSize = 9f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            val grauText = "Grau de Bem-Estar: ${diag.grauBemEstar.label.uppercase()}  |  Enquadramento: ${diag.ocorrenciaMausTratos.label}"
+            pageManager.canvas.drawText(grauText, col1X, pageManager.y + 20f, grauValPaint)
+
+            val domText = "Pareceres: Nutrição [${diag.nutricionalParecer.label}] • Conforto [${diag.confortoParecer.label}] • Saúde [${diag.saudeParecer.label}] • Comportamento [${diag.comportamentalParecer.label}]"
+            val domValPaint = Paint().apply {
+                color = Color.rgb(71, 85, 105)
+                textSize = 8f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                isAntiAlias = true
+            }
+            pageManager.canvas.drawText(domText, col1X, pageManager.y + 32f, domValPaint)
+
+            val boText = if (diag.gerouBoletimOcorrencia) "BO POLICIAL: SIM (GEROU BO)" else "BO POLICIAL: NÃO"
+            val boPaint = Paint().apply {
+                color = if (diag.gerouBoletimOcorrencia) Color.rgb(198, 40, 40) else Color.rgb(46, 125, 50)
                 textSize = 8f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            canvas.drawText("CONSTATAÇÕES DA AUDITORIA FISCAL DE MAUS-TRATOS (RES. CFMV Nº 1.236/2018):", col1X, y, alertLabelPaint)
-            y += 10f
-            val alertValPaint = Paint().apply {
+            val boWidth = boPaint.measureText(boText)
+            pageManager.canvas.drawText(boText, margin + contentWidth - boWidth - 10f, pageManager.y + 20f, boPaint)
+
+            pageManager.y = diagTop + diagHeight + 8f
+        }
+
+        val cleanedMistreatments = inspection.mistreatmentList
+            .map { cleanEccTerms(it) }
+            .map { it.replace(Regex("""^\[.*?\]\s*"""), "").replace("?", "").trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        if (cleanedMistreatments.isNotEmpty()) {
+            pageManager.ensureSpace(22f)
+            val alertLabelPaint = Paint().apply {
                 color = Color.rgb(198, 40, 40)
+                textSize = 8.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            pageManager.canvas.drawText("INCONFORMIDADES / ALERTAS CONSTATADOS (PROTOCOLO PPBEA):", col1X, pageManager.y, alertLabelPaint)
+            pageManager.y += 11f
+            val alertValPaint = Paint().apply {
+                color = Color.rgb(185, 28, 28)
                 textSize = 8.5f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 isAntiAlias = true
             }
-            for (ind in inspection.mistreatmentList) {
-                y = drawWrappedText(canvas, "• $ind", col1X + 4f, y, contentWidth - 20f, alertValPaint, 11f)
+            for (ind in cleanedMistreatments) {
+                drawWrappedText(pageManager, "• $ind", col1X + 4f, contentWidth - 16f, alertValPaint, 11.5f)
             }
-            y += 4f
-        }
-
-        if (inspection.adequateList.isNotEmpty()) {
-            val goodLabelPaint = Paint().apply {
-                color = Color.rgb(46, 125, 50)
-                textSize = 8f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            canvas.drawText("CONDIÇÕES ADEQUADAS DE BEM-ESTAR CONSTATADAS (RES. CFMV Nº 1.236/2018):", col1X, y, goodLabelPaint)
-            y += 10f
+            pageManager.y += 4f
+        } else if (diag != null) {
+            pageManager.ensureSpace(14f)
             val goodValPaint = Paint().apply {
                 color = Color.rgb(46, 125, 50)
                 textSize = 8.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            for (ind in inspection.adequateList) {
-                y = drawWrappedText(canvas, "✓ $ind", col1X + 4f, y, contentWidth - 20f, goodValPaint, 11f)
-            }
-            y += 4f
+            pageManager.canvas.drawText("✓ Nenhuma inconformidade técnica de maus-tratos apontada nos domínios do Protocolo PPBEA.", col1X, pageManager.y, goodValPaint)
+            pageManager.y += 14f
         }
 
-        // SECTION 3: PROVIDÊNCIAS OPERACIONAIS
-        val sec3Title = if (isDog) "3. PROVIDÊNCIAS OPERACIONAIS & APOIO AOS AUDITORES (PMDF / OUTROS)"
-                        else "3. PROVIDÊNCIAS OPERACIONAIS, APREENSÃO E APOIO AOS AUDITORES (SEAGRI / PMDF / OUTROS)"
-        y = drawSectionHeader(canvas, sec3Title, margin, y, contentWidth)
-
-        if (isDog) {
-            canvas.drawText("APOIO DA POLÍCIA MILITAR (PMDF / BPMA):", col1X, y, labelPaint)
-            val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO SOLICITADO"
-            val pmdfPaint = if (inspection.requiresPmdfSupport) {
-                Paint().apply { color = Color.rgb(21, 101, 192); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-            } else valuePaint
-            canvas.drawText(pmdfStatus, col1X, y + 11f, pmdfPaint)
-            y += 24f
-
-            if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
-                canvas.drawText("JUSTIFICATIVA DO APOIO POLICIAL (PMDF / BPMA):", col1X, y, labelPaint)
-                y += 10f
-                y = drawWrappedText(canvas, inspection.pmdfNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
-                y += 4f
+        // SECTION 3: DESCRIÇÃO E PARECER DO RELATÓRIO GERAL (PREENCHIDO NA JANELA NOVA FISCALIZAÇÃO)
+        val relatorioGeral = cleanEccTerms(
+            inspection.horseDescription.trim().ifBlank {
+                diag?.observacoes?.trim() ?: ""
             }
+        )
+        val extraNotes = cleanEccTerms(
+            inspection.imageNotes.trim().takeIf { it.isNotBlank() && it != relatorioGeral } ?: ""
+        )
+
+        pageManager.ensureSpace(36f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "3. DESCRIÇÃO E PARECER DO RELATÓRIO GERAL", margin, pageManager.y, contentWidth)
+
+        val descContentText = if (relatorioGeral.isNotBlank()) {
+            relatorioGeral
         } else {
-            val appLabel = "APREENSÃO / TRANSPORTE (SEAGRI-DF):"
-            canvas.drawText(appLabel, col1X, y, labelPaint)
-            val seagriStatus = if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
-            val seagriPaint = if (inspection.requiresSeagriApprehension) {
-                Paint().apply { color = Color.rgb(230, 81, 0); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-            } else valuePaint
-            canvas.drawText(seagriStatus, col1X, y + 11f, seagriPaint)
+            "Sem parecer descritivo adicional preenchido pelo auditor de campo na fiscalização."
+        }
 
-            canvas.drawText("APOIO POLÍCIA MILITAR (PMDF / BPMA):", col2X, y, labelPaint)
-            val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO"
-            val pmdfPaint = if (inspection.requiresPmdfSupport) {
-                Paint().apply { color = Color.rgb(21, 101, 192); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-            } else valuePaint
-            canvas.drawText(pmdfStatus, col2X, y + 11f, pmdfPaint)
-            y += 24f
+        pageManager.ensureSpace(24f)
+        val relLabelPaint = Paint().apply {
+            color = Color.rgb(0, 104, 74)
+            textSize = 8.5f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            isAntiAlias = true
+        }
+        pageManager.canvas.drawText("DESCRIÇÃO E PARECER TÉCNICO REGISTRADO NA FISCALIZAÇÃO:", col1X, pageManager.y, relLabelPaint)
+        pageManager.y += 12f
 
-            if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) {
-                val obsHeader = "OBSERVAÇÕES DA APREENSÃO:"
-                canvas.drawText(obsHeader, col1X, y, labelPaint)
-                y += 10f
-                y = drawWrappedText(canvas, inspection.seagriNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
-                y += 4f
+        val descBodyPaint = Paint(valuePaint).apply { textSize = 9f }
+        drawWrappedText(pageManager, descContentText, col1X, contentWidth - 16f, descBodyPaint, 12f)
+        pageManager.y += 6f
+
+        if (extraNotes.isNotBlank()) {
+            pageManager.ensureSpace(20f)
+            val noteLabelPaint = Paint().apply {
+                color = Color.rgb(71, 85, 105)
+                textSize = 8f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
             }
-            if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
-                canvas.drawText("JUSTIFICATIVA APOIO PMDF:", col1X, y, labelPaint)
-                y += 10f
-                y = drawWrappedText(canvas, inspection.pmdfNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
-                y += 4f
+            pageManager.canvas.drawText("OBSERVAÇÕES COMPLEMENTARES DE CAMPO:", col1X, pageManager.y, noteLabelPaint)
+            pageManager.y += 10f
+            drawWrappedText(pageManager, extraNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+            pageManager.y += 4f
+        }
+
+        // SECTION 4: PROVIDÊNCIAS OPERACIONAIS
+        val sec4Title = if (isDog) "4. PROVIDÊNCIAS OPERACIONAIS & APOIO POLICIAL (PMDF / BPMA / OUTROS)"
+                        else "4. PROVIDÊNCIAS OPERACIONAIS, APREENSÃO E APOIO POLICIAL (SEAGRI / PMDF / OUTROS)"
+        pageManager.ensureSpace(30f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, sec4Title, margin, pageManager.y, contentWidth)
+
+        val hasAnyDemand = inspection.requiresSeagriApprehension || inspection.requiresPmdfSupport || inspection.requiresOtherAgencySupport
+
+        if (!hasAnyDemand) {
+            pageManager.ensureSpace(16f)
+            pageManager.canvas.drawText("Nenhuma requisição de apreensão ou apoio policial demandada nesta diligência fiscal.", col1X, pageManager.y, valuePaint)
+            pageManager.y += 16f
+        } else {
+            if (!isDog) {
+                val seagriStatus = if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
+                val seagriPaint = if (inspection.requiresSeagriApprehension) {
+                    Paint().apply { color = Color.rgb(230, 81, 0); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+                } else valuePaint
+                pageManager.ensureSpace(24f)
+                pageManager.canvas.drawText("APREENSÃO / TRANSPORTE (SEAGRI-DF):", col1X, pageManager.y, labelPaint)
+                pageManager.canvas.drawText(seagriStatus, col1X, pageManager.y + 11f, seagriPaint)
+
+                val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO"
+                val pmdfPaint = if (inspection.requiresPmdfSupport) {
+                    Paint().apply { color = Color.rgb(21, 101, 192); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+                } else valuePaint
+                pageManager.canvas.drawText("APOIO POLÍCIA MILITAR (PMDF / BPMA):", col2X, pageManager.y, labelPaint)
+                pageManager.canvas.drawText(pmdfStatus, col2X, pageManager.y + 11f, pmdfPaint)
+                pageManager.y += 24f
+
+                if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) {
+                    pageManager.ensureSpace(18f)
+                    pageManager.canvas.drawText("OBSERVAÇÕES DA APREENSÃO:", col1X, pageManager.y, labelPaint)
+                    pageManager.y += 10f
+                    drawWrappedText(pageManager, inspection.seagriNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+                    pageManager.y += 4f
+                }
+                if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
+                    pageManager.ensureSpace(18f)
+                    pageManager.canvas.drawText("JUSTIFICATIVA APOIO PMDF:", col1X, pageManager.y, labelPaint)
+                    pageManager.y += 10f
+                    drawWrappedText(pageManager, inspection.pmdfNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+                    pageManager.y += 4f
+                }
+            } else {
+                val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO SOLICITADO"
+                val pmdfPaint = if (inspection.requiresPmdfSupport) {
+                    Paint().apply { color = Color.rgb(21, 101, 192); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+                } else valuePaint
+                pageManager.ensureSpace(24f)
+                pageManager.canvas.drawText("APOIO DA POLÍCIA MILITAR (PMDF / BPMA):", col1X, pageManager.y, labelPaint)
+                pageManager.canvas.drawText(pmdfStatus, col1X, pageManager.y + 11f, pmdfPaint)
+                pageManager.y += 24f
+
+                if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
+                    pageManager.ensureSpace(18f)
+                    pageManager.canvas.drawText("JUSTIFICATIVA DO APOIO POLICIAL (PMDF / BPMA):", col1X, pageManager.y, labelPaint)
+                    pageManager.y += 10f
+                    drawWrappedText(pageManager, inspection.pmdfNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+                    pageManager.y += 4f
+                }
+            }
+
+            if (inspection.requiresOtherAgencySupport) {
+                val otherStatus = "SIM (SOLICITADO)"
+                val otherPaint = Paint().apply { color = Color.rgb(106, 27, 154); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+                pageManager.ensureSpace(24f)
+                pageManager.canvas.drawText("REQUISIÇÃO DE OUTRO ÓRGÃO PÚBLICO:", col1X, pageManager.y, labelPaint)
+                pageManager.canvas.drawText(otherStatus, col1X, pageManager.y + 11f, otherPaint)
+
+                if (inspection.otherAgencyName.isNotBlank()) {
+                    pageManager.canvas.drawText("ÓRGÃO REQUISITADO:", col2X, pageManager.y, labelPaint)
+                    pageManager.canvas.drawText(inspection.otherAgencyName, col2X, pageManager.y + 11f, valuePaint)
+                }
+                pageManager.y += 24f
+
+                if (inspection.otherAgencyNotes.isNotBlank()) {
+                    pageManager.ensureSpace(18f)
+                    pageManager.canvas.drawText("PROVIDÊNCIAS REQUERIDAS / JUSTIFICATIVA:", col1X, pageManager.y, labelPaint)
+                    pageManager.y += 10f
+                    drawWrappedText(pageManager, inspection.otherAgencyNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+                    pageManager.y += 4f
+                }
             }
         }
 
-        // REQUISIÇÃO DE OUTRO ÓRGÃO / OUTRAS PROVIDÊNCIAS DE APREENSÃO
-        canvas.drawText("REQUISIÇÃO DE OUTRO ÓRGÃO / PROVIDÊNCIAS DE APREENSÃO:", col1X, y, labelPaint)
-        val otherStatus = if (inspection.requiresOtherAgencySupport) "SIM (SOLICITADO)" else "NÃO SOLICITADO"
-        val otherPaint = if (inspection.requiresOtherAgencySupport) {
-            Paint().apply { color = Color.rgb(106, 27, 154); textSize = 9f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-        } else valuePaint
-        canvas.drawText(otherStatus, col1X, y + 11f, otherPaint)
-
-        if (inspection.requiresOtherAgencySupport && inspection.otherAgencyName.isNotBlank()) {
-            canvas.drawText("ÓRGÃO REQUISITADO:", col2X, y, labelPaint)
-            canvas.drawText(inspection.otherAgencyName, col2X, y + 11f, valuePaint)
-        }
-        y += 24f
-
-        if (inspection.requiresOtherAgencySupport && inspection.otherAgencyNotes.isNotBlank()) {
-            canvas.drawText("PROVIDÊNCIAS REQUERIDAS / JUSTIFICATIVA (APREENSÃO OU APOIO):", col1X, y, labelPaint)
-            y += 10f
-            y = drawWrappedText(canvas, inspection.otherAgencyNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
-            y += 4f
-        }
-
-        // SECTION 4: TUTORES / RESPONSÁVEIS
+        // SECTION 5: IDENTIFICAÇÃO DOS TUTORES E RESPONSÁVEIS
         val tutors = inspection.allTutors
-        y = drawSectionHeader(canvas, "4. IDENTIFICAÇÃO DOS TUTORES E RESPONSÁVEIS (${tutors.size})", margin, y, contentWidth)
+        pageManager.ensureSpace(30f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "5. IDENTIFICAÇÃO DOS TUTORES E RESPONSÁVEIS (${tutors.size})", margin, pageManager.y, contentWidth)
         if (tutors.isEmpty()) {
-            canvas.drawText("Nenhum tutor ou responsável identificado no local da vistoria.", col1X, y, valuePaint)
-            y += 16f
+            pageManager.ensureSpace(16f)
+            pageManager.canvas.drawText("Nenhum tutor ou responsável identificado no local da vistoria.", col1X, pageManager.y, valuePaint)
+            pageManager.y += 16f
         } else {
             for ((tIdx, tutor) in tutors.withIndex()) {
+                pageManager.ensureSpace(16f)
                 val tName = tutor.name.ifBlank { "Não informado" }
                 val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
                 val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
-                canvas.drawText("TUTOR #${tIdx + 1}: $tName", col1X, y, valuePaint)
-                canvas.drawText("$docLabel: $tCpf", col2X, y, valuePaint)
-                y += 14f
+                pageManager.canvas.drawText("TUTOR #${tIdx + 1}: $tName", col1X, pageManager.y, valuePaint)
+                pageManager.canvas.drawText("$docLabel: $tCpf", col2X, pageManager.y, valuePaint)
+                pageManager.y += 14f
             }
         }
-        y += 4f
-
-        // SECTION 5: NOTAS DE CAMPO
-        if (inspection.imageNotes.isNotBlank()) {
-            y = drawSectionHeader(canvas, "5. NOTAS DE CAMPO E OBSERVAÇÕES FINAIS", margin, y, contentWidth)
-            y = drawWrappedText(canvas, inspection.imageNotes, col1X, y, contentWidth - 16f, valuePaint, 11f)
-            y += 6f
-        }
+        pageManager.y += 4f
 
         // SECTION 6: RESUMO FOTOGRÁFICO
-        y = drawSectionHeader(canvas, "6. REGISTRO FOTOGRÁFICO GEORREFERENCIADO (${allPhotos.size} FOTO(S))", margin, y, contentWidth)
+        pageManager.ensureSpace(30f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "6. REGISTRO FOTOGRÁFICO GEORREFERENCIADO (${allPhotos.size} FOTO(S))", margin, pageManager.y, contentWidth)
+        pageManager.ensureSpace(16f)
         if (allPhotos.isEmpty()) {
-            canvas.drawText("[Nenhuma fotografia anexada nesta ocorrência]", col1X, y, valuePaint)
-            y += 16f
+            pageManager.canvas.drawText("[Nenhuma fotografia anexada nesta ocorrência]", col1X, pageManager.y, valuePaint)
+            pageManager.y += 16f
         } else {
             val photoNote = if (allPhotos.size == 1) {
-                "✓ 1 fotografia georreferenciada anexada na Folha 2 em alta resolução (proporção 500x500)."
+                "✓ 1 fotografia georreferenciada anexada na Folha seguinte em alta resolução (proporção 500x500)."
             } else {
                 "✓ ${allPhotos.size} fotografias georreferenciadas anexadas nas Folhas seguintes em alta resolução (proporção 500x500)."
             }
-            canvas.drawText(photoNote, col1X, y, valuePaint)
-            y += 16f
+            pageManager.canvas.drawText(photoNote, col1X, pageManager.y, valuePaint)
+            pageManager.y += 16f
         }
 
-        // FOOTER PAGE 1
-        val footerY = pageHeight - 48f
-        val linePaint = Paint().apply {
-            color = Color.rgb(203, 213, 225)
-            strokeWidth = 1f
-        }
-        canvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
-
-        val footerTextPaint = Paint().apply {
-            color = Color.rgb(148, 163, 184)
-            textSize = 7.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            isAntiAlias = true
-        }
-
-        val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
-        val genText = "Levantamento expedido em ${sdfGen.format(Date())} | Relatório de Apoio"
-        canvas.drawText(genText, margin, footerY + 10f, footerTextPaint)
-        val legalNote = "Documento gerado por aplicativo independente para fins de apoio, sem vínculo oficial com o GDF."
-        canvas.drawText(legalNote, margin, footerY + 20f, footerTextPaint)
-
-        val signLineX = margin + contentWidth - 210f
-        canvas.drawLine(signLineX, footerY + 20f, margin + contentWidth, footerY + 20f, linePaint)
-        val auditorSignLabel = if (inspection.auditorName.isNotBlank()) inspection.auditorName else "Auditor Fiscal de Campo"
-        val auditorSubLabel = "Auditor Fiscal / Agente Responsável"
-        canvas.drawText(auditorSignLabel, signLineX + 8f, footerY + 30f, footerTextPaint)
-        canvas.drawText(auditorSubLabel, signLineX + 8f, footerY + 40f, footerTextPaint)
-
-        document.finishPage(page)
+        pageManager.finishCurrentPage()
 
         // PAGE 2 (AND BEYOND): FOTOGRAFIAS EM PROPORÇÃO 500x500
         val borderPaint = Paint().apply {
@@ -502,17 +713,34 @@ object PdfReportGenerator {
         }
 
         if (allPhotos.isNotEmpty()) {
+            val startPhotoPageNumber = pageManager.currentPageNumber + 1
+            val totalDocumentPages = pageManager.currentPageNumber + allPhotos.size
+
             allPhotos.forEachIndexed { photoIndex, photoPath ->
-                val photoPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, photoIndex + 2).create()
+                val currentPhotoPageNumber = startPhotoPageNumber + photoIndex
+                val photoPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, currentPhotoPageNumber).create()
                 val photoPage = document.startPage(photoPageInfo)
                 val pCanvas = photoPage.canvas
                 pCanvas.drawColor(Color.WHITE)
 
-                // Header bars
+                val greenBarPaint = Paint().apply { color = Color.rgb(0, 104, 74); style = Paint.Style.FILL }
+                val blueBarPaint = Paint().apply { color = Color.rgb(0, 100, 149); style = Paint.Style.FILL }
                 pCanvas.drawRect(0f, 0f, pageWidth.toFloat(), 12f, greenBarPaint)
                 pCanvas.drawRect(0f, 12f, pageWidth.toFloat(), 16f, blueBarPaint)
 
                 var py = 32f
+                val headerSubPaint = Paint().apply {
+                    color = Color.rgb(15, 23, 42)
+                    textSize = 9.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    isAntiAlias = true
+                }
+                val headerSmallPaint = Paint().apply {
+                    color = Color.rgb(100, 116, 139)
+                    textSize = 7.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                    isAntiAlias = true
+                }
                 pCanvas.drawText("ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL", margin, py, headerSubPaint)
                 py += 15f
                 pCanvas.drawText("Levantamento: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | Foto ${photoIndex + 1} de ${allPhotos.size}", margin, py, headerSmallPaint)
@@ -520,18 +748,15 @@ object PdfReportGenerator {
 
                 py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM ALTA DEFINIÇÃO (PROPORÇÃO 500x500)", margin, py, contentWidth)
 
-                // 500 x 500 Photo Box (Centered on A4 width 595: (595 - 500) / 2 = 47.5f)
                 val targetBoxSize = 500f
                 val photoX = (pageWidth - targetBoxSize) / 2f
                 val photoRect = RectF(photoX, py, photoX + targetBoxSize, py + targetBoxSize)
 
                 val optimizedBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 1200)
                 if (optimizedBitmap != null) {
-                    // Draw clean dark background for photo frame
                     val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
                     pCanvas.drawRect(photoRect, bgFramePaint)
 
-                    // Draw image scaled nicely into the 500x500 box preserving aspect ratio or fill
                     val bRatio = optimizedBitmap.width.toFloat() / optimizedBitmap.height.toFloat()
                     var dw = targetBoxSize
                     var dh = dw / bRatio
@@ -552,16 +777,17 @@ object PdfReportGenerator {
 
                 py += targetBoxSize + 16f
 
-                // Caption details below the 500x500 image
                 pCanvas.drawText("📍 Coordenadas: ${String.format(Locale.US, "%.6f°, %.6f°", inspection.latitude, inspection.longitude)}", photoX, py, captionTitlePaint)
                 py += 13f
                 pCanvas.drawText("🏛️ Região Administrativa: ${inspection.administrativeRegion} • Data/Hora: ${inspection.formattedCaptureDate}", photoX, py, captionSubPaint)
                 py += 12f
                 pCanvas.drawText("Registro Fotográfico Georreferenciado • Apoio à Fiscalização", photoX, py, captionSubPaint)
 
-                // Footer for photo page
+                val footerY = pageHeight - 48f
+                val linePaint = Paint().apply { color = Color.rgb(203, 213, 225); strokeWidth = 1f }
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
-                val pGenText = "Folha ${photoIndex + 2} de ${allPhotos.size + 1} | Anexo Fotográfico • Relatório de Apoio"
+                val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 7.5f; isAntiAlias = true }
+                val pGenText = "Folha $currentPhotoPageNumber de $totalDocumentPages | Anexo Fotográfico • Relatório de Apoio"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)

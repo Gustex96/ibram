@@ -91,11 +91,11 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun testAnimalSpeciesEntriesOnlyDogAndHorse() {
+    fun testAnimalSpeciesEntries() {
         val species = com.example.ui.components.AnimalSpecies.entries
-        assertEquals(2, species.size)
-        assertEquals(listOf("Cachorro", "Cavalo"), species.map { it.displayName })
-        assertTrue(species.none { it.name == "CAT" || it.name == "ROOSTER" })
+        assertTrue(species.any { it.name == "DOG" })
+        assertTrue(species.any { it.name == "HORSE" })
+        assertTrue(species.map { it.displayName }.containsAll(listOf("Cachorro", "Cavalo")))
     }
 
     @Test

@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,7 +60,7 @@ import com.example.data.model.FiveDomainsData
 
 /**
  * Visualizador completo e interativo dos 5 Domínios do Bem-Estar Animal
- * na aba de conhecimento do aplicativo.
+ * na aba de conhecimento do aplicativo, com paleta verde institucional e cartões brancos limpos.
  */
 @Composable
 fun FiveDomainsView(
@@ -97,31 +98,33 @@ fun FiveDomainsView(
             .fillMaxWidth()
             .testTag("five_domains_view")
     ) {
-        // Banner Explicativo Institucional
+        // Banner Explicativo Institucional (Card Branco Refinado)
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+            color = Color.White,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 1.dp
         ) {
             Row(
-                modifier = Modifier.padding(10.dp),
+                modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF14532D),
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -130,12 +133,12 @@ fun FiveDomainsView(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.6.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color(0xFF14532D)
                     )
                     Text(
                         text = "Os 5 Domínios constituem o parâmetro técnico adotado para avaliar a qualidade de vida e caracterizar infrações de maus-tratos em fiscalizações.",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color(0xFF334155),
                         lineHeight = 15.sp
                     )
                 }
@@ -147,22 +150,46 @@ fun FiveDomainsView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             item {
+                val isSelected = selectedDomainNumber == 0
                 FilterChip(
-                    selected = selectedDomainNumber == 0,
+                    selected = isSelected,
                     onClick = { selectedDomainNumber = 0 },
-                    label = { Text("Todos (5)", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_domain_all")
+                    label = { Text("Todos (5)", fontSize = 11.5.sp) },
+                    modifier = Modifier.testTag("filter_domain_all"),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                        selectedLabelColor = Color(0xFF022C22),
+                        containerColor = Color.White,
+                        labelColor = Color(0xFF475569)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        borderColor = if (isSelected) Color(0xFF14532D).copy(alpha = 0.3f) else Color(0xFFE2E8F0),
+                        enabled = true,
+                        selected = isSelected
+                    )
                 )
             }
             items(allDomains, key = { it.number }) { domain ->
+                val isSelected = selectedDomainNumber == domain.number
                 FilterChip(
-                    selected = selectedDomainNumber == domain.number,
+                    selected = isSelected,
                     onClick = { selectedDomainNumber = domain.number },
-                    label = { Text("${domain.number}. ${domain.shortName}", fontSize = 12.sp) },
-                    modifier = Modifier.testTag("filter_domain_${domain.number}")
+                    label = { Text("${domain.number}. ${domain.shortName}", fontSize = 11.5.sp) },
+                    modifier = Modifier.testTag("filter_domain_${domain.number}"),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                        selectedLabelColor = Color(0xFF022C22),
+                        containerColor = Color.White,
+                        labelColor = Color(0xFF475569)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        borderColor = if (isSelected) Color(0xFF14532D).copy(alpha = 0.3f) else Color(0xFFE2E8F0),
+                        enabled = true,
+                        selected = isSelected
+                    )
                 )
             }
         }
@@ -181,7 +208,7 @@ fun FiveDomainsView(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = Color(0xFF14532D)
                 )
             },
             trailingIcon = {
@@ -206,7 +233,7 @@ fun FiveDomainsView(
                 Text(
                     text = "Nenhum critério encontrado para \"$searchQuery\".",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color(0xFF64748B)
                 )
             }
         } else {
@@ -214,7 +241,8 @@ fun FiveDomainsView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = false),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 88.dp)
             ) {
                 items(filteredDomains, key = { it.number }) { domain ->
                     DomainDetailCard(domain = domain)
@@ -233,16 +261,15 @@ private fun DomainDetailCard(
 ) {
     var isExpanded by remember { mutableStateOf(true) }
 
-    ElevatedCard(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("domain_card_${domain.number}")
             .animateContentSize(tween(300)),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp
     ) {
         Column(
             modifier = Modifier
@@ -256,28 +283,28 @@ private fun DomainDetailCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(6.dp)
+                    color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                    shape = CircleShape
                 ) {
                     Text(
                         text = "DOMÍNIO ${domain.number}",
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = Color(0xFF022C22)
                     )
                 }
 
                 Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(6.dp)
+                    color = Color(0xFFD1FAE5),
+                    shape = CircleShape
                 ) {
                     Text(
                         text = domain.tag,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF14532D)
                     )
                 }
             }
@@ -287,14 +314,14 @@ private fun DomainDetailCard(
             // Título e Subtítulo do Domínio
             Text(
                 text = domain.title,
-                fontSize = 15.sp,
+                fontSize = 14.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color(0xFF0F172A)
             )
             Text(
                 text = domain.subtitle,
                 fontSize = 11.5.sp,
-                color = MaterialTheme.colorScheme.primary,
+                color = Color(0xFF14532D),
                 fontWeight = FontWeight.SemiBold
             )
 
@@ -303,16 +330,16 @@ private fun DomainDetailCard(
             // Seção de Destaque: "O que deve ser garantido ao animal"
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                color = Color(0xFFF0FDF4),
                 shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                border = BorderStroke(1.dp, Color(0xFFBBF7D0))
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Color(0xFF14532D),
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -320,14 +347,14 @@ private fun DomainDetailCard(
                             text = "O QUE DEVE SER GARANTIDO:",
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = Color(0xFF14532D)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = domain.whatMustBeGuaranteed,
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = Color(0xFF1E293B),
                         lineHeight = 16.5.sp
                     )
                 }
@@ -348,12 +375,12 @@ private fun DomainDetailCard(
                     text = if (isExpanded) "Ocultar critérios de campo" else "Ver critérios de fiscalização e indicadores",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = Color(0xFF14532D)
                 )
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color(0xFF14532D),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -369,7 +396,7 @@ private fun DomainDetailCard(
                         text = "O que verificar na fiscalização in loco:",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF475569)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     domain.auditIndicators.forEach { indicator ->
@@ -379,8 +406,8 @@ private fun DomainDetailCard(
                                 .padding(vertical = 2.dp),
                             verticalAlignment = Alignment.Top
                         ) {
-                            Text("• ", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                            Text(indicator, fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurface, lineHeight = 15.sp)
+                            Text("• ", fontSize = 12.sp, color = Color(0xFF14532D), fontWeight = FontWeight.Bold)
+                            Text(indicator, fontSize = 11.5.sp, color = Color(0xFF334155), lineHeight = 15.sp)
                         }
                     }
 
@@ -389,16 +416,16 @@ private fun DomainDetailCard(
                     // 2. Sinais Positivos (Conformidade)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF1B5E20).copy(alpha = 0.08f),
+                        color = Color(0xFFD1FAE5).copy(alpha = 0.5f),
                         shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, Color(0xFF2E7D32).copy(alpha = 0.3f))
+                        border = BorderStroke(1.dp, Color(0xFFA7F3D0))
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = Color(0xFF2E7D32),
+                                    tint = Color(0xFF14532D),
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -406,7 +433,7 @@ private fun DomainDetailCard(
                                     text = "Sinais de Atendimento / Regularidade:",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1B5E20)
+                                    color = Color(0xFF14532D)
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
@@ -414,7 +441,7 @@ private fun DomainDetailCard(
                                 Text(
                                     text = "✓ $pos",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF1B5E20),
+                                    color = Color(0xFF065F46),
                                     lineHeight = 14.5.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )
@@ -427,16 +454,16 @@ private fun DomainDetailCard(
                     // 3. Sinais de Alerta / Violação (Maus-Tratos)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                        color = Color(0xFFFEE2E2).copy(alpha = 0.6f),
                         shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f))
+                        border = BorderStroke(1.dp, Color(0xFFFECACA))
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Warning,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
+                                    tint = Color(0xFFDC2626),
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -444,7 +471,7 @@ private fun DomainDetailCard(
                                     text = "Indícios de Violação / Maus-Tratos:",
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.error
+                                    color = Color(0xFF991B1B)
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
@@ -452,7 +479,7 @@ private fun DomainDetailCard(
                                 Text(
                                     text = "⚠ $viol",
                                     fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    color = Color(0xFF7F1D1D),
                                     lineHeight = 14.5.sp,
                                     modifier = Modifier.padding(vertical = 1.dp)
                                 )

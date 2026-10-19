@@ -915,7 +915,7 @@ fun NewInspectionScreen(
             val isDog = draft.isDog
             SectionHeader(
                 title = if (isDog) "3. Quantidade de Cães & Avaliação PPBEA" else "3. Quantidade de Animais & Avaliação PPBEA",
-                description = "Contagem dos animais e perícia pericial de bem-estar animal com botões switch (ANEXO D – PPBEA)."
+                description = "Contagem dos animais e perícia de bem-estar animal com botões switch (PROTOCOLO PPBEA – ANEXO D)."
             )
 
             Card(
@@ -1200,7 +1200,7 @@ fun NewInspectionScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            text = "ANEXO D – Protocolo PPBEA",
+                                            text = "PROTOCOLO PPBEA – ANEXO D",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.5.sp,
                                             color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
@@ -1416,7 +1416,7 @@ fun NewInspectionScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (draft.ppbeaDiagnosis != null) "Editar Avaliação & Diagnóstico (ANEXO D)" else "Abrir Avaliação PPBEA (Switches Sim/Não)",
+                                    text = if (draft.ppbeaDiagnosis != null) "Editar Avaliação & Diagnóstico (PROTOCOLO PPBEA)" else "Abrir Avaliação PPBEA (Switches Sim/Não)",
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -1484,7 +1484,51 @@ fun NewInspectionScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
 
-                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        // Botão "✓ Aplicar Resultado ao Relatório Geral"
+                                        Button(
+                                            onClick = {
+                                                val inadequacoes = mutableListOf<String>()
+                                                if (diag.nutricionalParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Nutrição")
+                                                if (diag.confortoParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Conforto")
+                                                if (diag.saudeParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Saúde")
+                                                if (diag.comportamentalParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Comportamento")
+
+                                                val textoSintese = buildString {
+                                                    append("Protocolo PPBEA (Res. CFMV nº 1.236/2018). ")
+                                                    append("Constatado Grau de Bem-Estar ${diag.grauBemEstar.label.uppercase()}. ")
+                                                    if (diag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                                                        append("Restam configurados indícios técnicos de MAUS-TRATOS")
+                                                        if (inadequacoes.isNotEmpty()) {
+                                                            append(" (inadequações em: ${inadequacoes.distinct().joinToString(", ")}).")
+                                                        } else {
+                                                            append(".")
+                                                        }
+                                                    } else if (diag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO) {
+                                                        append("Não configura crime imediato de maus-tratos, mas exige termo de orientação com retorno obrigatório.")
+                                                    } else {
+                                                        append("NÃO CONFIGURA MAUS-TRATOS. Condições adequadas de bem-estar constatadas.")
+                                                    }
+                                                }
+                                                viewModel.updateHorseDescription(textoSintese)
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF14532D)),
+                                            contentPadding = PaddingValues(vertical = 8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "✓ Aplicar Resultado ao Relatório Geral",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = Color.White
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.End
@@ -1498,28 +1542,6 @@ fun NewInspectionScreen(
                                         }
                                     }
                                 }
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            // 3. Botão Secundário: Checklist Rápido de Indicadores
-                            OutlinedButton(
-                                onClick = { showPpbeaDialog = true },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("btn_open_ppbea_dialog"),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Filtrar por Domínio (Checklist Rápido)",
-                                    fontSize = 11.5.sp
-                                )
                             }
 
                             // Preview dos Indicadores Selecionados
@@ -1636,9 +1658,9 @@ fun NewInspectionScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isDog) "Descrição do(s) Cão(ães)" else "Descrição do(s) Cavalo(s)",
+                            text = "Descrição e Parecer do Relatório Geral",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
+                            fontSize = 13.5.sp,
                             color = MaterialTheme.colorScheme.primary
                         )
 
@@ -1676,13 +1698,10 @@ fun NewInspectionScreen(
                             .fillMaxWidth()
                             .testTag("horse_description_field"),
                         placeholder = {
-                            Text(
-                                if (isDog) "Ex: Cão sem raça definida (SRD), pelagem preta e branca, porte médio, coleira vermelha, ferimento na orelha..."
-                                else "Ex: Pelagem castanha, porte médio, sem ferradura, cicatriz na pata esquerda, sem sinais de desnutrição..."
-                            )
+                            Text("Descreva a situação física dos animais, parecer técnico geral e constatações periciais da fiscalização...")
                         },
-                        minLines = 2,
-                        maxLines = 4,
+                        minLines = 3,
+                        maxLines = 6,
                         shape = RoundedCornerShape(10.dp)
                     )
                 }
@@ -2055,10 +2074,10 @@ fun NewInspectionScreen(
                 }
             }
 
-            // 5. SECTION: DESCRIÇÃO DETALHADA DA OCORRÊNCIA & NOTAS DE CAMPO
+            // 5. SECTION: OBSERVAÇÕES COMPLEMENTARES DE CAMPO
             SectionHeader(
-                title = "5. Descrição Detalhada da Ocorrência & Notas de Campo",
-                description = "Descrição detalhada dos fatos observados no local da fiscalização, situação dos animais e notas periciais."
+                title = "5. Observações Complementares de Campo (Opcional)",
+                description = "Fatos adicionais ou notas de campo que complementem o Parecer Geral (opcional)."
             )
 
             Card(
@@ -2069,7 +2088,7 @@ fun NewInspectionScreen(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "Notas de Campo e Descrição da Imagem:",
+                        text = "Notas Adicionais de Campo:",
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -2083,13 +2102,10 @@ fun NewInspectionScreen(
                             .fillMaxWidth()
                             .testTag("image_notes_field"),
                         placeholder = {
-                            Text(
-                                if (isDog) "Ex: Dois cães confinados em espaço exíguo sem água limpa, acúmulo de dejetos, sinais evidentes de desnutrição..."
-                                else "Ex: Dois cavalos pastando soltos próximos à pista da marginal, arame quebrado, sem água fresca aparente..."
-                            )
+                            Text("Caso haja observações complementares sobre a diligência fiscal que não constem no Parecer Geral...")
                         },
-                        minLines = 3,
-                        maxLines = 6,
+                        minLines = 2,
+                        maxLines = 4,
                         shape = RoundedCornerShape(10.dp)
                     )
                 }

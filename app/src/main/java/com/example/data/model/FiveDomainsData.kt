@@ -32,11 +32,11 @@ object FiveDomainsData {
             auditIndicators = listOf(
                 "Disponibilidade contínua de água límpida, fresca e acessível sem esforço",
                 "Alimento específico e de boa qualidade, livre de mofo, azedamento ou fezes",
-                "Escore de Condição Corporal (ECC) adequado ao porte e padrão da espécie"
+                "Escore de Condição Corporal adequado ao porte e padrão da espécie"
             ),
             positiveIndicators = listOf(
                 "Bebedouros limpos, com água renovada e protegida do sol escaldante",
-                "Escore corporal ideal (ECC 4 a 6 para cavalos / ECC 4 a 5 para cães)",
+                "Escore corporal ideal (boa musculatura e cobertura adiposa saudável para a espécie)",
                 "Alimentação específica ofertada diariamente em vasilhas limpas"
             ),
             violationIndicators = listOf(

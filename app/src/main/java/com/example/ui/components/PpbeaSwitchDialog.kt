@@ -87,7 +87,6 @@ fun PpbeaSwitchDialog(
     onConfirm: () -> Unit = onDismiss
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    var selectedDomainFilter by remember { mutableStateOf<String?>(null) }
 
     val alertCategories = remember(species) {
         DfConstants.getMistreatmentCategories(species)
@@ -157,7 +156,7 @@ fun PpbeaSwitchDialog(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "ANEXO D – PROTOCOLO PPBEA",
+                                        text = "PROTOCOLO PPBEA – ANEXO D",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 14.sp,
                                         color = Color.White,
@@ -217,10 +216,7 @@ fun PpbeaSwitchDialog(
                 ) {
                     Tab(
                         selected = selectedTab == 0,
-                        onClick = {
-                            selectedTab = 0
-                            selectedDomainFilter = null
-                        },
+                        onClick = { selectedTab = 0 },
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(text = "⚠️", fontSize = 13.sp)
@@ -238,10 +234,7 @@ fun PpbeaSwitchDialog(
 
                     Tab(
                         selected = selectedTab == 1,
-                        onClick = {
-                            selectedTab = 1
-                            selectedDomainFilter = null
-                        },
+                        onClick = { selectedTab = 1 },
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(text = "✅", fontSize = 13.sp)
@@ -258,59 +251,9 @@ fun PpbeaSwitchDialog(
                     )
                 }
 
-                // 3. Barra de Filtro de Domínios (Nutrição, Ambiente, Saúde, Comportamento, Manejo)
-                val currentCategories = if (selectedTab == 0) {
-                    alertCategories.map { it.domain to it.icon }
-                } else {
-                    adequateCategories.map { it.domain to it.icon }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilterChip(
-                        selected = selectedDomainFilter == null,
-                        onClick = { selectedDomainFilter = null },
-                        label = { Text("Todos os Domínios", fontSize = 11.sp) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.FilterList,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = primaryColor.copy(alpha = 0.15f),
-                            selectedLabelColor = primaryColor
-                        )
-                    )
-
-                    currentCategories.forEach { (domain, icon) ->
-                        val isSelected = selectedDomainFilter == domain
-                        val shortTitle = domain.substringAfter(". ").substringBefore(" (")
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                selectedDomainFilter = if (isSelected) null else domain
-                            },
-                            label = { Text("$icon $shortTitle", fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = primaryColor.copy(alpha = 0.15f),
-                                selectedLabelColor = primaryColor
-                            )
-                        )
-                    }
-                }
-
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-                // 4. Lista Rolável com os Indicadores e Botões SWITCH
+                // Lista Rolável com os Indicadores e Botões SWITCH
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -321,19 +264,13 @@ fun PpbeaSwitchDialog(
                 ) {
                     if (selectedTab == 0) {
                         // Alertas de Maus-Tratos com Switches
-                        val filteredAlerts = if (selectedDomainFilter == null) {
-                            alertCategories
-                        } else {
-                            alertCategories.filter { it.domain == selectedDomainFilter }
-                        }
-
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            filteredAlerts.forEach { category ->
+                            alertCategories.forEach { category ->
                                 item {
                                     Surface(
                                         color = Color(0xFFFFEBEE),
@@ -376,19 +313,13 @@ fun PpbeaSwitchDialog(
                         }
                     } else {
                         // Condições Favoráveis com Switches
-                        val filteredAdequate = if (selectedDomainFilter == null) {
-                            adequateCategories
-                        } else {
-                            adequateCategories.filter { it.domain == selectedDomainFilter }
-                        }
-
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            filteredAdequate.forEach { category ->
+                            adequateCategories.forEach { category ->
                                 item {
                                     Surface(
                                         color = Color(0xFFE8F5E9),

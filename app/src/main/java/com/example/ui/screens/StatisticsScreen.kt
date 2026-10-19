@@ -156,36 +156,37 @@ fun StatisticsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .background(Color(0xFFF4FAF6))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .testTag("screen_statistics"),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 88.dp)
     ) {
-        // 1. Cabeçalho Institucional de Estatísticas
+        // 1. Cabeçalho Institucional de Estatísticas (Card Branco Refinado)
         item {
-            ElevatedCard(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                )
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = Color(0xFF14532D),
                         modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Assessment,
                                 contentDescription = "Estatísticas",
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -198,38 +199,43 @@ fun StatisticsScreen(
                             text = "ESTATÍSTICAS & LEVANTAMENTOS",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.5.sp,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = Color(0xFF14532D),
                             letterSpacing = 0.5.sp
                         )
                         val auditor = viewModel.auditorIdentification.ifBlank { "Equipe Operacional" }
-                        Text(
-                            text = "Auditor Fiscal: $auditor",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFD1FAE5),
+                            modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
+                        ) {
+                            Text(
+                                text = "Auditor Fiscal: $auditor",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF14532D),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                         Text(
                             text = "Métricas de Fiscalização e Bem-Estar Animal no DF",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.sp,
+                            color = Color(0xFF64748B)
                         )
                     }
                 }
             }
         }
 
-        // Indicador de Espécie Ativa para as Estatísticas (alterada no topo pelo botão 'Trocar Espécie')
-
-        // 3. Filtro de Período Temporal
+        // 2. Filtro de Período Temporal
         item {
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                )
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -239,29 +245,35 @@ fun StatisticsScreen(
                             Icon(
                                 imageVector = Icons.Default.CalendarMonth,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(15.dp)
+                                tint = Color(0xFF14532D),
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Período de Análise:",
-                                fontSize = 11.5.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color(0xFF0F172A)
                             )
                         }
-                        Text(
-                            text = "$totalInspections levantamento(s)",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Surface(
+                            color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = "$totalInspections levantamento(s)",
+                                fontSize = 11.sp,
+                                color = Color(0xFF022C22),
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                     }
 
                     LazyRow(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 4.dp),
+                            .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         val periods = listOf(
@@ -275,10 +287,18 @@ fun StatisticsScreen(
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { selectedPeriodFilter = index },
-                                label = { Text(periods[index], fontSize = 11.sp) },
+                                label = { Text(periods[index], fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    selectedContainerColor = Color(0xFF14532D),
+                                    selectedLabelColor = Color.White,
+                                    containerColor = Color.White,
+                                    labelColor = Color(0xFF334155)
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = isSelected,
+                                    borderColor = Color(0xFFCBD5E1),
+                                    selectedBorderColor = Color(0xFF14532D)
                                 )
                             )
                         }
@@ -287,19 +307,19 @@ fun StatisticsScreen(
             }
         }
 
-        // 4. Cards de Métricas Principais (KPIs em Grid)
+        // 3. Cards de Métricas Principais (KPIs em Grid)
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     StatCard(
                         title = "Levantamentos",
                         value = totalInspections.toString(),
                         subtitle = "Vistorias no período",
                         icon = Icons.Default.Assessment,
-                        accentColor = MaterialTheme.colorScheme.primary,
+                        accentColor = Color(0xFF14532D),
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
@@ -307,45 +327,46 @@ fun StatisticsScreen(
                         value = totalAnimals.toString(),
                         subtitle = if (species == AnimalSpecies.HORSE) "Equinos monitorados" else "Cães monitorados",
                         icon = Icons.Default.Pets,
-                        accentColor = MaterialTheme.colorScheme.secondary,
+                        accentColor = Color(0xFF0284C7),
                         modifier = Modifier.weight(1f)
                     )
                 }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     StatCard(
-                        title = "Com Sinais de Maus-Tratos",
+                        title = "Com Sinais",
                         value = mistreatedAnimals.toString(),
                         subtitle = "${String.format(Locale("pt", "BR"), "%.1f", mistreatmentRate)}% dos animais",
                         icon = Icons.Default.Warning,
-                        accentColor = if (mistreatedAnimals > 0) Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary,
+                        accentColor = if (mistreatedAnimals > 0) Color(0xFFDC2626) else Color(0xFF14532D),
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
-                        title = "Em Situação Adequada",
+                        title = "Adequados",
                         value = adequateAnimals.toString(),
                         subtitle = "Sem inconformidades",
                         icon = Icons.Default.CheckCircle,
-                        accentColor = Color(0xFF2E7D32),
+                        accentColor = Color(0xFF16A34A),
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
 
-        // 5. Barra de Progresso Comparativa do Bem-Estar
+        // 4. Barra de Progresso Comparativa do Bem-Estar
         if (totalAnimals > 0) {
             item {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -353,18 +374,25 @@ fun StatisticsScreen(
                         ) {
                             Text(
                                 text = "Proporção de Conformidade dos Animais",
-                                fontSize = 12.sp,
+                                fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color(0xFF0F172A)
                             )
-                            Text(
-                                text = "$totalAnimals total",
-                                fontSize = 10.5.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Surface(
+                                color = Color(0xFFF1F5F9),
+                                shape = CircleShape
+                            ) {
+                                Text(
+                                    text = "$totalAnimals total",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF475569),
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         // Barra de Progresso
                         LinearProgressIndicator(
@@ -373,32 +401,32 @@ fun StatisticsScreen(
                                 .fillMaxWidth()
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
-                            color = Color(0xFF2E7D32),
-                            trackColor = if (mistreatedAnimals > 0) Color(0xFFFFCDD2) else MaterialTheme.colorScheme.surfaceVariant
+                            color = Color(0xFF16A34A),
+                            trackColor = if (mistreatedAnimals > 0) Color(0xFFFECDD3) else Color(0xFFE2E8F0)
                         )
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(8.dp).background(Color(0xFF2E7D32), CircleShape))
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFF16A34A), CircleShape))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "Adequados: $adequateAnimals (${String.format(Locale("pt", "BR"), "%.1f", (adequateAnimals.toFloat() / totalAnimals) * 100)}%)",
-                                    fontSize = 10.5.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF475569)
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(8.dp).background(Color(0xFFD32F2F), CircleShape))
+                                Box(modifier = Modifier.size(8.dp).background(Color(0xFFDC2626), CircleShape))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "Com Alertas: $mistreatedAnimals (${String.format(Locale("pt", "BR"), "%.1f", mistreatmentRate)}%)",
-                                    fontSize = 10.5.sp,
-                                    color = if (mistreatedAnimals > 0) Color(0xFFD32F2F) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp,
+                                    color = if (mistreatedAnimals > 0) Color(0xFFDC2626) else Color(0xFF64748B),
                                     fontWeight = if (mistreatedAnimals > 0) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -408,32 +436,33 @@ fun StatisticsScreen(
             }
         }
 
-        // 6. Requisições de Apoio Operacional (SEAGRI / PMDF / Outros Órgãos)
+        // 5. Requisições de Apoio Operacional (SEAGRI / PMDF / Outros Órgãos)
         item {
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Shield,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
+                            tint = Color(0xFF14532D),
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Requisições de Apoio Interinstitucional",
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Color(0xFF0F172A)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -441,87 +470,87 @@ fun StatisticsScreen(
                     ) {
                         // SEAGRI
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (seagriCount > 0) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = if (seagriCount > 0) BorderStroke(1.dp, Color(0xFFFFB74D)) else null,
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (seagriCount > 0) Color(0xFFFEF3C7) else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, if (seagriCount > 0) Color(0xFFF59E0B) else Color(0xFFE2E8F0)),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
+                            Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
                                     text = "SEAGRI",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (seagriCount > 0) Color(0xFFE65100) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (seagriCount > 0) Color(0xFF92400E) else Color(0xFF64748B)
                                 )
                                 Text(
                                     text = "Apreensão",
-                                    fontSize = 9.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontSize = 9.5.sp,
+                                    color = Color(0xFF64748B)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "$seagriCount requisitado(s)",
-                                    fontSize = 12.sp,
+                                    text = "$seagriCount pedido(s)",
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (seagriCount > 0) Color(0xFFE65100) else MaterialTheme.colorScheme.onSurface
+                                    color = if (seagriCount > 0) Color(0xFF92400E) else Color(0xFF0F172A)
                                 )
                             }
                         }
 
                         // PMDF
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (pmdfCount > 0) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = if (pmdfCount > 0) BorderStroke(1.dp, Color(0xFF90CAF9)) else null,
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (pmdfCount > 0) Color(0xFFDBEAFE) else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, if (pmdfCount > 0) Color(0xFF3B82F6) else Color(0xFFE2E8F0)),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
+                            Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
                                     text = "PMDF",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (pmdfCount > 0) Color(0xFF1565C0) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (pmdfCount > 0) Color(0xFF1E40AF) else Color(0xFF64748B)
                                 )
                                 Text(
                                     text = "Apoio Policial",
-                                    fontSize = 9.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontSize = 9.5.sp,
+                                    color = Color(0xFF64748B)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "$pmdfCount requisitado(s)",
-                                    fontSize = 12.sp,
+                                    text = "$pmdfCount pedido(s)",
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (pmdfCount > 0) Color(0xFF1565C0) else MaterialTheme.colorScheme.onSurface
+                                    color = if (pmdfCount > 0) Color(0xFF1E40AF) else Color(0xFF0F172A)
                                 )
                             }
                         }
 
                         // Outros Órgãos
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (otherAgencyCount > 0) Color(0xFFF3E5F5) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = if (otherAgencyCount > 0) BorderStroke(1.dp, Color(0xFFCE93D8)) else null,
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (otherAgencyCount > 0) Color(0xFFF3E8FF) else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, if (otherAgencyCount > 0) Color(0xFFA855F7) else Color(0xFFE2E8F0)),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
+                            Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
-                                    text = "Outros Órgãos",
+                                    text = "Outros",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (otherAgencyCount > 0) Color(0xFF7B1FA2) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (otherAgencyCount > 0) Color(0xFF6B21A8) else Color(0xFF64748B)
                                 )
                                 Text(
-                                    text = "DPDF / Vigilância",
-                                    fontSize = 9.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "DPDF/Vig.",
+                                    fontSize = 9.5.sp,
+                                    color = Color(0xFF64748B)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "$otherAgencyCount requisitado(s)",
-                                    fontSize = 12.sp,
+                                    text = "$otherAgencyCount pedido(s)",
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (otherAgencyCount > 0) Color(0xFF7B1FA2) else MaterialTheme.colorScheme.onSurface
+                                    color = if (otherAgencyCount > 0) Color(0xFF6B21A8) else Color(0xFF0F172A)
                                 )
                             }
                         }
@@ -530,15 +559,16 @@ fun StatisticsScreen(
             }
         }
 
-        // 7. Distribuição Geográfica por Região Administrativa (RA do DF)
+        // 6. Distribuição Geográfica por Região Administrativa (RA do DF)
         item {
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -548,23 +578,29 @@ fun StatisticsScreen(
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = Color(0xFF14532D),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Distribuição por Região Administrativa (RA)",
-                                fontSize = 12.sp,
+                                fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color(0xFF0F172A)
                             )
                         }
-                        Text(
-                            text = "${raDistribution.size} RAs",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Surface(
+                            color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = "${raDistribution.size} RAs",
+                                fontSize = 11.sp,
+                                color = Color(0xFF022C22),
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -572,8 +608,8 @@ fun StatisticsScreen(
                     if (raDistribution.isEmpty()) {
                         Text(
                             text = "Nenhum dado registrado para o período selecionado.",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF64748B)
                         )
                     } else {
                         val maxCount = raDistribution.maxOfOrNull { it.second } ?: 1
@@ -586,26 +622,26 @@ fun StatisticsScreen(
                                     ) {
                                         Text(
                                             text = ra,
-                                            fontSize = 11.sp,
+                                            fontSize = 11.5.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = Color(0xFF0F172A)
                                         )
                                         Text(
                                             text = "$count vistoria(s)",
-                                            fontSize = 10.5.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = Color(0xFF14532D)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     LinearProgressIndicator(
                                         progress = { count.toFloat() / maxCount },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(6.dp)
                                             .clip(RoundedCornerShape(3.dp)),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                        color = Color(0xFF14532D),
+                                        trackColor = Color(0xFFE2E8F0)
                                     )
                                 }
                             }
@@ -615,34 +651,34 @@ fun StatisticsScreen(
             }
         }
 
-        // 8. Botões de Ação para Exportação dos Dados Estatísticos
+        // 7. Botões de Ação para Exportação dos Dados Estatísticos
         item {
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                )
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = "Exportação de Dados & Prestação de Contas",
-                        fontSize = 12.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color(0xFF0F172A)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Gere relatórios estatísticos consolidados e planilhas com as fiscalizações filtradas:",
-                        fontSize = 10.5.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = {
@@ -652,17 +688,17 @@ fun StatisticsScreen(
                                     viewModel.exportMultipleConsolidatedPdf(filteredInspections)
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(38.dp),
+                                .height(40.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = Color(0xFF14532D)
                             )
                         ) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Dossiê PDF", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Dossiê PDF", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
 
                         OutlinedButton(
@@ -676,14 +712,15 @@ fun StatisticsScreen(
                                     }
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFF14532D)),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(38.dp)
+                                .height(40.dp)
                         ) {
-                            Icon(Icons.Default.TableChart, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Planilha CSV", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.TableChart, contentDescription = null, tint = Color(0xFF14532D), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Planilha CSV", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF14532D))
                         }
                     }
                 }
@@ -701,13 +738,14 @@ private fun StatCard(
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -715,37 +753,37 @@ private fun StatCard(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = accentColor.copy(alpha = 0.15f),
-                    modifier = Modifier.size(28.dp)
+                    color = accentColor.copy(alpha = 0.12f),
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = accentColor,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
                 Text(
                     text = value,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = accentColor
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = title,
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color(0xFF0F172A),
                 maxLines = 1
             )
             Text(
                 text = subtitle,
-                fontSize = 9.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                color = Color(0xFF64748B),
                 maxLines = 1
             )
         }

@@ -197,7 +197,7 @@ object DfConstants {
             domain = "1. Estado Nutricional & Hidratação",
             icon = "🌾",
             items = listOf(
-                "Caquexia / Emaciação (Costelas, vértebras e ossos pélvicos proeminentes - ECC 1 a 2)",
+                "Caquexia / Emaciação (Costelas, vértebras e ossos pélvicos proeminentes)",
                 "Privação ou ausência de água potável / Recipiente inacessível ou imundo",
                 "Ausência de alimento adequado ou pasto completamente degradado",
                 "Desidratação severa constatada (olhos encovados / turgor diminuído)"
@@ -247,7 +247,7 @@ object DfConstants {
             domain = "1. Estado Nutricional & Hidratação",
             icon = "🌾",
             items = listOf(
-                "Escore corporal adequado/ideal (ECC 4 a 6 - boa musculatura e cobertura adiposa)",
+                "Escore corporal adequado/ideal (boa musculatura e cobertura adiposa satisfatória)",
                 "Água limpa, fresca, potável e acessível à vontade em bebedouro higienizado",
                 "Alimentação volumosa de boa qualidade (pasto verde farto, feno ou forragem)",
                 "Animal bem hidratado (turgor cutâneo elástico e mucosas róseas)"
@@ -293,7 +293,7 @@ object DfConstants {
             domain = "1. Estado Nutricional & Hidratação",
             icon = "🥣",
             items = listOf(
-                "Caquexia / Emaciação severa (costelas e vértebras salientes, perda de massa muscular - ECC 1 ou 2)",
+                "Caquexia / Emaciação severa (costelas e vértebras salientes, perda de massa muscular)",
                 "Privação ou ausência de água potável / Recipiente vazio, virado, inacessível ou sujo",
                 "Ausência de alimentação adequada (ração) / Animal faminto, inanição constatada",
                 "Desidratação acentuada (turgor cutâneo diminuído, olhos encovados, mucosas ressecadas)"
@@ -337,7 +337,7 @@ object DfConstants {
             domain = "1. Estado Nutricional & Hidratação",
             icon = "🥣",
             items = listOf(
-                "Escore de condição corporal ideal (ECC 4 a 5 - costelas palpáveis com leve cobertura adiposa)",
+                "Escore de condição corporal ideal (costelas palpáveis com leve cobertura adiposa)",
                 "Água limpa, fresca e potável à vontade em vasilhame higienizado",
                 "Alimentação regular de boa qualidade (ração comercial ou balanceada adequada à idade e porte)",
                 "Animal bem hidratado e nutrido (pelagem brilhante, olhos vivos e mucosas róseas)"

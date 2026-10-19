@@ -403,16 +403,15 @@ fun InspectionDetailScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    val descHeader = if (isDog) "Descrição do(s) Cão(ães)" else "Descrição do(s) Cavalo(s)"
                     Text(
-                        text = descHeader,
+                        text = "Descrição e Parecer do Relatório Geral",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    val descText = if (inspection.horseDescription.isNotBlank()) inspection.horseDescription else "Nenhuma descrição física específica registrada."
+                    val descText = if (inspection.horseDescription.isNotBlank()) inspection.horseDescription else "Nenhuma descrição ou parecer registrado."
                     Text(
                         text = descText,
                         fontSize = 13.sp

@@ -25,6 +25,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -151,29 +153,75 @@ fun HistoryScreen(
         else displayedInspections.filter { it.id in selectedIds }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Barra de Pesquisa Regional / Geral
-        AppOutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.searchQuery.value = it },
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF4FAF6))
+    ) {
+        // 1. Barra de Pesquisa Limpa (estilo HomeScreen)
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 2.dp)
-                .testTag("history_search_field"),
-            placeholder = { Text("Filtrar por RA, levantamento, tutor, notas...", fontSize = 11.5.sp) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Limpar busca", modifier = Modifier.size(16.dp))
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .height(44.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White,
+            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 12.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.searchQuery.value = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("history_search_field"),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 13.5.sp,
+                        color = Color(0xFF1E293B)
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (searchQuery.isEmpty()) {
+                            Text(
+                                text = "Filtrar por RA, levantamento, tutor, notas...",
+                                fontSize = 13.sp,
+                                color = Color(0xFF94A3B8),
+                                maxLines = 1
+                            )
+                        }
+                        innerTextField()
                     }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(10.dp)
-        )
+                )
 
-        // 2. Chips de Filtro Rápido por Região Administrativa (RA)
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(
+                        onClick = { viewModel.searchQuery.value = "" },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Limpar busca",
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+        // 2. Chips de Filtro Rápido por Região Administrativa (RA) com Paleta Verde
         val availableRas = remember(allInspections) {
             val fromData = allInspections.map { it.administrativeRegion }.distinct()
             val defaults = listOf(
@@ -191,14 +239,26 @@ fun HistoryScreen(
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             item {
                 FilterChip(
                     selected = selectedRaFilter == null,
                     onClick = { selectedRaFilter = null },
-                    label = { Text("Todas as RAs", fontSize = 10.5.sp) }
+                    label = { Text("Todas as RAs", fontSize = 11.sp, fontWeight = if (selectedRaFilter == null) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF14532D),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Color(0xFF334155)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selectedRaFilter == null,
+                        borderColor = Color(0xFFCBD5E1),
+                        selectedBorderColor = Color(0xFF14532D)
+                    )
                 )
             }
             items(availableRas) { ra ->
@@ -208,20 +268,34 @@ fun HistoryScreen(
                     onClick = {
                         selectedRaFilter = if (isSelected) null else ra
                     },
-                    label = { Text(ra, fontSize = 10.5.sp) }
+                    label = { Text(ra, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF14532D),
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Color(0xFF334155)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = Color(0xFFCBD5E1),
+                        selectedBorderColor = Color(0xFF14532D)
+                    )
                 )
             }
         }
 
-        // 3. Barra de Seleção Múltipla e Ações em Lote (PDFs e CSV)
+        // 3. Barra de Seleção Múltipla e Ações em Lote (Card Branco com Borda Suave)
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            shape = RoundedCornerShape(8.dp),
+            color = Color.White,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            shadowElevation = 1.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -230,24 +304,30 @@ fun HistoryScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (selectedIds.isNotEmpty()) {
                             Surface(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(6.dp)
+                                color = Color(0xFF14532D),
+                                shape = CircleShape
                             ) {
                                 Text(
                                     text = "${selectedIds.size} selecionado(s)",
                                     color = Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                                 )
                             }
                         } else {
-                            Text(
-                                text = "Registros (${displayedInspections.size})",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Surface(
+                                color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                                shape = CircleShape
+                            ) {
+                                Text(
+                                    text = "${displayedInspections.size} registros",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF022C22),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
                         }
                     }
 
@@ -259,27 +339,27 @@ fun HistoryScreen(
                                     onClick = {
                                         selectedIds = displayedInspections.map { it.id }.toSet()
                                     },
-                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
-                                    Icon(Icons.Default.SelectAll, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.SelectAll, contentDescription = null, tint = Color(0xFF14532D), modifier = Modifier.size(15.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("Selecionar Todos", fontSize = 11.sp)
+                                    Text("Todos", fontSize = 11.5.sp, color = Color(0xFF14532D), fontWeight = FontWeight.SemiBold)
                                 }
                             } else {
                                 TextButton(
                                     onClick = { selectedIds = emptySet() },
-                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
-                                    Icon(Icons.Default.Deselect, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Deselect, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(15.dp))
                                     Spacer(modifier = Modifier.width(3.dp))
-                                    Text("Desmarcar", fontSize = 11.sp)
+                                    Text("Desmarcar", fontSize = 11.5.sp, color = Color(0xFF64748B))
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Botões de Exportação Múltipla (PDF e CSV)
                 Row(
@@ -295,22 +375,23 @@ fun HistoryScreen(
                                 showMultiplePdfDialog = true
                             }
                         },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
+                            .height(38.dp)
                             .testTag("export_multiple_pdf_button"),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = Color(0xFF14532D)
                         )
                     ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = if (selectedIds.isNotEmpty()) "PDFs (${selectedIds.size})" else "Exportar PDFs",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
 
@@ -327,34 +408,37 @@ fun HistoryScreen(
                                 }
                             }
                         },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFF14532D)),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
+                            .height(38.dp)
                             .testTag("export_csv_button")
                     ) {
-                        Icon(Icons.Default.TableChart, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.TableChart, contentDescription = null, tint = Color(0xFF14532D), modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (selectedIds.isNotEmpty()) "CSV (${selectedIds.size})" else "Exportar CSV",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF14532D)
                         )
                     }
 
                     // Backup & Restauração Local (Aparelho)
                     OutlinedButton(
                         onClick = { showBackupDialog = true },
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         modifier = Modifier
-                            .height(36.dp)
+                            .height(38.dp)
                             .testTag("backup_button")
                     ) {
-                        Icon(Icons.Default.SaveAlt, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.SaveAlt, contentDescription = null, tint = Color(0xFF334155), modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Backup", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Backup", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))
                     }
                 }
             }
@@ -369,8 +453,8 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 6.dp, end = 6.dp, top = 2.dp, bottom = 76.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(displayedInspections, key = { _, item -> item.id }) { index, item ->
                     val isChecked = selectedIds.contains(item.id)
@@ -866,39 +950,24 @@ fun HistoryItemCard(
     onExportPdf: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val isEven = index % 2 == 0
-    val cardBgColor = if (isEven) {
-        MaterialTheme.colorScheme.surface
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-    }
-
-    ElevatedCard(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                shape = RoundedCornerShape(12.dp)
-            )
             .testTag("history_item_${inspection.id}"),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = cardBgColor
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 2.dp
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Color(0xFF14532D) else Color(0xFFE2E8F0)
         )
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
 
-            // 1. HEADER: Checkbox + NÚMERO DE PROTOCOLO + DATA (Margens Otimizadas)
+            // 1. HEADER: Checkbox + NÚMERO DE PROTOCOLO + DATA
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-                    .padding(horizontal = 6.dp, vertical = 2.5.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -910,46 +979,45 @@ fun HistoryItemCard(
                         checked = isSelected,
                         onCheckedChange = { onToggleSelect() },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = MaterialTheme.colorScheme.primary
+                            checkedColor = Color(0xFF14532D)
                         ),
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(3.dp)
+                        color = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                        shape = CircleShape
                     ) {
                         Text(
                             text = inspection.protocolNumber,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp),
+                            color = Color(0xFF022C22),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(3.dp)
+                        color = Color(0xFFD1FAE5),
+                        shape = CircleShape
                     ) {
                         Text(
                             text = "${inspection.speciesEmoji} ${inspection.speciesDisplay}",
-                            fontSize = 9.5.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp)
+                            color = Color(0xFF14532D),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                     if (inspection.auditorName.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "👤 ${inspection.auditorName}",
-                            fontSize = 9.5.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = Color(0xFF334155),
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
@@ -963,94 +1031,79 @@ fun HistoryItemCard(
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(11.dp)
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(12.dp)
                     )
-                    Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = inspection.formattedCaptureDate,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF64748B)
                     )
                 }
             }
 
-            // 2. PARÂMETRO: REGIÃO ADMINISTRATIVA (RA) & ENDEREÇO RESIDENCIAL (Margens Ajustadas)
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    // Linha 1: Região Administrativa (RA)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "RA: ",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = inspection.administrativeRegion,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 11.5.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                    }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                    // Linha 2: Endereço Residencial logo abaixo do campo RA
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Endereço: ",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = inspection.residentialAddress,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                    }
+            // 2. PARÂMETRO: REGIÃO ADMINISTRATIVA (RA) & ENDEREÇO RESIDENCIAL
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                // Linha 1: Região Administrativa (RA)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = Color(0xFF0F172A),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "RA: ${inspection.administrativeRegion}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+
+                // Linha 2: Endereço Residencial
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = null,
+                        tint = Color(0xFF475569),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Endereço: ${inspection.residentialAddress}",
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 12.sp,
+                        color = Color(0xFF475569),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
             }
 
-            // 3. PARÂMETRO: FOTO DA OCORRÊNCIA + THUMBNAIL DO PONTO NO MAPA (Compacto)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 3. FOTO DA OCORRÊNCIA + THUMBNAIL DO PONTO NO MAPA
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Coluna Esquerda: Fotografia da Ocorrência
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(95.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0F172A))
                         .clickable(onClick = onOpenZoom)
                 ) {
                     val photoFile = File(inspection.photoPath)
@@ -1081,7 +1134,7 @@ fun HistoryItemCard(
                             )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
-                                text = "Ampliar Foto",
+                                text = "Ampliar",
                                 fontSize = 9.5.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
@@ -1119,32 +1172,31 @@ fun HistoryItemCard(
                 )
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             // CORPO DO CARD COM OS DEMAIS PARÂMETROS
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-
-                // 4. PARÂMETRO: QUANTOS CAVALOS MONITORADOS E QUANTOS COM SINAIS DE MAUS TRATOS
+                // 4. QUANTOS ANIMAIS MONITORADOS E QUANTOS COM SINAIS DE MAUS TRATOS
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Total monitorados
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                        color = Color(0xFFFDE68A).copy(alpha = 0.85f),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(8.dp)) {
-                            val monitoredTitle = if (inspection.isDog) "Cães Monitorados" else "Cavalos Monitorados"
+                            val monitoredTitle = if (inspection.isDog) "Cães Monitorados" else "Animais Monitorados"
                             Text(
                                 text = monitoredTitle,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                color = Color(0xFF451A03)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             val animalUnit = if (inspection.isDog) "cão(ães)" else "animal(is)"
@@ -1152,7 +1204,7 @@ fun HistoryItemCard(
                                 text = "${inspection.speciesEmoji} ${inspection.horseCount} $animalUnit",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                color = Color(0xFF451A03)
                             )
                         }
                     }
@@ -1160,8 +1212,7 @@ fun HistoryItemCard(
                     // Com sinais de maus tratos
                     val hasMistreatment = inspection.mistreatedHorseCount > 0
                     Surface(
-                        color = if (hasMistreatment) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
-                        border = BorderStroke(1.dp, if (hasMistreatment) Color(0xFFFFCDD2) else Color(0xFFC8E6C9)),
+                        color = if (hasMistreatment) Color(0xFFFECDD3).copy(alpha = 0.85f) else Color(0xFFD1FAE5).copy(alpha = 0.85f),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -1170,7 +1221,7 @@ fun HistoryItemCard(
                                 text = "Sinais de Maus-Tratos",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (hasMistreatment) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                color = if (hasMistreatment) Color(0xFF881337) else Color(0xFF065F46)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
@@ -1181,7 +1232,7 @@ fun HistoryItemCard(
                                 },
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (hasMistreatment) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                color = if (hasMistreatment) Color(0xFF881337) else Color(0xFF065F46)
                             )
                         }
                     }
@@ -1195,23 +1246,23 @@ fun HistoryItemCard(
                     // Apoio SEAGRI
                     val seagriMarked = inspection.requiresSeagriApprehension
                     Surface(
-                        color = if (seagriMarked) Color(0xFFFFF3E0) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        border = if (seagriMarked) BorderStroke(1.dp, Color(0xFFFFB74D)) else null,
+                        color = if (seagriMarked) Color(0xFFFEF3C7) else Color(0xFFF1F5F9),
+                        border = if (seagriMarked) BorderStroke(1.dp, Color(0xFFF59E0B)) else null,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                             Text(
                                 text = if (seagriMarked) "🚨 SEAGRI: MARCADO" else "⚪ SEAGRI: Não marcado",
-                                fontSize = 11.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (seagriMarked) Color(0xFFE65100) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (seagriMarked) Color(0xFF92400E) else Color(0xFF64748B)
                             )
                             if (seagriMarked) {
                                 Text(
                                     text = if (inspection.seagriNotes.isNotBlank()) inspection.seagriNotes else "Apreensão requisitada",
                                     fontSize = 9.5.sp,
-                                    color = Color(0xFFBF360C),
+                                    color = Color(0xFF78350F),
                                     maxLines = 1
                                 )
                             }
@@ -1221,23 +1272,23 @@ fun HistoryItemCard(
                     // Apoio PMDF
                     val pmdfMarked = inspection.requiresPmdfSupport
                     Surface(
-                        color = if (pmdfMarked) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        border = if (pmdfMarked) BorderStroke(1.dp, Color(0xFF90CAF9)) else null,
+                        color = if (pmdfMarked) Color(0xFFDBEAFE) else Color(0xFFF1F5F9),
+                        border = if (pmdfMarked) BorderStroke(1.dp, Color(0xFF3B82F6)) else null,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                             Text(
                                 text = if (pmdfMarked) "👮 PMDF: MARCADO" else "⚪ PMDF: Não marcado",
-                                fontSize = 11.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (pmdfMarked) Color(0xFF1565C0) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (pmdfMarked) Color(0xFF1E40AF) else Color(0xFF64748B)
                             )
                             if (pmdfMarked) {
                                 Text(
                                     text = if (inspection.pmdfNotes.isNotBlank()) inspection.pmdfNotes else "Apoio policial requisitado",
                                     fontSize = 9.5.sp,
-                                    color = Color(0xFF0D47A1),
+                                    color = Color(0xFF1E3A8A),
                                     maxLines = 1
                                 )
                             }
@@ -1247,28 +1298,30 @@ fun HistoryItemCard(
 
                 // Apoio de Outro Órgão / Providências de Apreensão
                 val otherAgencyMarked = inspection.requiresOtherAgencySupport
-                Surface(
-                    color = if (otherAgencyMarked) Color(0xFFF3E5F5) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                    border = if (otherAgencyMarked) BorderStroke(1.dp, Color(0xFFCE93D8)) else null,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 3.dp)
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                        Text(
-                            text = if (otherAgencyMarked) "🏛️ OUTRO ÓRGÃO: ${inspection.otherAgencyName.ifBlank { "REQUISITADO" }}" else "⚪ Outro Órgão: Não requisitado",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (otherAgencyMarked) Color(0xFF6A1B9A) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (otherAgencyMarked && inspection.otherAgencyNotes.isNotBlank()) {
+                if (otherAgencyMarked) {
+                    Surface(
+                        color = Color(0xFFF3E8FF),
+                        border = BorderStroke(1.dp, Color(0xFFA855F7)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                             Text(
-                                text = inspection.otherAgencyNotes,
-                                fontSize = 9.5.sp,
-                                color = Color(0xFF4A148C),
-                                maxLines = 2
+                                text = "🏛️ OUTRO ÓRGÃO: ${inspection.otherAgencyName.ifBlank { "REQUISITADO" }}",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6B21A8)
                             )
+                            if (inspection.otherAgencyNotes.isNotBlank()) {
+                                Text(
+                                    text = inspection.otherAgencyNotes,
+                                    fontSize = 9.5.sp,
+                                    color = Color(0xFF581C87),
+                                    maxLines = 2
+                                )
+                            }
                         }
                     }
                 }
@@ -1282,24 +1335,26 @@ fun HistoryItemCard(
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = Color(0xFF475569),
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Tutores / Resp.: ${inspection.tutorsSummary}",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF334155),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // Descrição física do cavalo
+                // Descrição física do animal
                 if (inspection.horseDescription.isNotBlank()) {
                     Text(
                         text = "Descrição: ${inspection.horseDescription}",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color(0xFF64748B),
                         maxLines = 2
                     )
                 }
@@ -1308,7 +1363,7 @@ fun HistoryItemCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 4.dp),
+                        .padding(top = 6.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1319,8 +1374,8 @@ fun HistoryItemCard(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Excluir",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(17.dp)
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -1329,30 +1384,39 @@ fun HistoryItemCard(
                     OutlinedButton(
                         onClick = onEdit,
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        modifier = Modifier.height(32.dp)
+                        border = BorderStroke(1.dp, Color(0xFF14532D)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                        modifier = Modifier.height(34.dp)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF14532D), modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Editar", fontSize = 11.5.sp)
+                        Text("Editar", fontSize = 11.5.sp, color = Color(0xFF14532D), fontWeight = FontWeight.SemiBold)
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    OutlinedButton(
+                    Surface(
                         onClick = onExportPdf,
+                        modifier = Modifier
+                            .height(34.dp)
+                            .testTag("history_export_pdf_${inspection.id}"),
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                        modifier = Modifier.height(32.dp)
+                        color = Color(0xFFECFDF5),
+                        border = BorderStroke(1.dp, Color(0xFFA7F3D0))
                     ) {
-                        Icon(
-                            Icons.Default.PictureAsPdf,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("PDF", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.PictureAsPdf,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = Color(0xFF14532D)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("PDF", fontSize = 11.5.sp, color = Color(0xFF14532D), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
