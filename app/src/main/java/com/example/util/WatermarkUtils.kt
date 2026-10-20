@@ -37,10 +37,11 @@ object WatermarkUtils {
         protocol: String,
         captureTimeMillis: Long = System.currentTimeMillis(),
         exemplarIndex: Int = 1,
-        photoTag: String? = null
+        photoTag: String? = null,
+        deviceOrientationDegrees: Int = 0
     ): File? {
         val originalBitmap = decodeSampledBitmapFromUri(context, inputUri, 1920, 1920) ?: return null
-        val orientedBitmap = fixBitmapOrientation(context, inputUri, originalBitmap)
+        val orientedBitmap = fixBitmapOrientation(context, inputUri, originalBitmap, deviceOrientationDegrees)
 
         val watermarkedBitmap = addWatermarkToBitmap(
             source = orientedBitmap,
@@ -194,6 +195,7 @@ object WatermarkUtils {
     ): Bitmap {
         val width = source.width
         val height = source.height
+        val isLandscape = width > height
 
         val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
@@ -204,17 +206,16 @@ object WatermarkUtils {
         val baseDimension = max(width, height)
         val scaleFactor = (baseDimension / 1000f).coerceIn(1f, 3.5f)
 
-        val bannerPadding = (16f * scaleFactor)
-        val titleTextSize = 22f * scaleFactor
-        val bodyTextSize = 18f * scaleFactor
-        val smallTextSize = 14f * scaleFactor
-        val lineHeight = bodyTextSize * 1.4f
+        val bannerPadding = 16f * scaleFactor
+        val titleTextSize = (if (isLandscape) 19f else 22f) * scaleFactor
+        val bodyTextSize = (if (isLandscape) 16f else 18f) * scaleFactor
+        val smallTextSize = (if (isLandscape) 13f else 14f) * scaleFactor
+        val lineHeight = bodyTextSize * 1.35f
 
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
         val dateString = sdf.format(Date(captureTimeMillis))
         val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f° (GPS)", latitude, longitude)
         val raString = "RA: $administrativeRegion"
-        val protocolString = "LEVANTAMENTO: $protocol | APOIO À FISCALIZAÇÃO"
 
         val tagLine = if (!photoTag.isNullOrBlank()) {
             "🏷️ TAG: ${photoTag.trim().take(20)}"
@@ -222,32 +223,17 @@ object WatermarkUtils {
             "🐴 REGISTRO FOTOGRÁFICO: Foto #$exemplarIndex"
         }
 
-        val lines = listOf(
-            tagLine,
-            "📍 COORDENADAS: $coordsString",
-            "📅 DATA/HORA: $dateString",
-            "🏛 REGIÃO: $raString"
-        )
-
-        val bannerHeight = (lines.size * lineHeight) + titleTextSize + (bannerPadding * 2.4f)
-        val bannerTop = height - bannerHeight
-
-        // Draw translucent dark background bar
         val bgPaint = Paint().apply {
-            color = Color.argb(210, 15, 23, 42) // Slate 900 translucent
+            color = Color.argb(215, 15, 23, 42) // Slate 900 translucent
             style = Paint.Style.FILL
         }
-        canvas.drawRect(0f, bannerTop, width.toFloat(), height.toFloat(), bgPaint)
 
-        // Draw accent colored top stripe on banner (Safety Amber Gold)
         val stripePaint = Paint().apply {
             color = Color.rgb(245, 158, 11) // Amber 500
             strokeWidth = 4f * scaleFactor
             style = Paint.Style.FILL
         }
-        canvas.drawRect(0f, bannerTop, width.toFloat(), bannerTop + (4f * scaleFactor), stripePaint)
 
-        // Draw Title / Badge
         val titlePaint = Paint().apply {
             color = Color.rgb(254, 240, 138) // Light gold
             textSize = titleTextSize
@@ -256,33 +242,14 @@ object WatermarkUtils {
             setShadowLayer(4f, 1f, 1f, Color.BLACK)
         }
 
-        var currentY = bannerTop + bannerPadding + titleTextSize
-        canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, currentY, titlePaint)
-
-        // Draw protocol on the right side with guaranteed safety margin to prevent edge clipping
         val protoText = "REF: $protocol"
         val protoPaint = Paint().apply {
             color = Color.rgb(148, 163, 184) // Slate 400
-            textSize = smallTextSize * 0.85f
+            textSize = smallTextSize * 0.9f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
             isAntiAlias = true
         }
-        val titleWidth = titlePaint.measureText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO")
-        val rightMargin = (bannerPadding * 2.2f).coerceAtLeast(32f * scaleFactor)
-        val maxProtoWidth = (width - rightMargin - bannerPadding - titleWidth - (16f * scaleFactor)).coerceAtLeast(width * 0.35f)
-        while (protoPaint.measureText(protoText) > maxProtoWidth && protoPaint.textSize > 6.5f * scaleFactor) {
-            protoPaint.textSize -= 0.5f
-        }
-        val protoWidth = protoPaint.measureText(protoText)
-        val protoX = width - rightMargin - protoWidth
-        if (protoX > bannerPadding + titleWidth + (12f * scaleFactor)) {
-            canvas.drawText(protoText, protoX, currentY, protoPaint)
-        } else {
-            val safeX = (width - rightMargin - protoWidth).coerceAtLeast(bannerPadding)
-            canvas.drawText(protoText, safeX, currentY - (titleTextSize * 0.3f), protoPaint)
-        }
 
-        // Draw information lines
         val bodyPaint = Paint().apply {
             color = Color.WHITE
             textSize = bodyTextSize
@@ -299,23 +266,87 @@ object WatermarkUtils {
             setShadowLayer(3f, 1f, 1f, Color.BLACK)
         }
 
-        currentY += lineHeight * 0.4f
-        for (i in lines.indices) {
-            currentY += lineHeight
-            val text = lines[i]
-            if (i == 0) {
-                // Coordinates line with sky blue highlight
-                canvas.drawText(text, bannerPadding, currentY, highlightPaint)
-            } else if (i == lines.size - 1) {
-                val subPaint = Paint().apply {
-                    color = Color.rgb(203, 213, 225) // Slate 300
-                    textSize = smallTextSize
-                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
-                    isAntiAlias = true
-                }
-                canvas.drawText(text, bannerPadding, currentY, subPaint)
+        val subPaint = Paint().apply {
+            color = Color.rgb(203, 213, 225) // Slate 300
+            textSize = bodyTextSize
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            isAntiAlias = true
+            setShadowLayer(3f, 1f, 1f, Color.BLACK)
+        }
+
+        if (isLandscape) {
+            // MODO PAISAGEM: Banner horizontal compacto com 2 colunas para manter proporção perfeita
+            val bannerHeight = (2 * lineHeight) + titleTextSize + (bannerPadding * 2.2f)
+            val bannerTop = height - bannerHeight
+
+            // Fundo escuro translúcido
+            canvas.drawRect(0f, bannerTop, width.toFloat(), height.toFloat(), bgPaint)
+            // Faixa dourada no topo do banner
+            canvas.drawRect(0f, bannerTop, width.toFloat(), bannerTop + (3.5f * scaleFactor), stripePaint)
+
+            val titleY = bannerTop + bannerPadding + titleTextSize
+            canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, titleY, titlePaint)
+
+            val rightMargin = (bannerPadding * 2f).coerceAtLeast(32f * scaleFactor)
+            val protoWidth = protoPaint.measureText(protoText)
+            val protoX = width - rightMargin - protoWidth
+            canvas.drawText(protoText, protoX.coerceAtLeast(width * 0.65f), titleY, protoPaint)
+
+            val col2X = (width * 0.50f).coerceAtLeast(bannerPadding + 420f * scaleFactor)
+            val row1Y = titleY + lineHeight + (4f * scaleFactor)
+            val row2Y = row1Y + lineHeight
+
+            // Coluna 1: Tag/Identificação + Coordenadas GPS
+            canvas.drawText(tagLine, bannerPadding, row1Y, highlightPaint)
+            canvas.drawText("📍 COORDENADAS: $coordsString", bannerPadding, row2Y, bodyPaint)
+
+            // Coluna 2: Data/Hora + Região Administrativa
+            canvas.drawText("📅 DATA/HORA: $dateString", col2X, row1Y, subPaint)
+            canvas.drawText("🏛 REGIÃO: $raString", col2X, row2Y, subPaint)
+        } else {
+            // MODO RETRATO: Formato empilhado tradicional vertical
+            val lines = listOf(
+                tagLine,
+                "📍 COORDENADAS: $coordsString",
+                "📅 DATA/HORA: $dateString",
+                "🏛 REGIÃO: $raString"
+            )
+
+            val bannerHeight = (lines.size * lineHeight) + titleTextSize + (bannerPadding * 2.4f)
+            val bannerTop = height - bannerHeight
+
+            canvas.drawRect(0f, bannerTop, width.toFloat(), height.toFloat(), bgPaint)
+            canvas.drawRect(0f, bannerTop, width.toFloat(), bannerTop + (4f * scaleFactor), stripePaint)
+
+            var currentY = bannerTop + bannerPadding + titleTextSize
+            canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, currentY, titlePaint)
+
+            val titleWidth = titlePaint.measureText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO")
+            val rightMargin = (bannerPadding * 2.2f).coerceAtLeast(32f * scaleFactor)
+            val maxProtoWidth = (width - rightMargin - bannerPadding - titleWidth - (16f * scaleFactor)).coerceAtLeast(width * 0.35f)
+            while (protoPaint.measureText(protoText) > maxProtoWidth && protoPaint.textSize > 6.5f * scaleFactor) {
+                protoPaint.textSize -= 0.5f
+            }
+            val protoWidth = protoPaint.measureText(protoText)
+            val protoX = width - rightMargin - protoWidth
+            if (protoX > bannerPadding + titleWidth + (12f * scaleFactor)) {
+                canvas.drawText(protoText, protoX, currentY, protoPaint)
             } else {
-                canvas.drawText(text, bannerPadding, currentY, bodyPaint)
+                val safeX = (width - rightMargin - protoWidth).coerceAtLeast(bannerPadding)
+                canvas.drawText(protoText, safeX, currentY - (titleTextSize * 0.3f), protoPaint)
+            }
+
+            currentY += lineHeight * 0.4f
+            for (i in lines.indices) {
+                currentY += lineHeight
+                val text = lines[i]
+                if (i == 0) {
+                    canvas.drawText(text, bannerPadding, currentY, highlightPaint)
+                } else if (i == lines.size - 1) {
+                    canvas.drawText(text, bannerPadding, currentY, subPaint)
+                } else {
+                    canvas.drawText(text, bannerPadding, currentY, bodyPaint)
+                }
             }
         }
 
@@ -332,14 +363,14 @@ object WatermarkUtils {
             val options = BitmapFactory.Options().apply {
                 inJustDecodeBounds = true
             }
-            context.contentResolver.openInputStream(uri)?.use {
+            getInputStreamFromUri(context, uri)?.use {
                 BitmapFactory.decodeStream(it, null, options)
             }
 
             options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
             options.inJustDecodeBounds = false
 
-            context.contentResolver.openInputStream(uri)?.use {
+            getInputStreamFromUri(context, uri)?.use {
                 BitmapFactory.decodeStream(it, null, options)
             }
         } catch (_: Exception) {
@@ -366,23 +397,85 @@ object WatermarkUtils {
         return inSampleSize
     }
 
-    private fun fixBitmapOrientation(context: Context, uri: Uri, bitmap: Bitmap): Bitmap {
+    private fun getInputStreamFromUri(context: Context, uri: Uri): InputStream? {
         return try {
-            val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-            val exif = inputStream?.use { ExifInterface(it) } ?: return bitmap
-            val orientation = exif.getAttributeInt(
+            if (uri.scheme == "file") {
+                File(uri.path ?: "").inputStream()
+            } else {
+                context.contentResolver.openInputStream(uri)
+            }
+        } catch (_: Exception) {
+            try {
+                context.contentResolver.openInputStream(uri)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun fixBitmapOrientation(
+        context: Context,
+        uri: Uri,
+        bitmap: Bitmap,
+        deviceOrientationDegrees: Int = 0
+    ): Bitmap {
+        return try {
+            val inputStream: InputStream? = getInputStreamFromUri(context, uri)
+            val exif = inputStream?.use { ExifInterface(it) }
+            val orientation = exif?.getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL
-            )
+                ExifInterface.ORIENTATION_UNDEFINED
+            ) ?: ExifInterface.ORIENTATION_UNDEFINED
 
             val matrix = Matrix()
+            var rotated = false
             when (orientation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-                else -> return bitmap
+                ExifInterface.ORIENTATION_ROTATE_90 -> {
+                    matrix.postRotate(90f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_ROTATE_180 -> {
+                    matrix.postRotate(180f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_ROTATE_270 -> {
+                    matrix.postRotate(270f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> {
+                    matrix.postScale(-1f, 1f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                    matrix.postScale(1f, -1f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    matrix.postRotate(90f)
+                    matrix.postScale(-1f, 1f)
+                    rotated = true
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    matrix.postRotate(270f)
+                    matrix.postScale(-1f, 1f)
+                    rotated = true
+                }
             }
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+
+            if (rotated) {
+                Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            } else if (deviceOrientationDegrees == 90 || deviceOrientationDegrees == 270) {
+                // Se o EXIF não girou mas o fiscal segurou a câmera no modo paisagem:
+                if (bitmap.width < bitmap.height) {
+                    val rotMatrix = Matrix()
+                    rotMatrix.postRotate(if (deviceOrientationDegrees == 270) 270f else 90f)
+                    Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, rotMatrix, true)
+                } else {
+                    bitmap
+                }
+            } else {
+                bitmap
+            }
         } catch (_: Exception) {
             bitmap
         }

@@ -366,7 +366,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         exactTimestampMillis: Long? = null,
         exactRa: String? = null,
         exemplarIndex: Int? = null,
-        photoTag: String? = null
+        photoTag: String? = null,
+        orientationDegrees: Int = 0
     ) {
         val currentDraft = draft.value
         val captureLat = exactLatitude ?: currentDraft.latitude
@@ -401,7 +402,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 protocol = currentDraft.protocolNumber,
                 captureTimeMillis = captureTime,
                 exemplarIndex = orderIndex,
-                photoTag = photoTag
+                photoTag = photoTag,
+                deviceOrientationDegrees = orientationDegrees
             )
 
             withContext(Dispatchers.Main) {

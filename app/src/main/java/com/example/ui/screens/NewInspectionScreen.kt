@@ -2439,14 +2439,15 @@ fun NewInspectionScreen(
             administrativeRegion = draft.administrativeRegion,
             protocolNumber = draft.protocolNumber,
             capturedPhotosCount = draft.allPhotoPaths.size,
-            onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag ->
+            onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag, orientationDegrees ->
                 viewModel.addDraftPhotoUri(
                     uri = uri,
                     exactLatitude = exactLat,
                     exactLongitude = exactLng,
                     exactTimestampMillis = exactTime,
                     exactRa = dynamicRa,
-                    photoTag = photoTag
+                    photoTag = photoTag,
+                    orientationDegrees = orientationDegrees
                 )
             },
             onPickFromGallery = {
