@@ -1198,8 +1198,11 @@ fun HistoryItemCard(
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF451A03)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            val animalUnit = if (inspection.isDog) "cão(ães)" else "animal(is)"
+                            val animalUnit = if (inspection.isDog) {
+                                if (inspection.horseCount == 1) "cão" else "cães"
+                            } else {
+                                if (inspection.horseCount == 1) "animal" else "animais"
+                            }
                             Text(
                                 text = "${inspection.speciesEmoji} ${inspection.horseCount} $animalUnit",
                                 fontSize = 13.sp,
