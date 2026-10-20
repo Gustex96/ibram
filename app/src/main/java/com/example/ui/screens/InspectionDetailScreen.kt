@@ -841,7 +841,7 @@ fun InspectionDetailScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    val coordsFormatted = String.format(java.util.Locale.US, "Latitude: %.6f° | Longitude: %.6f°", inspection.latitude, inspection.longitude)
+                    val coordsFormatted = String.format(java.util.Locale.US, "Latitude: %.6f° • Longitude: %.6f°", inspection.latitude, inspection.longitude)
                     Text(
                         text = coordsFormatted,
                         fontSize = 12.sp,
@@ -1021,7 +1021,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -1048,6 +1048,7 @@ fun InspectionDetailScreen(
                     newTutorCpf = cpf,
                     newAdditionalTutors = additionalTutors,
                     newPpbeaAnswersData = ppbeaAnswersData,
+                    newPhotoPaths = updatedPhotos,
                     onSuccess = {
                         showEditDialog = false
                     }

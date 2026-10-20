@@ -102,6 +102,10 @@ import com.example.util.WatermarkUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.foundation.layout.navigationBarsPadding
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -111,6 +115,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        hideSystemNavigationBar()
 
         seedInitialDemoDataIfEmpty()
 
@@ -119,6 +124,25 @@ class MainActivity : ComponentActivity() {
                 MainAppNavHost(viewModel = viewModel)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hideSystemNavigationBar()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            hideSystemNavigationBar()
+        }
+    }
+
+    private fun hideSystemNavigationBar() {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.navigationBars())
     }
 
     private fun seedInitialDemoDataIfEmpty() {
@@ -418,6 +442,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .navigationBarsPadding()
                             .height(64.dp),
                         color = Color(0xFFEFF8F2),
                         border = BorderStroke(1.dp, Color(0xFFA7F3D0).copy(alpha = 0.6f))

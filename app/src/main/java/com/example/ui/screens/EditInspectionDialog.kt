@@ -73,6 +73,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import coil.compose.AsyncImage
 import com.example.data.model.DfConstants
 import com.example.data.model.EnquadramentoMausTratos
 import com.example.data.model.GrauBemEstar
@@ -88,6 +105,29 @@ import com.example.ui.components.MistreatmentChecklistView
 import com.example.ui.components.PpbeaEvaluationDialog
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
+import com.example.util.WatermarkUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.UUID
+
+private fun createEditTempCameraUri(context: Context): Uri? {
+    return try {
+        val photosDir = File(context.cacheDir, "photos").apply {
+            if (!exists()) mkdirs()
+        }
+        val uniqueSuffix = UUID.randomUUID().toString().take(6)
+        val photoFile = File(photosDir, "edit_capture_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            photoFile
+        )
+    } catch (_: Exception) {
+        null
+    }
+}
 
 @Composable
 fun EditInspectionDialog(
@@ -117,7 +157,8 @@ fun EditInspectionDialog(
         tutorCpf: String,
         additionalTutors: String,
         auditorName: String,
-        ppbeaAnswersData: String
+        ppbeaAnswersData: String,
+        photoPaths: List<String>
     ) -> Unit
 ) {
     var auditorName by remember { mutableStateOf(inspection.auditorName) }
@@ -142,6 +183,89 @@ fun EditInspectionDialog(
     var safetyRiskAssessment by remember { mutableStateOf(inspection.safetyRiskAssessment) }
     val context = LocalContext.current
     val isDog = inspection.isDog
+
+    // Gestão Dinâmica de Fotos (Anexar e Retirar Fotos durante Edição)
+    var photoPaths by remember { mutableStateOf(inspection.allPhotoPaths) }
+    var isProcessingPhoto by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            isProcessingPhoto = true
+            coroutineScope.launch(Dispatchers.IO) {
+                val watermarked = WatermarkUtils.applyWatermarkAndSave(
+                    context = context,
+                    inputUri = tempCameraUri!!,
+                    latitude = inspection.latitude,
+                    longitude = inspection.longitude,
+                    administrativeRegion = ra.ifBlank { inspection.administrativeRegion },
+                    protocol = inspection.protocolNumber,
+                    captureTimeMillis = System.currentTimeMillis(),
+                    exemplarIndex = photoPaths.size + 1
+                )
+                withContext(Dispatchers.Main) {
+                    if (watermarked != null) {
+                        photoPaths = photoPaths + watermarked.absolutePath
+                        Toast.makeText(context, "Nova foto capturada e anexada!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Erro ao gravar marca d'água.", Toast.LENGTH_SHORT).show()
+                    }
+                    isProcessingPhoto = false
+                }
+            }
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            isProcessingPhoto = true
+            coroutineScope.launch(Dispatchers.IO) {
+                val newlyAdded = mutableListOf<String>()
+                val initialSize = photoPaths.size
+                uris.forEachIndexed { idx, uri ->
+                    val watermarked = WatermarkUtils.applyWatermarkAndSave(
+                        context = context,
+                        inputUri = uri,
+                        latitude = inspection.latitude,
+                        longitude = inspection.longitude,
+                        administrativeRegion = ra.ifBlank { inspection.administrativeRegion },
+                        protocol = inspection.protocolNumber,
+                        captureTimeMillis = System.currentTimeMillis(),
+                        exemplarIndex = initialSize + idx + 1
+                    )
+                    if (watermarked != null) {
+                        newlyAdded.add(watermarked.absolutePath)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    if (newlyAdded.isNotEmpty()) {
+                        photoPaths = photoPaths + newlyAdded
+                        Toast.makeText(context, "${newlyAdded.size} foto(s) anexada(s) com sucesso!", Toast.LENGTH_SHORT).show()
+                    }
+                    isProcessingPhoto = false
+                }
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = createEditTempCameraUri(context)
+            if (uri != null) {
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            }
+        } else {
+            Toast.makeText(context, "Permissão de câmera necessária.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Estados para o Protocolo de Perícia em Bem-Estar Animal (PPBEA – Anexo D / Res. CFMV 1.236/2018)
     var showPpbeaEvaluationDialog by remember { mutableStateOf(false) }
@@ -280,6 +404,225 @@ fun EditInspectionDialog(
                                 singleLine = true,
                                 shape = RoundedCornerShape(10.dp)
                             )
+                        }
+                    }
+
+                    // 0. Registro Fotográfico Georreferenciado (Anexar / Retirar Fotos)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoLibrary,
+                                        contentDescription = null,
+                                        tint = Color(0xFF14532D),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Fotos da Fiscalização",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                }
+                                Surface(
+                                    color = if (photoPaths.isNotEmpty()) Color(0xFFA7F3D0).copy(alpha = 0.85f) else Color(0xFFFEE2E2),
+                                    shape = CircleShape
+                                ) {
+                                    Text(
+                                        text = if (photoPaths.isEmpty()) "Sem Fotos" else "${photoPaths.size} foto(s)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (photoPaths.isNotEmpty()) Color(0xFF022C22) else Color(0xFF991B1B),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            if (photoPaths.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFF8FAFC))
+                                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
+                                        .padding(vertical = 18.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "Nenhuma foto anexada a este relatório.",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Clique nos botões abaixo para tirar nova foto ou selecionar da galeria.",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFF94A3B8)
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    itemsIndexed(photoPaths) { index, path ->
+                                        Box(
+                                            modifier = Modifier
+                                                .width(135.dp)
+                                                .height(145.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFF0F172A))
+                                        ) {
+                                            val file = File(path)
+                                            if (file.exists()) {
+                                                AsyncImage(
+                                                    model = file,
+                                                    contentDescription = "Foto ${index + 1}",
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("Arquivo ausente", color = Color.White, fontSize = 10.sp)
+                                                }
+                                            }
+
+                                            // Badge com número da foto
+                                            Surface(
+                                                color = Color.Black.copy(alpha = 0.65f),
+                                                shape = RoundedCornerShape(bottomEnd = 6.dp),
+                                                modifier = Modifier.align(Alignment.TopStart)
+                                            ) {
+                                                Text(
+                                                    text = if (index == 0) "Foto 1 (Principal)" else "Foto ${index + 1}",
+                                                    color = Color.White,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+
+                                            // Botão Retirar Foto (Lixeira vermelha)
+                                            Surface(
+                                                onClick = {
+                                                    val updated = photoPaths.toMutableList()
+                                                    updated.removeAt(index)
+                                                    photoPaths = updated
+                                                    Toast.makeText(context, "Foto ${index + 1} retirada.", Toast.LENGTH_SHORT).show()
+                                                },
+                                                color = Color(0xFFDC2626),
+                                                shape = CircleShape,
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .padding(4.dp)
+                                                    .size(28.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Delete,
+                                                        contentDescription = "Retirar foto",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(15.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (isProcessingPhoto) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF14532D)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Processando e aplicando marca d'água oficial...",
+                                        fontSize = 11.5.sp,
+                                        color = Color(0xFF14532D),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Botões de ação para anexar fotos
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val hasCam = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                                        if (hasCam) {
+                                            val uri = createEditTempCameraUri(context)
+                                            if (uri != null) {
+                                                tempCameraUri = uri
+                                                cameraLauncher.launch(uri)
+                                            }
+                                        } else {
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    enabled = !isProcessingPhoto
+                                ) {
+                                    Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Tirar Foto", fontSize = 11.5.sp, maxLines = 1)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        galleryLauncher.launch("image/*")
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF14532D)),
+                                    enabled = !isProcessingPhoto
+                                ) {
+                                    Icon(
+                                        Icons.Default.AddPhotoAlternate,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Anexar Fotos", fontSize = 11.5.sp, color = Color.White, maxLines = 1)
+                                }
+                            }
                         }
                     }
 
@@ -1580,7 +1923,8 @@ fun EditInspectionDialog(
                                 adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
                                 requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
                                 otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
-                                prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave
+                                prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
+                                photoPaths
                             )
                         },
                         modifier = Modifier.weight(1.3f),

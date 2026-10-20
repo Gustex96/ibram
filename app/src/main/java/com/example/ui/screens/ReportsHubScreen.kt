@@ -738,7 +738,7 @@ fun ReportPreviewItem(
                     val info = buildString {
                         if (inspection.auditorName.isNotBlank()) append("Auditor: ${inspection.auditorName}")
                         if (inspection.tutorName.isNotBlank()) {
-                            if (isNotEmpty()) append(" | ")
+                            if (isNotEmpty()) append(" • ")
                             append("Tutor: ${inspection.tutorName}")
                         }
                     }

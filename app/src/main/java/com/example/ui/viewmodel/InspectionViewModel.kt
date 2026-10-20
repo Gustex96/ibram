@@ -955,6 +955,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newTutorCpf: String,
         newAdditionalTutors: String = original.additionalTutors,
         newPpbeaAnswersData: String = original.ppbeaAnswersData,
+        newPhotoPaths: List<String> = original.allPhotoPaths,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
@@ -965,7 +966,13 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             val clampedMistreated = newMistreatedHorseCount.coerceIn(0, newHorseCount)
             val indicatorsToSave = if (clampedMistreated == 0) "" else newMistreatmentIndicators
 
+            val finalPhotos = if (newPhotoPaths.isNotEmpty()) newPhotoPaths else listOf(original.photoPath)
+            val primaryPhoto = finalPhotos.first()
+            val additionalPhotosString = if (finalPhotos.size > 1) finalPhotos.drop(1).joinToString(";;") else ""
+
             val updated = original.copy(
+                photoPath = primaryPhoto,
+                additionalPhotoPaths = additionalPhotosString,
                 imageNotes = newNotes,
                 administrativeRegion = newRa,
                 quadra = newQuadra,

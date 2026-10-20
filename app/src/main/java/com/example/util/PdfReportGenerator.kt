@@ -865,7 +865,7 @@ object PdfReportGenerator {
                 }
                 pCanvas.drawText("ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL", margin, py, headerSubPaint)
                 py += 15f
-                pCanvas.drawText("Levantamento: ${inspection.protocolNumber} | RA: ${inspection.administrativeRegion} | ${inspection.formattedCaptureDate}", margin, py, headerSmallPaint)
+                pCanvas.drawText("Levantamento: ${inspection.protocolNumber} • RA: ${inspection.administrativeRegion} • ${inspection.formattedCaptureDate}", margin, py, headerSmallPaint)
                 py += 20f
 
                 py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM ALTA RESOLUÇÃO", margin, py, contentWidth)
@@ -947,7 +947,7 @@ object PdfReportGenerator {
                 val linePaint = Paint().apply { color = Color.rgb(203, 213, 225); strokeWidth = 1f }
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
                 val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 7.5f; isAntiAlias = true }
-                val pGenText = "Folha $currentPhotoPageNumber de $totalDocumentPages | Anexo Fotográfico • Relatório de Apoio"
+                val pGenText = "Folha $currentPhotoPageNumber de $totalDocumentPages • Anexo Fotográfico • Relatório de Apoio"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)
@@ -1132,7 +1132,7 @@ object PdfReportGenerator {
         coverCanvas.drawLine(margin, pageHeight - 50f, margin + contentWidth, pageHeight - 50f, linePaint)
         val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 8f; isAntiAlias = true }
         val sdfGen = SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", java.util.Locale("pt", "BR"))
-        coverCanvas.drawText("Relatório gerado em ${sdfGen.format(Date())} | Apoio em Fiscalização", margin, pageHeight - 36f, footerTextPaint)
+        coverCanvas.drawText("Relatório gerado em ${sdfGen.format(Date())} • Apoio em Fiscalização", margin, pageHeight - 36f, footerTextPaint)
         coverCanvas.drawText("Página 1 de ${inspections.size + 1}", margin + contentWidth - 80f, pageHeight - 36f, footerTextPaint)
 
         document.finishPage(coverPage)
@@ -1165,7 +1165,7 @@ object PdfReportGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 isAntiAlias = true
             }
-            dCanvas.drawText("Auditor Fiscal: $itemAuditor | Espécie: ${item.speciesDisplay}", margin, dy, dAuditorPaint)
+            dCanvas.drawText("Auditor Fiscal: $itemAuditor • Espécie: ${item.speciesDisplay}", margin, dy, dAuditorPaint)
             dy += 16f
 
             dy = drawSectionHeader(dCanvas, "DADOS DE GEORREFERENCIAMENTO & LOCALIZAÇÃO", margin, dy, contentWidth)
