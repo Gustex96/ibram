@@ -149,9 +149,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         }
         val targetName = customSpeciesName ?: species.displayName
         selectedSpeciesFilter.value = targetName
-        if (draft.value.allPhotoPaths.isEmpty()) {
-            draft.value = draft.value.copy(species = targetName)
-        }
+        draft.value = draft.value.copy(species = targetName)
     }
 
     fun setCustomSpecies(name: String) {
@@ -194,6 +192,17 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun navigateTo(screen: String, detailId: Long? = null) {
+        if (screen == "NEW_INSPECTION") {
+            val targetName = if (selectedSpecies == AnimalSpecies.OUTROS && !customSpeciesName.isNullOrBlank()) {
+                customSpeciesName!!
+            } else {
+                selectedSpecies.displayName
+            }
+            draft.value = draft.value.copy(
+                species = targetName,
+                auditorName = auditorIdentification.ifBlank { draft.value.auditorName }
+            )
+        }
         activeScreenName = screen
         activeDetailId = detailId
     }

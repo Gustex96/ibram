@@ -27,7 +27,7 @@ android {
   } else { "1.1" }
 
   defaultConfig {
-    applicationId = "com.aistudio.equidf.kpmv"
+    applicationId = "com.aistudio.levo.kpmv"
     minSdk = 24
     targetSdk = 36
     versionCode = appVersionCode

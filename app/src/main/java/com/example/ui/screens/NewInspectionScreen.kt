@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -128,11 +129,24 @@ import java.io.File
 fun NewInspectionScreen(
     viewModel: InspectionViewModel,
     onNavigateBack: () -> Unit,
-    onSavedSuccessfully: (Long) -> Unit
+    onSavedSuccessfully: (Long) -> Unit,
+    onSwitchSpecies: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
+
+    // Sincroniza a espécie selecionada no carrossel de entrada com o rascunho
+    LaunchedEffect(viewModel.selectedSpecies, viewModel.customSpeciesName) {
+        val targetSpecies = if (viewModel.selectedSpecies == AnimalSpecies.OUTROS && !viewModel.customSpeciesName.isNullOrBlank()) {
+            viewModel.customSpeciesName!!
+        } else {
+            viewModel.selectedSpecies.displayName
+        }
+        if (draft.species != targetSpecies) {
+            viewModel.updateDraftSpecies(targetSpecies)
+        }
+    }
 
     var showRaDialog by rememberSaveable { mutableStateOf(false) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -332,94 +346,129 @@ fun NewInspectionScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Seletor de Espécie
-                    Text(
-                        text = "ESPÉCIE DO LEVANTAMENTO FISCAL",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    // Exibição exclusiva da Espécie selecionada no menu inicial "carrossel"
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val isDog = draft.isDog
-                        // Opção Cachorro
+                        Text(
+                            text = "ESPÉCIE DO LEVANTAMENTO FISCAL",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        // Botão "Trocar Espécie" disponível para troca imediata
                         Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { viewModel.updateDraftSpecies("Cachorro") }
-                                .border(
-                                    width = if (isDog) 2.dp else 1.dp,
-                                    color = if (isDog) Color(0xFF16A34A) else MaterialTheme.colorScheme.outlineVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .testTag("select_species_dog_button"),
-                            color = if (isDog) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+                            onClick = onSwitchSpecies,
+                            shape = CircleShape,
+                            color = Color(0xFF14532D),
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.testTag("btn_new_inspection_switch_species")
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 10.dp, horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text(text = "🐕", fontSize = 18.sp)
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = "Trocar Espécie",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = "Trocar Espécie",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    val activeSpeciesName = draft.species.ifBlank {
+                        if (viewModel.selectedSpecies == AnimalSpecies.OUTROS && !viewModel.customSpeciesName.isNullOrBlank())
+                            viewModel.customSpeciesName!!
+                        else
+                            viewModel.selectedSpecies.displayName
+                    }
+                    val isDogSpecies = activeSpeciesName.contains("Cachorro", ignoreCase = true) ||
+                            activeSpeciesName.contains("Cão", ignoreCase = true) ||
+                            activeSpeciesName.contains("Canino", ignoreCase = true)
+                    val isCatSpecies = activeSpeciesName.contains("Gato", ignoreCase = true) ||
+                            activeSpeciesName.contains("Felino", ignoreCase = true)
+                    val isPoultrySpecies = activeSpeciesName.contains("Galin", ignoreCase = true) ||
+                            activeSpeciesName.contains("Ave", ignoreCase = true)
+                    val isHorseSpecies = activeSpeciesName.contains("Cavalo", ignoreCase = true) ||
+                            activeSpeciesName.contains("Equino", ignoreCase = true)
+
+                    val speciesEmoji = when {
+                        isDogSpecies -> "🐕"
+                        isCatSpecies -> "🐈"
+                        isPoultrySpecies -> "🐔"
+                        isHorseSpecies -> "🐎"
+                        else -> "🐾"
+                    }
+                    val speciesSubtext = when {
+                        isDogSpecies -> "Caninos"
+                        isCatSpecies -> "Felinos"
+                        isPoultrySpecies -> "Aves / Galináceos"
+                        isHorseSpecies -> "Equinos"
+                        else -> "Espécie sob Fiscalização"
+                    }
+
+                    // Card Único Exclusivo da Espécie Selecionada no Início
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = 2.dp,
+                                color = Color(0xFF16A34A),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .testTag("active_selected_species_card"),
+                        color = Color(0xFFE8F5E9)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp, horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = speciesEmoji, fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "Cachorro",
-                                        fontWeight = if (isDog) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 13.sp,
-                                        color = if (isDog) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
+                                        text = activeSpeciesName,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = Color(0xFF1B5E20)
                                     )
                                     Text(
-                                        text = "Caninos",
-                                        fontSize = 10.sp,
-                                        color = if (isDog) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "$speciesSubtext • Selecionado no menu inicial",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF2E7D32)
                                     )
                                 }
                             }
-                        }
 
-                        // Opção Cavalo
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { viewModel.updateDraftSpecies("Cavalo") }
-                                .border(
-                                    width = if (!isDog) 2.dp else 1.dp,
-                                    color = if (!isDog) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .testTag("select_species_horse_button"),
-                            color = if (!isDog) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 10.dp, horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF16A34A).copy(alpha = 0.2f)
                             ) {
-                                Text(text = "🐎", fontSize = 18.sp)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(
-                                        text = "Cavalo",
-                                        fontWeight = if (!isDog) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 13.sp,
-                                        color = if (!isDog) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = "Equinos",
-                                        fontSize = 10.sp,
-                                        color = if (!isDog) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Text(
+                                    text = "Ativa",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
                     }

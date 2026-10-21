@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
@@ -104,7 +105,8 @@ import java.io.File
 @Composable
 fun HistoryScreen(
     viewModel: InspectionViewModel,
-    onNavigateToNewInspection: () -> Unit
+    onNavigateToNewInspection: () -> Unit,
+    onSwitchSpecies: () -> Unit = {}
 ) {
     val inspections by viewModel.filteredInspections.collectAsStateWithLifecycle()
     val allInspections by viewModel.allInspections.collectAsStateWithLifecycle()
@@ -158,22 +160,28 @@ fun HistoryScreen(
             .fillMaxSize()
             .background(Color(0xFFF4FAF6))
     ) {
-        // 1. Barra de Pesquisa Limpa (estilo HomeScreen)
-        Surface(
+        // 1. Barra Unificada de Pesquisa e Botão "Trocar Espécie" (Alinhado com a HomeScreen)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-                .height(44.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White,
-            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 12.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
             ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 12.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                 BasicTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.searchQuery.value = it },
@@ -216,6 +224,38 @@ fun HistoryScreen(
                         contentDescription = "Buscar",
                         tint = Color(0xFF64748B),
                         modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+            // Botão Elevado "Trocar Espécie"
+            Surface(
+                onClick = onSwitchSpecies,
+                modifier = Modifier
+                    .height(44.dp)
+                    .testTag("btn_history_switch_species"),
+                shape = CircleShape,
+                color = Color(0xFF14532D),
+                shadowElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Trocar Espécie",
+                        color = Color.White,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
                     )
                 }
             }

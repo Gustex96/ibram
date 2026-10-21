@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.LocalPolice
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Warning
@@ -85,7 +86,8 @@ import java.util.Locale
 @Composable
 fun StatisticsScreen(
     viewModel: InspectionViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSwitchSpecies: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val allInspections by viewModel.allInspections.collectAsStateWithLifecycle()
@@ -221,6 +223,35 @@ fun StatisticsScreen(
                             fontSize = 11.sp,
                             color = Color(0xFF64748B)
                         )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        onClick = onSwitchSpecies,
+                        shape = CircleShape,
+                        color = Color(0xFF14532D),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.testTag("btn_stats_switch_species")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = "Trocar Espécie",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Trocar Espécie",
+                                color = Color.White,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }

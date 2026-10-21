@@ -275,7 +275,8 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                     onNavigateBack = { viewModel.navigateTo("MAIN") },
                     onSavedSuccessfully = { newId ->
                         viewModel.navigateTo("DETAIL", newId)
-                    }
+                    },
+                    onSwitchSpecies = { showSplashScreen = true }
                 )
             }
             "DETAIL" -> {
@@ -599,16 +600,20 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                             )
                             1 -> HistoryScreen(
                                 viewModel = viewModel,
-                                onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") }
+                                onNavigateToNewInspection = { viewModel.navigateTo("NEW_INSPECTION") },
+                                onSwitchSpecies = { showSplashScreen = true }
                             )
                             2 -> StatisticsScreen(
-                                viewModel = viewModel
+                                viewModel = viewModel,
+                                onSwitchSpecies = { showSplashScreen = true }
                             )
                             3 -> ReportsHubScreen(
-                                viewModel = viewModel
+                                viewModel = viewModel,
+                                onSwitchSpecies = { showSplashScreen = true }
                             )
                             4 -> com.example.ui.screens.KnowledgeScreen(
-                                viewModel = viewModel
+                                viewModel = viewModel,
+                                onSwitchSpecies = { showSplashScreen = true }
                             )
                         }
                     }

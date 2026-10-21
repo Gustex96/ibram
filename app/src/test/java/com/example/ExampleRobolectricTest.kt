@@ -216,8 +216,8 @@ class ExampleRobolectricTest {
 
         val equineInspection = HorseInspection(
             protocolNumber = "DF-EQU-2026-9999",
-            photoPath = "/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_front.jpg",
-            additionalPhotoPaths = "/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_lateral.jpg;;/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_pata.jpg",
+            photoPath = "/data/user/0/com.aistudio.levo.kpmv/files/photos/horse_front.jpg",
+            additionalPhotoPaths = "/data/user/0/com.aistudio.levo.kpmv/files/photos/horse_lateral.jpg;;/data/user/0/com.aistudio.levo.kpmv/files/photos/horse_pata.jpg",
             latitude = -15.823456,
             longitude = -47.987654,
             administrativeRegion = "Planaltina (RA II)",
@@ -237,7 +237,7 @@ class ExampleRobolectricTest {
         assertEquals("DF-EQU-2026-9999", loaded?.protocolNumber)
         assertEquals(-15.823456, loaded?.latitude ?: 0.0, 0.000001)
         assertEquals(-47.987654, loaded?.longitude ?: 0.0, 0.000001)
-        assertEquals("/data/user/0/com.aistudio.equidf.kpmv/files/photos/horse_front.jpg", loaded?.photoPath)
+        assertEquals("/data/user/0/com.aistudio.levo.kpmv/files/photos/horse_front.jpg", loaded?.photoPath)
         assertEquals(3, loaded?.allPhotoPaths?.size)
         assertEquals("Cavalo", loaded?.species)
         assertFalse(loaded?.isDog == true)

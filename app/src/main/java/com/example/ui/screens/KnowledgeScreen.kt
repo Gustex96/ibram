@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -70,7 +71,8 @@ import com.example.ui.viewmodel.InspectionViewModel
 @Composable
 fun KnowledgeScreen(
     viewModel: InspectionViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSwitchSpecies: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val species = viewModel.selectedSpecies
@@ -160,6 +162,34 @@ fun KnowledgeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Botão Trocar Espécie
+                    Surface(
+                        onClick = onSwitchSpecies,
+                        shape = CircleShape,
+                        color = Color(0xFF14532D),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.testTag("btn_knowledge_switch_species")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = "Trocar Espécie",
+                                tint = Color.White,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Text(
+                                text = "Trocar Espécie",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
                     // Botão para abrir o Manual Oficial do CRMV-MS (ANEXO D - PPBEA)
                     Surface(
                         onClick = {

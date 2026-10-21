@@ -3,6 +3,7 @@ package com.example.ui.screens
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -25,8 +26,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,7 +50,6 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.FlashAuto
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material.icons.filled.ZoomIn
@@ -75,9 +76,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
@@ -90,7 +92,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.ui.components.AppOutlinedTextField
 import com.example.util.LocationHelper
-import com.example.util.WatermarkUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -101,59 +102,58 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-data class PendingPhotoCapture(
+private data class PendingPhotoCapture(
     val uri: Uri,
     val exactLat: Double,
     val exactLng: Double,
     val exactTime: Long,
     val exactRa: String,
-    val orientationDegrees: Int = 0
+    val orientationDegrees: Int
 )
 
+/**
+ * Câmera Técnica de Campo para Fiscalização Ambiental e Bem-Estar Animal.
+ * - Orientação das fotos e da marca d'água sincronizada com a rotação do aparelho (Paisagem / Retrato).
+ * - HUD georreferenciado limpo e adaptativo que acompanha a rotação sem deslocamento ou cortes.
+ * - Zoom suave por gestos de pinça dos dedos e botões de atalho rápido.
+ */
 @Composable
 fun CameraCaptureScreen(
-    initialLatitude: Double,
-    initialLongitude: Double,
-    administrativeRegion: String,
-    protocolNumber: String,
-    capturedPhotosCount: Int,
-    onPhotoCaptured: (
-        uri: Uri,
-        exactLatitude: Double,
-        exactLongitude: Double,
-        exactTimestampMillis: Long,
-        dynamicRa: String,
-        photoTag: String?,
-        orientationDegrees: Int
-    ) -> Unit,
+    onPhotoCaptured: (Uri, Double, Double, Long, String, String?, Int) -> Unit,
+    onClose: () -> Unit,
     onPickFromGallery: () -> Unit,
-    onClose: () -> Unit
+    initialLatitude: Double = -15.7942,
+    initialLongitude: Double = -47.8821,
+    administrativeRegion: String = "Plano Piloto",
+    capturedPhotosCount: Int = 0,
+    protocolNumber: String = "DF-MAUS-TRATOS-2026",
+    photoNumber: Int = capturedPhotosCount + 1
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val configuration = LocalConfiguration.current
+    val locationHelper = remember { LocationHelper(context) }
 
-    val photoNumber = capturedPhotosCount + 1
+    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var activeCamera by remember { mutableStateOf<Camera?>(null) }
+    var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
+    var flashMode by remember { mutableIntStateOf(ImageCapture.FLASH_MODE_AUTO) }
 
-    val locationHelper = remember(context) { LocationHelper(context) }
+    // Telemetria em tempo real
     var currentLatitude by remember { mutableDoubleStateOf(initialLatitude) }
     var currentLongitude by remember { mutableDoubleStateOf(initialLongitude) }
     var currentAccuracy by remember { mutableFloatStateOf(0f) }
     var currentAltitude by remember { mutableDoubleStateOf(0.0) }
     var isRealGps by remember { mutableStateOf(false) }
+    var currentDynamicRa by remember { mutableStateOf(administrativeRegion.ifBlank { "Plano Piloto" }) }
     var currentTimestampMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var currentDynamicRa by remember { mutableStateOf(administrativeRegion) }
 
-    var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
-    var flashMode by remember { mutableIntStateOf(ImageCapture.FLASH_MODE_AUTO) }
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
-    var activeCamera by remember { mutableStateOf<Camera?>(null) }
-
-    // Estados de Zoom (Suporte a Pinça dos dedos e botões rápidos 1x, 2x, etc.)
+    // Estado do Zoom (1x até 8x)
     var currentZoomRatio by remember { mutableFloatStateOf(1f) }
     var minZoomRatio by remember { mutableFloatStateOf(1f) }
     var maxZoomRatio by remember { mutableFloatStateOf(8f) }
 
-    // Sensor de Orientação da Câmera (Retrato vs Paisagem)
+    // Detecção física da orientação do sensor
     var currentDeviceOrientation by remember { mutableIntStateOf(0) }
     var targetRotationSurface by remember { mutableIntStateOf(Surface.ROTATION_0) }
 
@@ -185,17 +185,20 @@ fun CameraCaptureScreen(
         }
     }
 
-    // Ângulo de rotação dos ícones da UI para acompanhar os olhos do fiscal em modo paisagem ou retrato
-    val targetUiAngle = when (currentDeviceOrientation) {
-        90 -> -90f
+    // Identifica se a janela está em orientação paisagem pelo sistema
+    val isScreenLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // Ângulo de rotação animada para os elementos de interface acompanharem a mão do fiscal
+    val targetUiRotation = when (currentDeviceOrientation) {
+        90 -> 270f
         180 -> 180f
         270 -> 90f
         else -> 0f
     }
-    val animatedUiRotation by animateFloatAsState(
-        targetValue = targetUiAngle,
-        animationSpec = tween(durationMillis = 280),
-        label = "camera_ui_rotation"
+    val uiRotationDegrees by animateFloatAsState(
+        targetValue = if (isScreenLandscape) 0f else targetUiRotation,
+        animationSpec = tween(durationMillis = 300),
+        label = "cameraUiRotation"
     )
 
     var isCapturing by remember { mutableStateOf(false) }
@@ -203,9 +206,8 @@ fun CameraCaptureScreen(
     var pendingPhotoCapture by remember { mutableStateOf<PendingPhotoCapture?>(null) }
     var photoTagInput by remember { mutableStateOf("") }
 
-    // Stream contínuo de coordenadas dinâmicas e relógio tipo Timestamp Camera
+    // Stream contínuo de coordenadas dinâmicas e relógio
     LaunchedEffect(Unit) {
-        // 1. Relógio atualizando segundo a segundo (Princípio Timestamp Camera)
         launch {
             while (isActive) {
                 currentTimestampMillis = System.currentTimeMillis()
@@ -213,7 +215,6 @@ fun CameraCaptureScreen(
             }
         }
 
-        // 2. Stream de GPS contínuo e em tempo real (Princípio Google Maps)
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -235,6 +236,58 @@ fun CameraCaptureScreen(
 
     BackHandler {
         onClose()
+    }
+
+    val triggerCapture: () -> Unit = {
+        if (!isCapturing) {
+            isCapturing = true
+            flashAnimation = true
+
+            val exactLat = currentLatitude
+            val exactLng = currentLongitude
+            val exactTime = currentTimestampMillis
+            val exactRa = currentDynamicRa
+            val captureOrientation = currentDeviceOrientation
+
+            val capture = imageCapture
+            if (capture != null) {
+                val photosDir = File(context.cacheDir, "camera_raw").apply {
+                    if (!exists()) mkdirs()
+                }
+                val photoFile = File(photosDir, "CAM_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpg")
+                val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+                capture.takePicture(
+                    outputOptions,
+                    ContextCompat.getMainExecutor(context),
+                    object : ImageCapture.OnImageSavedCallback {
+                        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                            flashAnimation = false
+                            isCapturing = false
+                            val uri = Uri.fromFile(photoFile)
+                            pendingPhotoCapture = PendingPhotoCapture(uri, exactLat, exactLng, exactTime, exactRa, captureOrientation)
+                            photoTagInput = ""
+                        }
+
+                        override fun onError(exception: ImageCaptureException) {
+                            val isPhotoLandscape = (captureOrientation == 90 || captureOrientation == 270 || isScreenLandscape)
+                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape)
+                            flashAnimation = false
+                            isCapturing = false
+                            pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
+                            photoTagInput = ""
+                        }
+                    }
+                )
+            } else {
+                val isPhotoLandscape = (captureOrientation == 90 || captureOrientation == 270 || isScreenLandscape)
+                val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape)
+                flashAnimation = false
+                isCapturing = false
+                pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
+                photoTagInput = ""
+            }
+        }
     }
 
     Box(
@@ -277,7 +330,7 @@ fun CameraCaptureScreen(
                             if (zoomState != null) {
                                 currentZoomRatio = zoomState.zoomRatio
                                 minZoomRatio = zoomState.minZoomRatio
-                                maxZoomRatio = zoomState.maxZoomRatio.coerceAtMost(10f)
+                                maxZoomRatio = zoomState.maxZoomRatio.coerceAtMost(8f)
                             }
                         }
                     } catch (e: Exception) {
@@ -323,22 +376,29 @@ fun CameraCaptureScreen(
             )
         }
 
-        // TOP BAR: Botão voltar + HUD de GPS Dinâmico em Tempo Real + Flash/Lente
+        // =========================================================================
+        // 1. BARRA SUPERIOR: Voltar (Esquerda) e Flash / Trocar Câmera (Direita)
+        // Separados do HUD para nunca haver sobreposição ou truncamento
+        // =========================================================================
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .padding(top = 42.dp, start = 16.dp, end = 16.dp),
+                .padding(
+                    top = if (isScreenLandscape) 14.dp else 42.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Close / Back button
+            // Botão Voltar
             IconButton(
                 onClick = onClose,
                 modifier = Modifier
-                    .size(40.dp)
-                    .rotate(animatedUiRotation)
-                    .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                    .size(42.dp)
+                    .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                    .graphicsLayer { rotationZ = uiRotationDegrees }
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -347,82 +407,8 @@ fun CameraCaptureScreen(
                 )
             }
 
-            // HUD DINÂMICO (Atualiza continuamente conforme o fiscal se move, estilo Google Maps e Timestamp)
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color.Black.copy(alpha = 0.75f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
-                modifier = Modifier.rotate(animatedUiRotation)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Ponto pulsante verde indicando GPS dinâmico ativo
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .background(
-                                    if (isRealGps) Color(0xFF22C55E) else Color(0xFFEAB308),
-                                    CircleShape
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = String.format(Locale.US, "%.6f°, %.6f°", currentLatitude, currentLongitude),
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        if (currentAccuracy > 0f) {
-                            Text(
-                                text = String.format(Locale.US, " (±%.1fm)", currentAccuracy),
-                                color = Color(0xFF86EFAC),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFF15803D),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC).copy(alpha = 0.8f))
-                        ) {
-                            Text(
-                                text = "Foto #$photoNumber",
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR")).format(Date(currentTimestampMillis)),
-                            color = Color(0xFFFEF08A),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Text(
-                            text = " • $currentDynamicRa",
-                            color = Color(0xFF67E8F9),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            // Camera Switch & Flash
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.rotate(animatedUiRotation)
-            ) {
+            // Ações de Flash e Alternar Lente (Frontal/Traseira)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(
                     onClick = {
                         flashMode = when (flashMode) {
@@ -432,8 +418,9 @@ fun CameraCaptureScreen(
                         }
                     },
                     modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .size(42.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
                 ) {
                     val flashIcon = when (flashMode) {
                         ImageCapture.FLASH_MODE_ON -> Icons.Default.FlashOn
@@ -456,8 +443,9 @@ fun CameraCaptureScreen(
                         }
                     },
                     modifier = Modifier
-                        .size(40.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .size(42.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Cameraswitch,
@@ -468,58 +456,108 @@ fun CameraCaptureScreen(
             }
         }
 
-        // DYNAMIC RA & EXEMPLAR BADGE (Posicionamento dinâmico em tempo real exibido com destaque na câmera)
+        // =========================================================================
+        // 2. HUD FLUTUANTE GEORREFERENCIADO (GPS, Data/Hora, RA, Foto #)
+        // Design unificado em 2 linhas, compacto, nítido e com rotação adaptativa
+        // =========================================================================
         Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = Color.Black.copy(alpha = 0.78f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 200.dp)
-                .rotate(animatedUiRotation),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.Black.copy(alpha = 0.75f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF22C55E).copy(alpha = 0.6f))
+                .align(Alignment.TopCenter)
+                .padding(
+                    top = if (isScreenLandscape) 14.dp else 94.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
+                .widthIn(max = 380.dp)
+                .graphicsLayer { rotationZ = uiRotationDegrees }
+                .testTag("camera_gps_hud")
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF15803D)
+                // Linha 1: Status GPS + Coordenadas + Precisão + Foto #
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Ponto indicador GPS
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(if (isRealGps) Color(0xFF22C55E) else Color(0xFFEAB308), CircleShape)
+                    )
+
+                    Text(
+                        text = String.format(Locale.US, "%.6f°, %.6f°", currentLatitude, currentLongitude),
+                        color = Color.White,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+
+                    if (currentAccuracy > 0f) {
+                        Text(
+                            text = String.format(Locale.US, "(±%.1fm)", currentAccuracy),
+                            color = Color(0xFF86EFAC),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = Color(0xFF15803D),
+                        border = BorderStroke(0.5.dp, Color(0xFF86EFAC).copy(alpha = 0.7f))
+                    ) {
+                        Text(
+                            text = "Foto #$photoNumber",
+                            color = Color.White,
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                // Linha 2: Data/Hora com segundos + Região Administrativa
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Foto #$photoNumber",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        text = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR")).format(Date(currentTimestampMillis)),
+                        color = Color(0xFFFEF08A),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace
+                    )
+
+                    Text(
+                        text = "• $currentDynamicRa",
+                        color = Color(0xFF67E8F9),
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = Color(0xFF22C55E),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "RA Atual: $currentDynamicRa",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
             }
         }
 
-        // CONTROLES DE ZOOM: Suporte à Pinça com os Dedos + Botões de Atalho Rápido (1x, 2x, 3x)
+        // =========================================================================
+        // 3. BARRA DE ZOOM (Suporte contínuo a pinça com indicador visual e atalhos 1x, 2x, 3x)
+        // =========================================================================
         Surface(
             shape = RoundedCornerShape(22.dp),
             color = Color.Black.copy(alpha = 0.75f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 140.dp)
-                .rotate(animatedUiRotation)
+                .padding(bottom = if (isScreenLandscape) 16.dp else 114.dp)
+                .graphicsLayer { rotationZ = uiRotationDegrees }
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -561,13 +599,13 @@ fun CameraCaptureScreen(
                     }
                 }
 
-                // Indicador quando o fiscal usa os dedos (gesto de pinça) para nível intermediário
+                // Indicador dinâmico de zoom intermediário obtido pelo gesto de pinça
                 val isIntermediate = activeLevels.none { kotlin.math.abs(currentZoomRatio - it) < 0.15f }
                 if (isIntermediate) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color(0xFF15803D),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC).copy(alpha = 0.8f))
+                        border = BorderStroke(1.dp, Color(0xFF86EFAC).copy(alpha = 0.8f))
                     ) {
                         Text(
                             text = String.format(Locale.US, "%.1fx", currentZoomRatio),
@@ -582,131 +620,154 @@ fun CameraCaptureScreen(
             }
         }
 
-        // BOTTOM CONTROLS
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 44.dp, start = 24.dp, end = 24.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Pick from Gallery
-            IconButton(
-                onClick = onPickFromGallery,
+        // =========================================================================
+        // 4. CONTROLES DE CAPTURA (Obturador, Galeria e Contador de Fotos)
+        // Posicionados conforme a orientação: Lateral direita em Paisagem, Inferior em Retrato
+        // =========================================================================
+        if (isScreenLandscape) {
+            // MODO PAISAGEM: Painel lateral à direita (alcance natural do polegar)
+            Column(
                 modifier = Modifier
-                    .size(50.dp)
-                    .rotate(animatedUiRotation)
-                    .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.PhotoLibrary,
-                    contentDescription = "Galeria",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            // Clean Shutter Button (Grava as coordenadas e orientação exatas do instante do clique)
-            Box(
-                modifier = Modifier
-                    .size(76.dp)
-                    .rotate(animatedUiRotation)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.3f))
-                    .clickable(enabled = !isCapturing) {
-                        isCapturing = true
-                        flashAnimation = true
-
-                        // Coordenadas, RA, horário e orientação dinâmicos exatos no instante do clique
-                        val exactLat = currentLatitude
-                        val exactLng = currentLongitude
-                        val exactTime = currentTimestampMillis
-                        val exactRa = currentDynamicRa
-                        val captureOrientation = currentDeviceOrientation
-
-                        val capture = imageCapture
-                        if (capture != null) {
-                            val photosDir = File(context.cacheDir, "camera_raw").apply {
-                                if (!exists()) mkdirs()
-                            }
-                            val photoFile = File(photosDir, "CAM_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpg")
-                            val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-                            capture.takePicture(
-                                outputOptions,
-                                ContextCompat.getMainExecutor(context),
-                                object : ImageCapture.OnImageSavedCallback {
-                                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                        flashAnimation = false
-                                        isCapturing = false
-                                        val uri = Uri.fromFile(photoFile)
-                                        pendingPhotoCapture = PendingPhotoCapture(uri, exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                                        photoTagInput = ""
-                                    }
-
-                                    override fun onError(exception: ImageCaptureException) {
-                                        val isLandscape = (captureOrientation == 90 || captureOrientation == 270)
-                                        val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isLandscape)
-                                        flashAnimation = false
-                                        isCapturing = false
-                                        pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                                        photoTagInput = ""
-                                    }
-                                }
-                            )
-                        } else {
-                            val isLandscape = (captureOrientation == 90 || captureOrientation == 270)
-                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isLandscape)
-                            flashAnimation = false
-                            isCapturing = false
-                            pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                            photoTagInput = ""
-                        }
+                // Badge contador
+                Surface(
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.55f),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "$capturedPhotosCount",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    .testTag("camera_shutter_button"),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isCapturing) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(62.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
+                }
+
+                // Botão de Disparo
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.3f))
+                        .clickable(enabled = !isCapturing) { triggerCapture() }
+                        .testTag("camera_shutter_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isCapturing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(62.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+
+                // Botão Galeria
+                IconButton(
+                    onClick = onPickFromGallery,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = "Galeria",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-
-            // Photo Count Badge
-            Surface(
-                shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.45f),
+        } else {
+            // MODO RETRATO: Barra inferior centralizada
+            Row(
                 modifier = Modifier
-                    .size(50.dp)
-                    .rotate(animatedUiRotation)
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 28.dp, start = 24.dp, end = 24.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "$capturedPhotosCount",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                // Botão Galeria
+                IconButton(
+                    onClick = onPickFromGallery,
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = "Galeria",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
+                }
+
+                // Botão de Disparo do Obturador
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.3f))
+                        .clickable(enabled = !isCapturing) { triggerCapture() }
+                        .testTag("camera_shutter_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isCapturing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(62.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+
+                // Contador de Fotos Capturadas
+                Surface(
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .size(50.dp)
+                        .graphicsLayer { rotationZ = uiRotationDegrees }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "$capturedPhotosCount",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
     }
 
-    // Balão / Diálogo para inserção de Tag na foto (máximo 20 caracteres)
+    // Diálogo opcional para inserção de Tag na foto (máximo 20 caracteres)
     pendingPhotoCapture?.let { pending ->
         AlertDialog(
             onDismissRequest = {
-                // Se fechar clicando fora, salva a foto sem tag
                 onPhotoCaptured(
                     pending.uri,
                     pending.exactLat,
@@ -791,7 +852,11 @@ fun CameraCaptureScreen(
                             finalTag,
                             pending.orientationDegrees
                         )
-                        Toast.makeText(context, if (finalTag != null) "Foto com tag salva no relatório e na Galeria!" else "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            if (finalTag != null) "Foto com tag salva no relatório e na Galeria!" else "Foto salva no relatório e na Galeria!",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         pendingPhotoCapture = null
                         photoTagInput = ""
                     },
