@@ -1051,7 +1051,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -1078,6 +1078,7 @@ fun InspectionDetailScreen(
                     newTutorCpf = cpf,
                     newAdditionalTutors = additionalTutors,
                     newPpbeaAnswersData = ppbeaAnswersData,
+                    newIndividualEvaluationsData = indivEvaluationsData,
                     newPhotoPaths = updatedPhotos,
                     onSuccess = {
                         showEditDialog = false

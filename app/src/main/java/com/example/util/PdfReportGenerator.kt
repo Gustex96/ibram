@@ -139,7 +139,7 @@ object PdfReportGenerator {
         estimatedH += 35f + (inspection.allTutors.size * 15f)
         // Section 5: Diagnostico Geral & Parecer
         if (inspection.individualEvaluations.isNotEmpty()) {
-            estimatedH += 45f + (inspection.individualEvaluations.size * 105f)
+            estimatedH += 45f + (inspection.individualEvaluations.size * 135f)
         } else {
             estimatedH += 85f
             val notesLen = (inspection.horseDescription + " " + (inspection.ppbeaDiagnosis?.observacoes ?: "")).length
@@ -350,6 +350,70 @@ object PdfReportGenerator {
         }
     }
 
+    private fun countWrappedLines(text: String, maxWidth: Float, paint: Paint): Int {
+        var count = 0
+        val paragraphs = text.split("\n")
+        for (paragraph in paragraphs) {
+            val trimmed = paragraph.trim()
+            if (trimmed.isEmpty()) {
+                count++
+                continue
+            }
+            val words = trimmed.split(Regex("\\s+"))
+            var currentLine = StringBuilder()
+            for (word in words) {
+                val potentialLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+                if (paint.measureText(potentialLine) <= maxWidth) {
+                    currentLine = StringBuilder(potentialLine)
+                } else {
+                    if (currentLine.isNotEmpty()) count++
+                    currentLine = StringBuilder(word)
+                }
+            }
+            if (currentLine.isNotEmpty()) count++
+        }
+        return maxOf(1, count)
+    }
+
+    private fun drawTextLinesOnCanvas(
+        canvas: Canvas,
+        text: String,
+        x: Float,
+        startY: Float,
+        maxWidth: Float,
+        paint: Paint,
+        lineSpacing: Float
+    ): Float {
+        var curY = startY
+        val paragraphs = text.split("\n")
+        for (paragraph in paragraphs) {
+            val trimmed = paragraph.trim()
+            if (trimmed.isEmpty()) {
+                curY += lineSpacing * 0.6f
+                continue
+            }
+            val words = trimmed.split(Regex("\\s+"))
+            var currentLine = StringBuilder()
+            for (word in words) {
+                val potentialLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+                if (paint.measureText(potentialLine) <= maxWidth) {
+                    currentLine = StringBuilder(potentialLine)
+                } else {
+                    if (currentLine.isNotEmpty()) {
+                        canvas.drawText(currentLine.toString(), x, curY, paint)
+                        curY += lineSpacing
+                    }
+                    currentLine = StringBuilder(word)
+                }
+            }
+            if (currentLine.isNotEmpty()) {
+                canvas.drawText(currentLine.toString(), x, curY, paint)
+                curY += lineSpacing
+            }
+        }
+        return curY
+    }
+
     private fun drawIndividualAnimalEvaluationInPdf(
         pageManager: TextPageManager,
         index: Int,
@@ -381,11 +445,43 @@ object PdfReportGenerator {
             }
         }
 
-        val alertsH = if (animalAlerts.isNotEmpty()) (animalAlerts.size * 11f) + 14f else 16f
-        val notesH = if (animal.notes.isNotBlank()) 14f else 0f
-        val cardTotalH = 70f + alertsH + notesH
+        val alertItemP = Paint().apply {
+            color = Color.rgb(153, 27, 27)
+            textSize = 7.5f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            isAntiAlias = true
+        }
+        val noteP = Paint().apply {
+            color = Color.rgb(71, 85, 105)
+            textSize = 7.5f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+            isAntiAlias = true
+        }
 
-        pageManager.ensureSpace(cardTotalH + 10f)
+        // Medição precisa da altura necessária para evitar sobreposições e quebras errôneas
+        val textMaxWidth = contentWidth - 20f
+        var calculatedAlertsH = 0f
+        if (animalAlerts.isNotEmpty()) {
+            calculatedAlertsH += 14f // Título "INCONFORMIDADES TÉCNICAS CONSTATADAS:"
+            for (alert in animalAlerts) {
+                val lines = countWrappedLines("• $alert", textMaxWidth, alertItemP)
+                calculatedAlertsH += (lines * 10.5f) + 2f
+            }
+        } else {
+            calculatedAlertsH += 16f // Mensagem de conformidade
+        }
+
+        var calculatedNotesH = 0f
+        if (animal.notes.isNotBlank()) {
+            val lines = countWrappedLines("Observações: ${animal.notes}", textMaxWidth, noteP)
+            calculatedNotesH += (lines * 10.5f) + 4f
+        }
+
+        val topSectionH = 72f
+        val cardTotalH = topSectionH + calculatedAlertsH + calculatedNotesH + 10f
+
+        // Garante que o card inteiro cabe na página atual, sem quebras indesejadas
+        pageManager.ensureSpace(cardTotalH + 12f)
         val cardTop = pageManager.y
 
         val bgPaint = Paint().apply {
@@ -426,15 +522,15 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        pageManager.canvas.drawText("EXEMPLAR #${index + 1} • ESPÉCIE: ${animal.species.uppercase()}", col1X, cardTop + 13f, titleP)
+        pageManager.canvas.drawText("EXEMPLAR #${index + 1} • ESPÉCIE: ${animal.species.uppercase()}", col1X, cardTop + 14f, titleP)
         val tagLabel = "TAG / PROPRIETÁRIO: ${animal.tagOrCpf.ifBlank { "Sem identificação / TAG informada" }}"
-        pageManager.canvas.drawText(tagLabel, col2X, cardTop + 13f, tagP)
+        pageManager.canvas.drawText(tagLabel, col2X, cardTop + 14f, tagP)
 
         val divPaint = Paint().apply {
             color = borderPaint.color
             strokeWidth = 0.8f
         }
-        pageManager.canvas.drawLine(col1X, cardTop + 18f, margin + contentWidth - 8f, cardTop + 18f, divPaint)
+        pageManager.canvas.drawLine(col1X, cardTop + 19f, margin + contentWidth - 8f, cardTop + 19f, divPaint)
 
         // 2. Grau de Bem-Estar e Enquadramento Legal
         val subDiagP = Paint().apply {
@@ -445,11 +541,11 @@ object PdfReportGenerator {
         }
         val grauStr = "GRAU DE BEM-ESTAR: " + (diag?.grauBemEstar?.label?.uppercase() ?: "PENDENTE")
         val enquadStr = "ENQUADRAMENTO: " + (diag?.ocorrenciaMausTratos?.label ?: "Não avaliado")
-        pageManager.canvas.drawText(grauStr, col1X, cardTop + 29f, subDiagP)
-        pageManager.canvas.drawText(enquadStr, col2X, cardTop + 29f, subDiagP)
+        pageManager.canvas.drawText(grauStr, col1X, cardTop + 30f, subDiagP)
+        pageManager.canvas.drawText(enquadStr, col2X, cardTop + 30f, subDiagP)
 
         // 3. Os 4 Domínios do Protocolo PPBEA
-        val domCardY = cardTop + 35f
+        val domCardY = cardTop + 37f
         val domColW = (contentWidth - 24f) / 4f
         val domList = listOf(
             "🥣 Nutrição" to (diag?.nutricionalParecer ?: ParecerDomain.ADEQUADO),
@@ -504,8 +600,8 @@ object PdfReportGenerator {
             pageManager.canvas.drawText(dParecer.label.uppercase(), dX + 4f, domCardY + 17f, dStatusP)
         }
 
-        // 4. Critérios e Inconformidades
-        var currentY = domCardY + 28f
+        // 4. Critérios e Inconformidades (Desenho posicionado linha a linha)
+        var curY = domCardY + 29f
         if (animalAlerts.isNotEmpty()) {
             val alertHeaderP = Paint().apply {
                 color = Color.rgb(185, 28, 28)
@@ -513,17 +609,12 @@ object PdfReportGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            pageManager.canvas.drawText("INCONFORMIDADES TÉCNICAS CONSTATADAS:", col1X, currentY, alertHeaderP)
-            currentY += 9f
+            pageManager.canvas.drawText("INCONFORMIDADES TÉCNICAS CONSTATADAS:", col1X, curY, alertHeaderP)
+            curY += 10f
 
-            val alertItemP = Paint().apply {
-                color = Color.rgb(153, 27, 27)
-                textSize = 7f
-                isAntiAlias = true
-            }
             for (alert in animalAlerts) {
-                drawWrappedText(pageManager, "• $alert", col1X + 4f, contentWidth - 16f, alertItemP, 9.5f)
-                currentY += 9.5f
+                curY = drawTextLinesOnCanvas(pageManager.canvas, "• $alert", col1X + 4f, curY, textMaxWidth, alertItemP, 9.5f)
+                curY += 2f
             }
         } else {
             val okP = Paint().apply {
@@ -536,21 +627,23 @@ object PdfReportGenerator {
                 "✓ Todos os critérios avaliados encontram-se em conformidade técnica nos 4 domínios."
             else
                 "• Avaliação detalhada do Protocolo PPBEA pendente para este exemplar."
-            pageManager.canvas.drawText(okMsg, col1X, currentY + 3f, okP)
-            currentY += 12f
+            pageManager.canvas.drawText(okMsg, col1X, curY + 2f, okP)
+            curY += 12f
         }
 
         if (animal.notes.isNotBlank()) {
-            val noteP = Paint().apply {
+            val noteHeaderP = Paint().apply {
                 color = Color.rgb(71, 85, 105)
                 textSize = 7.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 isAntiAlias = true
             }
-            pageManager.canvas.drawText("Observações: ${animal.notes}", col1X, currentY + 2f, noteP)
+            pageManager.canvas.drawText("Observações:", col1X, curY, noteHeaderP)
+            curY += 9f
+            curY = drawTextLinesOnCanvas(pageManager.canvas, animal.notes, col1X + 4f, curY, textMaxWidth, noteP, 9.5f)
         }
 
-        pageManager.y = cardTop + cardTotalH + 6f
+        pageManager.y = cardTop + cardTotalH + 8f
     }
 
     fun generateSingleInspectionPdf(context: Context, inspection: HorseInspection): File? {

@@ -97,11 +97,15 @@ import com.example.data.model.HorseInspection
 import com.example.data.model.ParecerDomain
 import com.example.data.model.PpbeaCriteriaRepository
 import com.example.data.model.PpbeaCriterion
+import com.example.data.model.IndividualAnimalEvaluation
+import com.example.data.model.IndividualAnimalSerializer
 import com.example.data.model.PpbeaDiagnosis
 import com.example.data.model.PpbeaDomain
 import com.example.data.model.TutorEntry
 import com.example.ui.components.AppOutlinedTextField
 import com.example.ui.components.PpbeaEvaluationDialog
+import com.example.ui.components.PpbeaOpenEvaluationButton
+import com.example.ui.components.PpbeaSelectionModalDialog
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
 import com.example.util.WatermarkUtils
@@ -157,7 +161,8 @@ fun EditInspectionDialog(
         additionalTutors: String,
         auditorName: String,
         ppbeaAnswersData: String,
-        photoPaths: List<String>
+        photoPaths: List<String>,
+        individualEvaluationsData: String
     ) -> Unit
 ) {
     var auditorName by remember { mutableStateOf(inspection.auditorName) }
@@ -267,6 +272,11 @@ fun EditInspectionDialog(
     }
 
     // Estados para o Protocolo de Perícia em Bem-Estar Animal (PPBEA – Anexo D / Res. CFMV 1.236/2018)
+    var individualEvaluations by remember {
+        mutableStateOf(inspection.individualEvaluations)
+    }
+    var showPpbeaSelectionModal by remember { mutableStateOf(false) }
+    var showIndividualizedScreen by remember { mutableStateOf(false) }
     var showPpbeaEvaluationDialog by remember { mutableStateOf(false) }
     var answersMap by remember {
         mutableStateOf(inspection.ppbeaAnswersMap.toMutableMap())
@@ -1023,31 +1033,83 @@ fun EditInspectionDialog(
                                 }
                             }
 
-                            // Botão para abrir diálogo PPBEA completo
-                            Row(
+                            // 1. BOTÃO PRINCIPAL: "Abrir Avaliação" Conforme Mockup Abrir_avalia__o_9fb09810.png
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(Color(0xFFF0FDF4))
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
                             ) {
-                                Text(
-                                    text = "Avaliação e Critérios PPBEA",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF14532D)
+                                PpbeaOpenEvaluationButton(
+                                    onClick = { showPpbeaSelectionModal = true },
+                                    hasDiagnosis = ppbeaDiagnosis != null,
+                                    individualCount = individualEvaluations.size
                                 )
-                                OutlinedButton(
-                                    onClick = { showPpbeaEvaluationDialog = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF14532D)),
-                                    border = BorderStroke(1.dp, Color(0xFF14532D))
+                            }
+
+                            // Resumo das Avaliações Individualizadas (se houver animais cadastrados)
+                            if (individualEvaluations.isNotEmpty()) {
+                                Surface(
+                                    color = Color(0xFFF3EDF7),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, Color(0xFFD0BCFF)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .clickable { showIndividualizedScreen = true }
+                                        .testTag("summary_individualized_evaluations_edit")
                                 ) {
-                                    Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Abrir Avaliação PPBEA", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text("📋", fontSize = 15.sp)
+                                                Text(
+                                                    text = "Avaliação Individualizada (${individualEvaluations.size} animais)",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF4F378B)
+                                                )
+                                            }
+                                            Surface(
+                                                color = Color(0xFFEADBFC),
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Ver / Editar",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF65558F),
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        individualEvaluations.forEachIndexed { idx, item ->
+                                            val statusText = if (item.isEvaluated) {
+                                                if (item.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS)
+                                                    "⚠️ Configura Maus-Tratos"
+                                                else
+                                                    "✅ ${item.ppbeaDiagnosis?.grauBemEstar?.label ?: "Adequado"}"
+                                            } else {
+                                                "⏳ PPBEA Pendente"
+                                            }
+                                            Text(
+                                                text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $statusText",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF49454F),
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -1916,6 +1978,7 @@ fun EditInspectionDialog(
                             val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
                             val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
                             val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(answersMap)
+                            val indivToSave = IndividualAnimalSerializer.serializeList(individualEvaluations)
                             onSave(
                                 notes, ra, quadra, conjunto, numero, horseDescription,
                                 horseCount, mistreatedHorseCount, alertIndicatorsToSave,
@@ -1923,7 +1986,7 @@ fun EditInspectionDialog(
                                 requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
                                 otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
                                 prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
-                                photoPaths
+                                photoPaths, indivToSave
                             )
                         },
                         modifier = Modifier.weight(1.3f),
@@ -1937,6 +2000,69 @@ fun EditInspectionDialog(
                 }
             }
         }
+    }
+
+    if (showPpbeaSelectionModal) {
+        PpbeaSelectionModalDialog(
+            onDismiss = { showPpbeaSelectionModal = false },
+            onSelectIndividualized = {
+                showPpbeaSelectionModal = false
+                showIndividualizedScreen = true
+            },
+            onSelectSampling = {
+                showPpbeaSelectionModal = false
+                showPpbeaEvaluationDialog = true
+            }
+        )
+    }
+
+    if (showIndividualizedScreen) {
+        IndividualizedPpbeaScreen(
+            initialEvaluations = individualEvaluations,
+            defaultSpecies = inspection.species,
+            onSaveAndClose = { updatedList: List<IndividualAnimalEvaluation> ->
+                individualEvaluations = updatedList
+                if (updatedList.isNotEmpty()) {
+                    horseCount = updatedList.size
+                    val mistreatedCount = updatedList.count {
+                        it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS
+                    }
+                    mistreatedHorseCount = mistreatedCount
+
+                    val evaluated = updatedList.mapNotNull { it.ppbeaDiagnosis }
+                    if (evaluated.isNotEmpty()) {
+                        val hasMausTratos = evaluated.any { it.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                        val hasRecomendacoes = evaluated.any { it.ocorrenciaMausTratos == EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO }
+                        val worstEnquadramento = when {
+                            hasMausTratos -> EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS
+                            hasRecomendacoes -> EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO
+                            else -> EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS
+                        }
+                        val minGrau = evaluated.minByOrNull { it.grauBemEstar.ordinal }?.grauBemEstar ?: GrauBemEstar.MUITO_ALTO
+                        ppbeaDiagnosis = (ppbeaDiagnosis ?: evaluated.first()).copy(
+                            ocorrenciaMausTratos = worstEnquadramento,
+                            grauBemEstar = minGrau,
+                            isEvaluated = true
+                        )
+                    }
+
+                    // Sincroniza indicadores de alerta de maus-tratos
+                    val aggregatedAlerts = mutableListOf<String>()
+                    updatedList.forEach { animal ->
+                        val ans = animal.ppbeaAnswersMap
+                        PpbeaCriteriaRepository.criteria.forEach { crit ->
+                            if (ans[crit.id] == crit.simIsRuim) {
+                                val tag = "[${crit.domain.title}] ${crit.question.replace("?", "")}"
+                                if (!aggregatedAlerts.contains(tag)) aggregatedAlerts.add(tag)
+                            }
+                        }
+                    }
+                    mistreatmentIndicators = (mistreatmentIndicators + aggregatedAlerts).distinct()
+                }
+                showIndividualizedScreen = false
+            },
+            onCancel = { showIndividualizedScreen = false }
+        )
     }
 
     if (showPpbeaEvaluationDialog) {

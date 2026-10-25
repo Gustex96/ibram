@@ -161,7 +161,23 @@ data class HorseInspection(
         get() = mistreatedHorseCount > 0
 
     val mistreatmentList: List<String>
-        get() = if (mistreatmentIndicators.isBlank()) emptyList() else mistreatmentIndicators.split(";;").asSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        get() {
+            val fromIndiv = if (individualEvaluations.isNotEmpty()) {
+                val alerts = mutableListOf<String>()
+                individualEvaluations.forEach { animal ->
+                    val answers = animal.ppbeaAnswersMap
+                    PpbeaCriteriaRepository.criteria.forEach { criterion ->
+                        if (answers[criterion.id] == criterion.simIsRuim) {
+                            val tag = "[${criterion.domain.title}] ${criterion.question.replace("?", "")}"
+                            if (!alerts.contains(tag)) alerts.add(tag)
+                        }
+                    }
+                }
+                alerts
+            } else emptyList()
+            val fromBase = if (mistreatmentIndicators.isBlank()) emptyList() else mistreatmentIndicators.split(";;").asSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+            return (fromBase + fromIndiv).distinct()
+        }
 
     val adequateList: List<String>
         get() = if (adequateIndicators.isBlank()) emptyList() else adequateIndicators.split(";;").map { it.trim() }.filter { it.isNotEmpty() }

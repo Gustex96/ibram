@@ -672,11 +672,23 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             draft.value.ppbeaDiagnosis
         }
 
+        val aggregatedAlerts = mutableListOf<String>()
+        list.forEach { animal ->
+            val ans = animal.ppbeaAnswersMap
+            com.example.data.model.PpbeaCriteriaRepository.criteria.forEach { crit ->
+                if (ans[crit.id] == crit.simIsRuim) {
+                    val tag = "[${crit.domain.title}] ${crit.question.replace("?", "")}"
+                    if (!aggregatedAlerts.contains(tag)) aggregatedAlerts.add(tag)
+                }
+            }
+        }
+
         draft.value = draft.value.copy(
             individualEvaluations = list,
             horseCount = totalCount,
             mistreatedHorseCount = mistreatedCount,
-            ppbeaDiagnosis = aggregatedDiagnosis
+            ppbeaDiagnosis = aggregatedDiagnosis,
+            mistreatmentIndicators = (draft.value.mistreatmentIndicators + aggregatedAlerts).distinct()
         )
     }
 
