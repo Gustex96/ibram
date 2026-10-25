@@ -70,7 +70,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.example.data.model.HorseInspection
 import com.example.ui.components.AnimalSpecies
-import com.example.ui.components.SpeciesSelectorTabs
 import com.example.ui.viewmodel.InspectionViewModel
 import com.example.util.CsvExportUtils
 import java.text.SimpleDateFormat

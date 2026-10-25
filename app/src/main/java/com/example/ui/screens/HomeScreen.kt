@@ -95,7 +95,6 @@ import com.example.data.model.AnexoFGuideItem
 import com.example.data.model.DfConstants
 import com.example.data.model.HorseInspection
 import com.example.ui.components.AnimalSpecies
-import com.example.ui.components.SpeciesSelectorTabs
 import com.example.ui.viewmodel.InspectionViewModel
 import java.io.File
 

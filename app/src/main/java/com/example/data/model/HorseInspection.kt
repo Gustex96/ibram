@@ -59,8 +59,13 @@ data class HorseInspection(
     val inspectionTeam: String = "Equipe de Apoio em Fiscalização",
     // Respostas serializadas dos critérios do Protocolo PPBEA (chave:booleano separadas por ;;)
     val ppbeaAnswersData: String = "",
+    // Avaliações individualizadas por animal/espécie serializadas
+    val individualEvaluationsData: String = "",
     val createdAt: Long = System.currentTimeMillis(),
 ) {
+    val individualEvaluations: List<IndividualAnimalEvaluation>
+        get() = IndividualAnimalSerializer.deserializeList(individualEvaluationsData)
+
     val ppbeaAnswersMap: Map<String, Boolean>
         get() = PpbeaCriteriaRepository.reconstructAnswers(ppbeaAnswersData, mistreatmentList, adequateList)
 

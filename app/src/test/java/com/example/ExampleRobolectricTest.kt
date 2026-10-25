@@ -397,4 +397,53 @@ class ExampleRobolectricTest {
 
         db.close()
     }
+
+    @Test
+    fun testExportCerradoSplashVectorToHighResPng() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val drawable = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_splash_vector)
+        assertNotNull(drawable)
+        val width = 1080
+        val height = 2220
+        val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        drawable?.setBounds(0, 0, width, height)
+        drawable?.draw(canvas)
+        val currentDir = File(".").absoluteFile
+        val rootDir = if (currentDir.name == "app") currentDir.parentFile ?: currentDir else currentDir
+        val outDir = File(rootDir, "public/assets").apply { if (!exists()) mkdirs() }
+        val outFile = File(outDir, "background_cerrado_splash_hd.png")
+        java.io.FileOutputStream(outFile).use { outStream ->
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outStream)
+        }
+        assertTrue(outFile.exists())
+        assertTrue(outFile.length() > 0)
+    }
+
+    @Test
+    fun testIndividualAnimalEvaluationSerialization() {
+        val list = listOf(
+            com.example.data.model.IndividualAnimalEvaluation(
+                id = "anim-1",
+                tagOrCpf = "BRINCO-001",
+                species = "Cavalo",
+                ppbeaAnswersData = "nut_magro:true;;nut_sem_agua:false"
+            ),
+            com.example.data.model.IndividualAnimalEvaluation(
+                id = "anim-2",
+                tagOrCpf = "CHIP-998",
+                species = "Cachorro",
+                ppbeaAnswersData = "nut_magro:false;;nut_sem_agua:false"
+            )
+        )
+        val serialized = com.example.data.model.IndividualAnimalSerializer.serializeList(list)
+        val deserialized = com.example.data.model.IndividualAnimalSerializer.deserializeList(serialized)
+        assertEquals(2, deserialized.size)
+        assertEquals("anim-1", deserialized[0].id)
+        assertEquals("BRINCO-001", deserialized[0].tagOrCpf)
+        assertEquals("Cavalo", deserialized[0].species)
+        assertTrue(deserialized[0].isEvaluated)
+        assertEquals("CHIP-998", deserialized[1].tagOrCpf)
+        assertEquals("Cachorro", deserialized[1].species)
+    }
 }

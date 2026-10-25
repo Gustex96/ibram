@@ -571,6 +571,36 @@ fun InspectionDetailScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Abrir Avaliação PPBEA (Revisar/Editar)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
+
+                    if (inspection.individualEvaluations.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            color = Color(0xFFF3EDF7),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFD0BCFF)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "Avaliação Individualizada (${inspection.individualEvaluations.size} animais)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4F378B)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                inspection.individualEvaluations.forEachIndexed { idx, item ->
+                                    val diagText = if (item.isEvaluated) {
+                                        "Grau ${item.ppbeaDiagnosis?.grauBemEstar?.label ?: "Concluído"}"
+                                    } else "Pendente"
+                                    Text(
+                                        text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $diagText",
+                                        fontSize = 11.5.sp,
+                                        color = Color(0xFF49454F)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

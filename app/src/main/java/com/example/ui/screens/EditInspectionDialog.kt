@@ -101,7 +101,6 @@ import com.example.data.model.PpbeaDiagnosis
 import com.example.data.model.PpbeaDomain
 import com.example.data.model.TutorEntry
 import com.example.ui.components.AppOutlinedTextField
-import com.example.ui.components.MistreatmentChecklistView
 import com.example.ui.components.PpbeaEvaluationDialog
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator

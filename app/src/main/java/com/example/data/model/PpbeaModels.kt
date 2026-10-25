@@ -465,3 +465,56 @@ object PpbeaCriteriaRepository {
     }
 }
 
+/**
+ * Modelo para Avaliação Individualizada de cada animal/exemplar periciado
+ * conforme o design de caixa_avaliaçaoindividualizada.png
+ */
+data class IndividualAnimalEvaluation(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val tagOrCpf: String = "",
+    val species: String = "Cavalo",
+    val ppbeaAnswersData: String = "",
+    val notes: String = ""
+) {
+    val ppbeaAnswersMap: Map<String, Boolean>
+        get() = PpbeaCriteriaRepository.reconstructAnswers(ppbeaAnswersData, emptyList(), emptyList())
+
+    val ppbeaDiagnosis: PpbeaDiagnosis?
+        get() {
+            val map = ppbeaAnswersMap
+            return if (map.isNotEmpty()) PpbeaCriteriaRepository.evaluate(map) else null
+        }
+
+    val isEvaluated: Boolean
+        get() = ppbeaDiagnosis != null
+}
+
+object IndividualAnimalSerializer {
+    fun serializeList(list: List<IndividualAnimalEvaluation>): String {
+        return list.joinToString(";;;") { item ->
+            val cleanId = item.id.replace(":::", "_").replace(";;;", "_")
+            val cleanTag = item.tagOrCpf.replace(":::", "_").replace(";;;", "_")
+            val cleanSpecies = item.species.replace(":::", "_").replace(";;;", "_")
+            val cleanAnswers = item.ppbeaAnswersData.replace(":::", "_").replace(";;;", "_")
+            val cleanNotes = item.notes.replace(":::", "_").replace(";;;", "_")
+            "$cleanId:::$cleanTag:::$cleanSpecies:::$cleanAnswers:::$cleanNotes"
+        }
+    }
+
+    fun deserializeList(raw: String): List<IndividualAnimalEvaluation> {
+        if (raw.isBlank()) return emptyList()
+        return raw.split(";;;").filter { it.isNotBlank() }.mapNotNull { chunk ->
+            val parts = chunk.split(":::")
+            if (parts.size >= 3) {
+                IndividualAnimalEvaluation(
+                    id = parts.getOrNull(0) ?: java.util.UUID.randomUUID().toString(),
+                    tagOrCpf = parts.getOrNull(1) ?: "",
+                    species = parts.getOrNull(2) ?: "Cavalo",
+                    ppbeaAnswersData = parts.getOrNull(3) ?: "",
+                    notes = parts.getOrNull(4) ?: ""
+                )
+            } else null
+        }
+    }
+}
+

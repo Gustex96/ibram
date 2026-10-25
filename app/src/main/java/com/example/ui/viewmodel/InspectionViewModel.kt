@@ -71,6 +71,7 @@ data class InspectionDraftState(
     val isSaving: Boolean = false,
     val protocolNumber: String = generateProtocol(),
     val ppbeaDiagnosis: com.example.data.model.PpbeaDiagnosis? = null,
+    val individualEvaluations: List<com.example.data.model.IndividualAnimalEvaluation> = emptyList(),
 ) {
     val isDog: Boolean
         get() = DfConstants.isDogSpecies(species)
@@ -641,6 +642,10 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         draft.value = draft.value.copy(ppbeaDiagnosis = null)
     }
 
+    fun updateIndividualEvaluations(list: List<com.example.data.model.IndividualAnimalEvaluation>) {
+        draft.value = draft.value.copy(individualEvaluations = list)
+    }
+
     fun updateRequiresSeagriApprehension(required: Boolean) {
         draft.value = draft.value.copy(requiresSeagriApprehension = required)
     }
@@ -820,6 +825,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     safetyRiskAssessment = safetyAssessment,
                     imageNotes = current.imageNotes,
                     ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
+                    individualEvaluationsData = com.example.data.model.IndividualAnimalSerializer.serializeList(current.individualEvaluations),
                     tutorName = primTutor.name,
                     tutorCpf = primTutor.cpf,
                     additionalTutors = addTutors
@@ -921,6 +927,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         safetyRiskAssessment = safetyAssessment,
                         imageNotes = current.imageNotes,
                         ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
+                        individualEvaluationsData = com.example.data.model.IndividualAnimalSerializer.serializeList(current.individualEvaluations),
                         tutorName = primTutor.name,
                         tutorCpf = primTutor.cpf,
                         additionalTutors = addTutors

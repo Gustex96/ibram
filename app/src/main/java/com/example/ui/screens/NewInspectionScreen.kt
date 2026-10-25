@@ -118,7 +118,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.data.model.DfConstants
 import com.example.ui.components.AnimalSpecies
-import com.example.ui.components.MistreatmentChecklistView
+import com.example.ui.components.PpbeaOpenEvaluationButton
+import com.example.ui.components.PpbeaSelectionModalDialog
 import com.example.ui.viewmodel.InspectionViewModel
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
@@ -156,6 +157,8 @@ fun NewInspectionScreen(
     var showAnatomyDialog by rememberSaveable { mutableStateOf(false) }
     var showPpbeaDialog by rememberSaveable { mutableStateOf(false) }
     var showPpbeaEvaluationDialog by rememberSaveable { mutableStateOf(false) }
+    var showPpbeaSelectionModal by rememberSaveable { mutableStateOf(false) }
+    var showIndividualizedScreen by rememberSaveable { mutableStateOf(false) }
 
     BackHandler {
         onNavigateBack()
@@ -1446,29 +1449,77 @@ fun NewInspectionScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // 1. BOTÃO PRINCIPAL: Caixa de Diálogo com Botões Switch (Sim/Não) e Resultado
-                            Button(
-                                onClick = { showPpbeaEvaluationDialog = true },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("btn_open_ppbea_evaluation_dialog"),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (draft.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) Color(0xFFC62828) else Color(0xFF1B5E20),
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (draft.ppbeaDiagnosis != null) "Editar Avaliação & Diagnóstico (PROTOCOLO PPBEA)" else "Abrir Avaliação PPBEA (Switches Sim/Não)",
-                                    fontSize = 12.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            // 1. BOTÃO PRINCIPAL: "Abrir Avaliação" Conforme Mockup Abrir_avalia__o_9fb09810.png
+                            PpbeaOpenEvaluationButton(
+                                onClick = { showPpbeaSelectionModal = true },
+                                hasDiagnosis = draft.ppbeaDiagnosis != null,
+                                individualCount = draft.individualEvaluations.size
+                            )
+
+                            // Resumo das Avaliações Individualizadas (se houver animais cadastrados)
+                            if (draft.individualEvaluations.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Surface(
+                                    color = Color(0xFFF3EDF7),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, Color(0xFFD0BCFF)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showIndividualizedScreen = true }
+                                        .testTag("summary_individualized_evaluations")
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text("📋", fontSize = 15.sp)
+                                                Text(
+                                                    text = "Avaliação Individualizada (${draft.individualEvaluations.size} animais)",
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF4F378B)
+                                                )
+                                            }
+                                            Surface(
+                                                color = Color(0xFFEADBFC),
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Ver / Editar",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF65558F),
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        draft.individualEvaluations.forEachIndexed { idx, item ->
+                                            val statusText = if (item.isEvaluated) {
+                                                if (item.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS)
+                                                    "⚠️ Configura Maus-Tratos"
+                                                else
+                                                    "✅ ${item.ppbeaDiagnosis?.grauBemEstar?.label ?: "Adequado"}"
+                                            } else {
+                                                "⏳ PPBEA Pendente"
+                                            }
+                                            Text(
+                                                text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $statusText",
+                                                fontSize = 11.5.sp,
+                                                color = Color(0xFF49454F),
+                                                modifier = Modifier.padding(vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             // 2. Card de Diagnóstico Geral Realizado Conforme image.png
@@ -2425,6 +2476,36 @@ fun NewInspectionScreen(
             onSaveDiagnosis = { diagnosis ->
                 viewModel.setPpbeaDiagnosis(diagnosis)
                 showPpbeaEvaluationDialog = false
+            }
+        )
+    }
+
+    // CAIXA DE DIÁLOGO MODAL SELETORA (CONFORME MOCKUP IMAGE_686E7F53.PNG)
+    if (showPpbeaSelectionModal) {
+        PpbeaSelectionModalDialog(
+            onDismiss = { showPpbeaSelectionModal = false },
+            onSelectIndividualized = {
+                showPpbeaSelectionModal = false
+                showIndividualizedScreen = true
+            },
+            onSelectSampling = {
+                showPpbeaSelectionModal = false
+                showPpbeaEvaluationDialog = true
+            }
+        )
+    }
+
+    // TELA DE AVALIAÇÃO INDIVIDUALIZADA (CONFORME MOCKUP CAIXA_AVALIAÇAOINDIVIDUALIZADA.PNG)
+    if (showIndividualizedScreen) {
+        IndividualizedPpbeaScreen(
+            initialEvaluations = draft.individualEvaluations,
+            defaultSpecies = draft.species,
+            onSaveAndClose = { updatedEvaluations ->
+                viewModel.updateIndividualEvaluations(updatedEvaluations)
+                showIndividualizedScreen = false
+            },
+            onCancel = {
+                showIndividualizedScreen = false
             }
         )
     }
