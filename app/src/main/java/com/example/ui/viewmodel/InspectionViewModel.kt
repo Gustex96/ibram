@@ -643,7 +643,41 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun updateIndividualEvaluations(list: List<com.example.data.model.IndividualAnimalEvaluation>) {
-        draft.value = draft.value.copy(individualEvaluations = list)
+        if (list.isEmpty()) {
+            draft.value = draft.value.copy(individualEvaluations = emptyList())
+            return
+        }
+
+        val totalCount = list.size
+        val mistreatedCount = list.count {
+            it.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS
+        }
+
+        val evaluatedDiagnoses = list.mapNotNull { it.ppbeaDiagnosis }
+        val aggregatedDiagnosis = if (evaluatedDiagnoses.isNotEmpty()) {
+            val hasMausTratos = evaluatedDiagnoses.any { it.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+            val hasRecomendacoes = evaluatedDiagnoses.any { it.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO }
+            val worstEnquadramento = when {
+                hasMausTratos -> com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS
+                hasRecomendacoes -> com.example.data.model.EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO
+                else -> com.example.data.model.EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS
+            }
+            val minGrau = evaluatedDiagnoses.minByOrNull { it.grauBemEstar.ordinal }?.grauBemEstar ?: com.example.data.model.GrauBemEstar.MUITO_ALTO
+            (draft.value.ppbeaDiagnosis ?: evaluatedDiagnoses.first()).copy(
+                ocorrenciaMausTratos = worstEnquadramento,
+                grauBemEstar = minGrau,
+                isEvaluated = true
+            )
+        } else {
+            draft.value.ppbeaDiagnosis
+        }
+
+        draft.value = draft.value.copy(
+            individualEvaluations = list,
+            horseCount = totalCount,
+            mistreatedHorseCount = mistreatedCount,
+            ppbeaDiagnosis = aggregatedDiagnosis
+        )
     }
 
     fun updateRequiresSeagriApprehension(required: Boolean) {
@@ -973,6 +1007,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newTutorCpf: String,
         newAdditionalTutors: String = original.additionalTutors,
         newPpbeaAnswersData: String = original.ppbeaAnswersData,
+        newIndividualEvaluationsData: String = original.individualEvaluationsData,
         newPhotoPaths: List<String> = original.allPhotoPaths,
         onSuccess: () -> Unit
     ) {
@@ -1016,7 +1051,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 tutorName = newTutorName,
                 tutorCpf = CpfValidator.format(newTutorCpf),
                 additionalTutors = newAdditionalTutors,
-                ppbeaAnswersData = newPpbeaAnswersData
+                ppbeaAnswersData = newPpbeaAnswersData,
+                individualEvaluationsData = newIndividualEvaluationsData
             )
 
             repository.updateInspection(updated)

@@ -446,4 +446,57 @@ class ExampleRobolectricTest {
         assertEquals("CHIP-998", deserialized[1].tagOrCpf)
         assertEquals("Cachorro", deserialized[1].species)
     }
+
+    @Test
+    fun testIndividualAnimalDiagnosisAndDomains() {
+        val animal1 = com.example.data.model.IndividualAnimalEvaluation(
+            id = "anim-1",
+            tagOrCpf = "BRINCO-001 / João da Silva",
+            species = "Cavalo",
+            ppbeaAnswersData = "nut_magro:true;;nut_sem_agua:false;;saude_ferido_doente:true",
+            notes = "Animal necessita de suplementação urgente"
+        )
+        val animal2 = com.example.data.model.IndividualAnimalEvaluation(
+            id = "anim-2",
+            tagOrCpf = "TAG-882 / Maria Pereira",
+            species = "Cachorro",
+            ppbeaAnswersData = "nut_magro:false;;nut_sem_agua:false",
+            notes = "Bom estado geral"
+        )
+
+        // Verificações animal 1: possui diagnóstico com inconformidades em nutrição e saúde
+        val diag1 = animal1.ppbeaDiagnosis
+        assertNotNull(diag1)
+        assertEquals(com.example.data.model.ParecerDomain.INADEQUADO, diag1?.nutricionalParecer)
+        assertEquals(com.example.data.model.ParecerDomain.INADEQUADO, diag1?.saudeParecer)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag1?.confortoParecer)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag1?.comportamentalParecer)
+        assertTrue(animal1.isEvaluated)
+
+        // Verificações animal 2: conformidade
+        val diag2 = animal2.ppbeaDiagnosis
+        assertNotNull(diag2)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag2?.nutricionalParecer)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag2?.saudeParecer)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag2?.confortoParecer)
+        assertEquals(com.example.data.model.ParecerDomain.ADEQUADO, diag2?.comportamentalParecer)
+
+        // Teste de agregação na entidade HorseInspection
+        val serialized = com.example.data.model.IndividualAnimalSerializer.serializeList(listOf(animal1, animal2))
+        val inspection = HorseInspection(
+            protocolNumber = "DF-INDIV-2026-001",
+            photoPath = "/mock/path.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Planaltina (RA II)",
+            species = "Múltiplas Espécies",
+            horseCount = 2,
+            mistreatedHorseCount = 1,
+            individualEvaluationsData = serialized
+        )
+
+        assertEquals(2, inspection.individualEvaluations.size)
+        assertEquals("BRINCO-001 / João da Silva", inspection.individualEvaluations[0].tagOrCpf)
+        assertEquals("TAG-882 / Maria Pereira", inspection.individualEvaluations[1].tagOrCpf)
+    }
 }
