@@ -90,7 +90,7 @@ fun PpbeaEvaluationDialog(
     onSaveDiagnosis: (PpbeaDiagnosis) -> Unit
 ) {
     // Armazena as respostas dos switches: criterionId -> isYes (true = SIM, false = NÃO)
-    val answersState = remember {
+    val answersState = remember(initialDiagnosis) {
         mutableStateMapOf<String, Boolean>().apply {
             if (initialDiagnosis != null && initialDiagnosis.answersMap.isNotEmpty()) {
                 putAll(initialDiagnosis.answersMap)
@@ -99,8 +99,8 @@ fun PpbeaEvaluationDialog(
     }
 
     var selectedDomainIndex by remember { mutableIntStateOf(0) }
-    var currentDiagnosis by remember { mutableStateOf(initialDiagnosis ?: PpbeaDiagnosis()) }
-    var showResultScreen by remember { mutableStateOf(initialDiagnosis?.isEvaluated == true) }
+    var currentDiagnosis by remember(initialDiagnosis) { mutableStateOf(initialDiagnosis ?: PpbeaDiagnosis()) }
+    var showResultScreen by remember(initialDiagnosis) { mutableStateOf(initialDiagnosis?.isEvaluated == true) }
 
     Dialog(
         onDismissRequest = onDismiss,

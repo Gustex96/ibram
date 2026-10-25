@@ -272,8 +272,33 @@ fun EditInspectionDialog(
     }
 
     // Estados para o Protocolo de Perícia em Bem-Estar Animal (PPBEA – Anexo D / Res. CFMV 1.236/2018)
-    var individualEvaluations by remember {
-        mutableStateOf(inspection.individualEvaluations)
+    var individualEvaluations by remember(inspection.id, inspection.individualEvaluationsData) {
+        mutableStateOf(
+            if (inspection.individualEvaluations.isNotEmpty()) {
+                inspection.individualEvaluations
+            } else {
+                val count = maxOf(1, inspection.horseCount)
+                val tutorTag = when {
+                    inspection.tutorName.isNotBlank() && inspection.tutorCpf.isNotBlank() -> "${inspection.tutorName} (${inspection.tutorCpf})"
+                    inspection.tutorName.isNotBlank() -> inspection.tutorName
+                    inspection.tutorCpf.isNotBlank() -> inspection.tutorCpf
+                    else -> ""
+                }
+                val addTutors = inspection.allTutors.drop(1)
+                (0 until count).map { idx ->
+                    val tag = if (idx == 0) tutorTag else (addTutors.getOrNull(idx - 1)?.let {
+                        if (it.cpf.isNotBlank()) "${it.name} (${it.cpf})".trim() else it.name
+                    } ?: "")
+                    IndividualAnimalEvaluation(
+                        id = UUID.randomUUID().toString(),
+                        species = inspection.species.ifBlank { "Cavalo" },
+                        tagOrCpf = tag,
+                        ppbeaAnswersData = if (idx == 0) inspection.ppbeaAnswersData else "",
+                        notes = if (idx == 0) inspection.horseDescription else ""
+                    )
+                }
+            }
+        )
     }
     var showPpbeaSelectionModal by remember { mutableStateOf(false) }
     var showIndividualizedScreen by remember { mutableStateOf(false) }

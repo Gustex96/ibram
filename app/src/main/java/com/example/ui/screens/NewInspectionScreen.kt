@@ -2497,8 +2497,32 @@ fun NewInspectionScreen(
 
     // TELA DE AVALIAÇÃO INDIVIDUALIZADA (CONFORME MOCKUP CAIXA_AVALIAÇAOINDIVIDUALIZADA.PNG)
     if (showIndividualizedScreen) {
+        val currentIndiv = if (draft.individualEvaluations.isNotEmpty()) {
+            draft.individualEvaluations
+        } else {
+            val tutorTag = when {
+                draft.tutorName.isNotBlank() && draft.tutorCpf.isNotBlank() -> "${draft.tutorName} (${draft.tutorCpf})"
+                draft.tutorName.isNotBlank() -> draft.tutorName
+                draft.tutorCpf.isNotBlank() -> draft.tutorCpf
+                else -> ""
+            }
+            val count = maxOf(1, draft.horseCount)
+            val addTutors = draft.tutors.drop(1)
+            (0 until count).map { idx ->
+                val tag = if (idx == 0) tutorTag else (addTutors.getOrNull(idx - 1)?.let {
+                    if (it.cpf.isNotBlank()) "${it.name} (${it.cpf})".trim() else it.name
+                } ?: "")
+                com.example.data.model.IndividualAnimalEvaluation(
+                    id = java.util.UUID.randomUUID().toString(),
+                    species = draft.species.ifBlank { "Cavalo" },
+                    tagOrCpf = tag,
+                    ppbeaAnswersData = if (idx == 0) com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(draft.ppbeaDiagnosis?.answersMap ?: emptyMap()) else "",
+                    notes = if (idx == 0) draft.horseDescription else ""
+                )
+            }
+        }
         IndividualizedPpbeaScreen(
-            initialEvaluations = draft.individualEvaluations,
+            initialEvaluations = currentIndiv,
             defaultSpecies = draft.species,
             onSaveAndClose = { updatedEvaluations ->
                 viewModel.updateIndividualEvaluations(updatedEvaluations)

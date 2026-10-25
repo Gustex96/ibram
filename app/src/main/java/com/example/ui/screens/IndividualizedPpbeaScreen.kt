@@ -72,6 +72,8 @@ import com.example.data.model.PpbeaCriteriaRepository
 import com.example.data.model.PpbeaDiagnosis
 import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.PpbeaEvaluationDialog
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 /**
  * Tela de Avaliação Individualizada do Protocolo PPBEA conforme o design do mockup:
@@ -91,7 +93,7 @@ fun IndividualizedPpbeaScreen(
     onCancel: () -> Unit
 ) {
     // Lista mutável de animais individualizados
-    val evaluationsList = remember {
+    val evaluationsList = remember(initialEvaluations, defaultSpecies) {
         mutableStateListOf<IndividualAnimalEvaluation>().apply {
             if (initialEvaluations.isNotEmpty()) {
                 addAll(initialEvaluations)
@@ -111,12 +113,20 @@ fun IndividualizedPpbeaScreen(
     var activeEvaluatingAnimalIndex by remember { mutableStateOf<Int?>(null) }
     var showAddSpeciesDialog by remember { mutableStateOf(false) }
 
-    BackHandler {
-        onSaveAndClose(evaluationsList.toList())
-    }
+    Dialog(
+        onDismissRequest = onCancel,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
+    ) {
+        BackHandler {
+            onSaveAndClose(evaluationsList.toList())
+        }
 
-    Scaffold(
-        containerColor = Color(0xFF1E1E1E), // Fundo escuro do mockup caixa_avaliaçaoindividualizada.png
+        Scaffold(
+            containerColor = Color(0xFF1E1E1E), // Fundo escuro do mockup caixa_avaliaçaoindividualizada.png
         topBar = {
             TopAppBar(
                 title = {
@@ -298,6 +308,7 @@ fun IndividualizedPpbeaScreen(
                 showAddSpeciesDialog = false
             }
         )
+    }
     }
 }
 
