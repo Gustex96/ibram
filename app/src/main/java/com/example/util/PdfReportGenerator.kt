@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -209,7 +210,11 @@ object PdfReportGenerator {
                     val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.logo_meio_ambiente)
                     if (logoBitmap != null) {
                         val logoRect = RectF(margin, y, margin + logoWidth, y + logoHeight)
+                        val saveCount = canvas.save()
+                        val clipPath = Path().apply { addRoundRect(logoRect, 6f, 6f, Path.Direction.CW) }
+                        canvas.clipPath(clipPath)
                         canvas.drawBitmap(logoBitmap, null, logoRect, null)
+                        canvas.restoreToCount(saveCount)
                     }
                 } catch (_: Exception) {}
 
@@ -1393,7 +1398,11 @@ object PdfReportGenerator {
                 val logoWidth = 60f
                 val logoHeight = 60f
                 val logoRect = RectF(margin, y, margin + logoWidth, y + logoHeight)
+                val saveCount = coverCanvas.save()
+                val clipPath = Path().apply { addRoundRect(logoRect, 8f, 8f, Path.Direction.CW) }
+                coverCanvas.clipPath(clipPath)
                 coverCanvas.drawBitmap(logoBitmap, null, logoRect, null)
+                coverCanvas.restoreToCount(saveCount)
             }
         } catch (_: Exception) {}
 

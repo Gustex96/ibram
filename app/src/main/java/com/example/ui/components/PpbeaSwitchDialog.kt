@@ -156,7 +156,7 @@ fun PpbeaSwitchDialog(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "PROTOCOLO PPBEA – ANEXO D",
+                                        text = "PROTOCOLO PPBEA",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 14.sp,
                                         color = Color.White,

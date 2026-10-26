@@ -46,6 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -125,68 +126,67 @@ fun AppSplashScreen(
                         .fillMaxWidth()
                         .testTag("app_brand_header_above_carousel")
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Surface(
                             shape = CircleShape,
                             color = Color(0xFF1B4D36),
-                            border = BorderStroke(1.5.dp, Color(0xFF69F0AE)),
-                            shadowElevation = 4.dp,
-                            modifier = Modifier.size(48.dp)
+                            border = BorderStroke(1.8.dp, Color(0xFF69F0AE)),
+                            shadowElevation = 6.dp,
+                            modifier = Modifier.size(68.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Image(
                                     painter = painterResource(id = R.drawable.app_protection_icon),
-                                    contentDescription = "Símbolo do Aplicativo LEVO",
+                                    contentDescription = "Emblema do Aplicativo LEVO",
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(56.dp)
                                         .clip(CircleShape)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "LEVO",
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                letterSpacing = 1.5.sp
+                            )
+
+                            Surface(
+                                color = Color(0xFF2E7D32),
+                                shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "LEVO",
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    text = "AUDITORIA • DF",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    letterSpacing = 1.2.sp
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
-
-                                Surface(
-                                    color = Color(0xFF2E7D32),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "AUDITORIA • DF",
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
                             }
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = "Selecione a espécie para iniciar a fiscalização:",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFFC8E6C9)
-                            )
                         }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Selecione a espécie para iniciar a fiscalização:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFC8E6C9),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 

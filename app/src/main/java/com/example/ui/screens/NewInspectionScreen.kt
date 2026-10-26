@@ -1250,19 +1250,12 @@ fun NewInspectionScreen(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = "PROTOCOLO PPBEA – ANEXO D",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.5.sp,
-                                            color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
-                                        )
-                                        Text(
-                                            text = "Perícia em Bem-Estar Animal • Res. CFMV 1.236/2018",
-                                            fontSize = 10.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    Text(
+                                        text = "PROTOCOLO PPBEA",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = if (draft.mistreatmentIndicators.isNotEmpty()) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                    )
                                 }
 
                                 Surface(
@@ -1279,16 +1272,16 @@ fun NewInspectionScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                            // 4 INDICADORES OFICIAIS DO PROTOCOLO PPBEA (ANEXO D - RES. CFMV 1.236/2018)
+                            // 4 INDICADORES OFICIAIS DO PROTOCOLO PPBEA
                             Text(
                                 text = "Os 4 Indicadores de Bem-Estar Animal (Situação Boa vs Ruim):",
-                                fontSize = 11.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1447,7 +1440,7 @@ fun NewInspectionScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             // 1. BOTÃO PRINCIPAL: "Abrir Avaliação" Conforme Mockup Abrir_avalia__o_9fb09810.png
                             PpbeaOpenEvaluationButton(
@@ -1776,13 +1769,13 @@ fun NewInspectionScreen(
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_owl),
-                                    contentDescription = if (isDog) "Consultar 5 Domínios e Guia Canino" else "Consultar Atlas Anatômico e 5 Domínios",
+                                    contentDescription = "Consultar Conhecimento (5 Domínios e Atlas)",
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = if (isDog) "5 Domínios & Guia" else "Atlas & 5 Domínios",
+                                    text = "Conhecimento",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer

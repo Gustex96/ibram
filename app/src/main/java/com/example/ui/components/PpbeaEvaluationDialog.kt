@@ -170,16 +170,11 @@ fun PpbeaEvaluationDialog(
 
                                 Column {
                                     Text(
-                                        text = "PROTOCOLO PPBEA – ANEXO D",
+                                        text = "PROTOCOLO PPBEA",
                                         fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 13.5.sp,
+                                        fontSize = 14.sp,
                                         color = Color.White,
                                         letterSpacing = 0.5.sp
-                                    )
-                                    Text(
-                                        text = "Perícia de Bem-Estar Animal • Res. CFMV 1.236/2018",
-                                        fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.9f)
                                     )
                                 }
                             }
