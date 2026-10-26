@@ -1504,8 +1504,16 @@ fun NewInspectionScreen(
                                             } else {
                                                 "⏳ PPBEA Pendente"
                                             }
+                                            val idOrResp = buildString {
+                                                if (item.tagOrCpf.isNotBlank()) append(item.tagOrCpf)
+                                                if (item.tutorQualification.isNotBlank()) {
+                                                    if (isNotEmpty()) append(" • Resp: ")
+                                                    append(item.tutorQualification)
+                                                }
+                                                if (isEmpty()) append("Sem identificação")
+                                            }
                                             Text(
-                                                text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $statusText",
+                                                text = "• #${idx + 1} (${item.species}): $idOrResp — $statusText",
                                                 fontSize = 11.5.sp,
                                                 color = Color(0xFF49454F),
                                                 modifier = Modifier.padding(vertical = 1.dp)
@@ -2517,6 +2525,7 @@ fun NewInspectionScreen(
         IndividualizedPpbeaScreen(
             initialEvaluations = currentIndiv,
             defaultSpecies = draft.species,
+            availableTutors = draft.tutors,
             onSaveAndClose = { updatedEvaluations ->
                 viewModel.updateIndividualEvaluations(updatedEvaluations)
                 showIndividualizedScreen = false

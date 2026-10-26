@@ -592,8 +592,16 @@ fun InspectionDetailScreen(
                                     val diagText = if (item.isEvaluated) {
                                         "Grau ${item.ppbeaDiagnosis?.grauBemEstar?.label ?: "Concluído"}"
                                     } else "Pendente"
+                                    val idOrResp = buildString {
+                                        if (item.tagOrCpf.isNotBlank()) append(item.tagOrCpf)
+                                        if (item.tutorQualification.isNotBlank()) {
+                                            if (isNotEmpty()) append(" • Resp: ")
+                                            append(item.tutorQualification)
+                                        }
+                                        if (isEmpty()) append("Sem identificação")
+                                    }
                                     Text(
-                                        text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $diagText",
+                                        text = "• #${idx + 1} (${item.species}): $idOrResp — $diagText",
                                         fontSize = 11.5.sp,
                                         color = Color(0xFF49454F)
                                     )

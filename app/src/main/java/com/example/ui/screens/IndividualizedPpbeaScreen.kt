@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -44,6 +45,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -70,6 +72,7 @@ import com.example.data.model.EnquadramentoMausTratos
 import com.example.data.model.IndividualAnimalEvaluation
 import com.example.data.model.PpbeaCriteriaRepository
 import com.example.data.model.PpbeaDiagnosis
+import com.example.data.model.TutorEntry
 import com.example.ui.components.AnimalSpecies
 import com.example.ui.components.PpbeaEvaluationDialog
 import androidx.compose.ui.window.Dialog
@@ -81,6 +84,7 @@ import androidx.compose.ui.window.DialogProperties
  *
  * Apresenta:
  * - Botão "+ Adicionar Espécies" no topo para acrescentar outros animais/espécies.
+ * - Campo estilo "MENU LIST" para recuperar nome e CPF dos tutores/responsáveis cadastrados.
  * - Campo "TAG/Proprietário" com o placeholder "Identificação do animal".
  * - Botão "Iniciar PPBEA" com ícone de reprodução (Play) que abre a avaliação individual.
  */
@@ -89,6 +93,7 @@ import androidx.compose.ui.window.DialogProperties
 fun IndividualizedPpbeaScreen(
     initialEvaluations: List<IndividualAnimalEvaluation>,
     defaultSpecies: String,
+    availableTutors: List<TutorEntry> = emptyList(),
     onSaveAndClose: (List<IndividualAnimalEvaluation>) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -256,8 +261,12 @@ fun IndividualizedPpbeaScreen(
                     index = index,
                     item = item,
                     canDelete = evaluationsList.size > 1,
+                    availableTutors = availableTutors,
                     onUpdateTagOrCpf = { newTag ->
                         evaluationsList[index] = item.copy(tagOrCpf = newTag)
+                    },
+                    onUpdateTutorQualification = { newTutor ->
+                        evaluationsList[index] = item.copy(tutorQualification = newTutor)
                     },
                     onUpdateSpecies = { newSpecies ->
                         evaluationsList[index] = item.copy(species = newSpecies)
@@ -314,18 +323,22 @@ fun IndividualizedPpbeaScreen(
 
 /**
  * Card individual de cada animal conforme a imagem:
- * caixa_avaliaçaoindividualizada.png
+ * caixa_avaliaçaoindividualizada.png e o campo MENU LIST de Responsável (image_4d649560.png)
  */
 @Composable
 private fun IndividualAnimalCard(
     index: Int,
     item: IndividualAnimalEvaluation,
     canDelete: Boolean,
+    availableTutors: List<TutorEntry>,
     onUpdateTagOrCpf: (String) -> Unit,
+    onUpdateTutorQualification: (String) -> Unit,
     onUpdateSpecies: (String) -> Unit,
     onStartPpbea: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var showTutorMenu by remember { mutableStateOf(false) }
+    var showManualQualDialog by remember { mutableStateOf(false) }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
@@ -401,6 +414,172 @@ private fun IndividualAnimalCard(
             }
 
             Spacer(modifier = Modifier.height(14.dp))
+
+            // Campo no estilo "MENU LIST" (conforme imagem modelo):
+            // Recupera os nomes e CPFs dos tutores/responsáveis preenchidos no início do levantamento
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFF0E0E6)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showTutorMenu = true }
+                        .testTag("menu_responsavel_$index")
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Responsável",
+                                    tint = Color(0xFF49454F),
+                                    modifier = Modifier.size(24.dp)
+                                )
+
+                                Column {
+                                    Text(
+                                        text = "Responsável",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF351F28)
+                                    )
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                    Text(
+                                        text = item.tutorQualification.ifBlank { "Qualificação" },
+                                        fontSize = 12.5.sp,
+                                        fontWeight = if (item.tutorQualification.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (item.tutorQualification.isNotBlank()) Color(0xFF4A378B) else Color(0xFF79747E),
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Selecionar responsável",
+                                tint = Color(0xFF49454F),
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+
+                        // Linha divisória inferior conforme o modelo da imagem anexada
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp)
+                                .height(1.dp)
+                                .background(Color(0xFFE6D6DC))
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = showTutorMenu,
+                    onDismissRequest = { showTutorMenu = false },
+                    modifier = Modifier
+                        .background(Color(0xFF282828))
+                        .testTag("dropdown_tutors_$index")
+                ) {
+                    val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+                    if (validTutors.isNotEmpty()) {
+                        validTutors.forEach { tutor ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = tutor.name.ifBlank { "Tutor sem nome" },
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            fontSize = 13.5.sp
+                                        )
+                                        if (tutor.cpf.isNotBlank()) {
+                                            Text(
+                                                text = "CPF: ${tutor.cpf}",
+                                                fontSize = 11.5.sp,
+                                                color = Color(0xFFD0BCFF)
+                                            )
+                                        }
+                                    }
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = Color(0xFFD0BCFF),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    val qual = if (tutor.cpf.isNotBlank()) "${tutor.name} (${tutor.cpf})" else tutor.name
+                                    onUpdateTutorQualification(qual)
+                                    if (item.tagOrCpf.isBlank()) {
+                                        onUpdateTagOrCpf(tutor.name)
+                                    }
+                                    showTutorMenu = false
+                                }
+                            )
+                        }
+
+                        if (item.tutorQualification.isNotBlank()) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Desvincular responsável",
+                                        color = Color(0xFFEF9A9A),
+                                        fontSize = 12.5.sp
+                                    )
+                                },
+                                onClick = {
+                                    onUpdateTutorQualification("")
+                                    showTutorMenu = false
+                                }
+                            )
+                        }
+                    } else {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Nenhum tutor cadastrado no início do levantamento",
+                                    color = Color(0xFFCCCCCC),
+                                    fontSize = 12.sp
+                                )
+                            },
+                            onClick = { showTutorMenu = false }
+                        )
+                    }
+
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Digitar qualificação manual...",
+                                color = Color(0xFFD0BCFF),
+                                fontSize = 12.5.sp
+                            )
+                        },
+                        onClick = {
+                            showTutorMenu = false
+                            showManualQualDialog = true
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // CORPO DO CARD CONFORME O DESIGN DO MOCKUP:
             // Lado Esquerdo: Campo "TAG/Proprietário" | "Identificação do animal"
@@ -533,6 +712,58 @@ private fun IndividualAnimalCard(
                         )
                     }
                 }
+            }
+
+            if (showManualQualDialog) {
+                var manualText by remember { mutableStateOf(item.tutorQualification) }
+                AlertDialog(
+                    onDismissRequest = { showManualQualDialog = false },
+                    title = {
+                        Text(
+                            text = "Qualificação do Responsável",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Informe o nome e CPF do responsável por este exemplar:",
+                                color = Color(0xFFE2E8F0),
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedTextField(
+                                value = manualText,
+                                onValueChange = { manualText = it },
+                                placeholder = { Text("Ex: João da Silva (CPF: 000.000.000-00)") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                onUpdateTutorQualification(manualText.trim())
+                                if (item.tagOrCpf.isBlank() && manualText.isNotBlank()) {
+                                    onUpdateTagOrCpf(manualText.trim())
+                                }
+                                showManualQualDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF65558F))
+                        ) {
+                            Text("Confirmar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showManualQualDialog = false }) {
+                            Text("Cancelar", color = Color(0xFFE2E8F0))
+                        }
+                    },
+                    containerColor = Color(0xFF282828)
+                )
             }
         }
     }

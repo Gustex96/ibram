@@ -474,7 +474,8 @@ data class IndividualAnimalEvaluation(
     val tagOrCpf: String = "",
     val species: String = "Cavalo",
     val ppbeaAnswersData: String = "",
-    val notes: String = ""
+    val notes: String = "",
+    val tutorQualification: String = ""
 ) {
     val ppbeaAnswersMap: Map<String, Boolean>
         get() = PpbeaCriteriaRepository.reconstructAnswers(ppbeaAnswersData, emptyList(), emptyList())
@@ -497,7 +498,8 @@ object IndividualAnimalSerializer {
             val cleanSpecies = item.species.replace(":::", "_").replace(";;;", "_")
             val cleanAnswers = item.ppbeaAnswersData.replace(":::", "_").replace(";;;", "_")
             val cleanNotes = item.notes.replace(":::", "_").replace(";;;", "_")
-            "$cleanId:::$cleanTag:::$cleanSpecies:::$cleanAnswers:::$cleanNotes"
+            val cleanTutor = item.tutorQualification.replace(":::", "_").replace(";;;", "_")
+            "$cleanId:::$cleanTag:::$cleanSpecies:::$cleanAnswers:::$cleanNotes:::$cleanTutor"
         }
     }
 
@@ -511,10 +513,12 @@ object IndividualAnimalSerializer {
                     tagOrCpf = parts.getOrNull(1) ?: "",
                     species = parts.getOrNull(2) ?: "Cavalo",
                     ppbeaAnswersData = parts.getOrNull(3) ?: "",
-                    notes = parts.getOrNull(4) ?: ""
+                    notes = parts.getOrNull(4) ?: "",
+                    tutorQualification = parts.getOrNull(5) ?: ""
                 )
             } else null
         }
     }
 }
+
 

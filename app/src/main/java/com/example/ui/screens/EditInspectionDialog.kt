@@ -1123,8 +1123,16 @@ fun EditInspectionDialog(
                                             } else {
                                                 "⏳ PPBEA Pendente"
                                             }
+                                            val idOrResp = buildString {
+                                                if (item.tagOrCpf.isNotBlank()) append(item.tagOrCpf)
+                                                if (item.tutorQualification.isNotBlank()) {
+                                                    if (isNotEmpty()) append(" • Resp: ")
+                                                    append(item.tutorQualification)
+                                                }
+                                                if (isEmpty()) append("Sem identificação")
+                                            }
                                             Text(
-                                                text = "• #${idx + 1} (${item.species}): ${item.tagOrCpf.ifBlank { "Sem identificação" }} — $statusText",
+                                                text = "• #${idx + 1} (${item.species}): $idOrResp — $statusText",
                                                 fontSize = 11.sp,
                                                 color = Color(0xFF49454F),
                                                 modifier = Modifier.padding(vertical = 1.dp)
@@ -1675,6 +1683,7 @@ fun EditInspectionDialog(
         IndividualizedPpbeaScreen(
             initialEvaluations = individualEvaluations,
             defaultSpecies = inspection.species,
+            availableTutors = tutorsList,
             onSaveAndClose = { updatedList: List<IndividualAnimalEvaluation> ->
                 individualEvaluations = updatedList
                 if (updatedList.isNotEmpty()) {

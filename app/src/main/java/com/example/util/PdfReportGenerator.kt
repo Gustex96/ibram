@@ -527,8 +527,15 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        pageManager.canvas.drawText("EXEMPLAR #${index + 1} • ESPÉCIE: ${animal.species.uppercase()}", col1X, cardTop + 14f, titleP)
-        val tagLabel = "TAG / PROPRIETÁRIO: ${animal.tagOrCpf.ifBlank { "Sem identificação / TAG informada" }}"
+        val tagDetail = buildString {
+            if (animal.tagOrCpf.isNotBlank()) append(animal.tagOrCpf)
+            if (animal.tutorQualification.isNotBlank()) {
+                if (isNotEmpty()) append(" • Resp: ")
+                append(animal.tutorQualification)
+            }
+            if (isEmpty()) append("Sem identificação / TAG informada")
+        }
+        val tagLabel = "TAG / RESPONSÁVEL: $tagDetail"
         pageManager.canvas.drawText(tagLabel, col2X, cardTop + 14f, tagP)
 
         val divPaint = Paint().apply {
@@ -1038,8 +1045,8 @@ object PdfReportGenerator {
             inspection.imageNotes.trim().takeIf { it.isNotBlank() && it != relatorioGeral } ?: ""
         )
 
-        // Se houver parecer técnico geral preenchido, desenha primeiro
-        if (relatorioGeral.isNotBlank() && relatorioGeral != "Sem parecer descritivo adicional preenchido pelo auditor de campo na fiscalização.") {
+        // Desenha o subitem "PARECER TÉCNICO GERAL DA FISCALIZAÇÃO" apenas na avaliação por amostragem (sem animais individualizados)
+        if (inspection.individualEvaluations.isEmpty() && relatorioGeral.isNotBlank() && relatorioGeral != "Sem parecer descritivo adicional preenchido pelo auditor de campo na fiscalização.") {
             pageManager.ensureSpace(36f)
             val parecP = Paint().apply {
                 color = Color.rgb(0, 104, 74)

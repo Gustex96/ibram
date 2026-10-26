@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -97,7 +98,26 @@ fun AppSplashScreen(
             contentScale = ContentScale.Crop
         )
 
-        // 2. Nome do Aplicativo com o Símbolo e Carrossel Multinavegação Material 3
+        // 2. Emblema do Aplicativo no Topo Centralizado (100 x 100) sem fundo preto
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = fadeIn(tween(600)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 28.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.app_protection_icon),
+                contentDescription = "Emblema do Aplicativo LEVO",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .testTag("app_emblem_top_centered")
+            )
+        }
+
+        // 3. Nome do Aplicativo e Carrossel Multinavegação Material 3
         AnimatedVisibility(
             visible = isVisible,
             enter = fadeIn(tween(600)) + slideInVertically(
@@ -115,7 +135,7 @@ fun AppSplashScreen(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Nome do aplicativo com o símbolo posicionado em cima do menu carrossel
+                // Nome do aplicativo posicionado em cima do menu carrossel
                 Surface(
                     color = Color(0xFF141E15).copy(alpha = 0.88f),
                     shape = RoundedCornerShape(20.dp),
@@ -132,26 +152,6 @@ fun AppSplashScreen(
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF1B4D36),
-                            border = BorderStroke(1.8.dp, Color(0xFF69F0AE)),
-                            shadowElevation = 6.dp,
-                            modifier = Modifier.size(68.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.app_protection_icon),
-                                    contentDescription = "Emblema do Aplicativo LEVO",
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
