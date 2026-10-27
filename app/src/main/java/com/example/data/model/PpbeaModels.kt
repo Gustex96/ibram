@@ -377,7 +377,7 @@ object PpbeaCriteriaRepository {
                     append("Constatado Grau de Bem-Estar ")
                     append(grau.label.uppercase())
                     append(". Pareceres setoriais: Nutrição [${nutParecer.label}], Conforto [${confParecer.label}], Saúde [${saudeParecer.label}], Comportamento [${compParecer.label}]. ")
-                    append("CONFIGURA CRIME DE MAUS-TRATOS (Art. 32 da Lei Federal 9.605/1998 c/c Lei 14.064/2020). Requer lavratura de Auto de Infração, BO e medidas de apreensão/recolhimento.")
+                    append("CONFIGURA CRIME DE MAUS-TRATOS (Art. 32 da Lei Federal 9.605/1998 c/c Lei 14.064/2020). Requer lavratura de Auto de Infração e medidas de apreensão/recolhimento.")
                 }
                 EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO -> {
                     append("Constatado Grau de Bem-Estar ")

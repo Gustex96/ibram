@@ -131,7 +131,7 @@ object PdfReportGenerator {
             .filter { it.isNotBlank() }
             .distinct()
         estimatedH += mistreatments.size * 13f
-        // Section 3: Providencias, BO & Apoio
+        // Providências & Apoio
         estimatedH += 65f
         if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) estimatedH += 25f
         if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) estimatedH += 25f
@@ -1123,22 +1123,13 @@ object PdfReportGenerator {
             pageManager.y = diagBoxTop + totalBoxHeight + 10f
         }
 
-        // SECTION 5: 5. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO
+        // SECTION 5: 5. PROVIDÊNCIAS OPERACIONAIS E APOIO
         pageManager.ensureSpace(30f)
-        pageManager.y = drawSectionHeader(pageManager.canvas, "5. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO", margin, pageManager.y, contentWidth)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "5. PROVIDÊNCIAS OPERACIONAIS E APOIO", margin, pageManager.y, contentWidth)
 
-        val col3W = (contentWidth - 12f) / 3f
+        val col2W = (contentWidth - 8f) / 2f
         val c1 = margin + 4f
-        val c2 = margin + col3W + 6f
-        val c3 = margin + (col3W * 2f) + 8f
-
-        val boStatus = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) "SIM (REGISTRADO)" else "NÃO"
-        val boPaint = Paint().apply {
-            color = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) Color.rgb(198, 40, 40) else Color.rgb(46, 125, 50)
-            textSize = 8.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
+        val c2 = margin + col2W + 6f
 
         val seagriStatus = if (isDog) "N/A (NÃO APLICÁVEL)" else if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
         val seagriPaint = if (inspection.requiresSeagriApprehension) {
@@ -1151,14 +1142,11 @@ object PdfReportGenerator {
         } else valuePaint
 
         pageManager.ensureSpace(28f)
-        pageManager.canvas.drawText("BOLETIM DE OCORRÊNCIA (BO):", c1, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(boStatus, c1, pageManager.y + 11f, boPaint)
+        pageManager.canvas.drawText("APREENSÃO (SEAGRI-DF):", c1, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(seagriStatus, c1, pageManager.y + 11f, seagriPaint)
 
-        pageManager.canvas.drawText("APREENSÃO (SEAGRI-DF):", c2, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(seagriStatus, c2, pageManager.y + 11f, seagriPaint)
-
-        pageManager.canvas.drawText("APOIO POLICIAL (PMDF/BPMA):", c3, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(pmdfStatus, c3, pageManager.y + 11f, pmdfPaint)
+        pageManager.canvas.drawText("APOIO POLICIAL (PMDF/BPMA):", c2, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(pmdfStatus, c2, pageManager.y + 11f, pmdfPaint)
         pageManager.y += 26f
 
         if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) {

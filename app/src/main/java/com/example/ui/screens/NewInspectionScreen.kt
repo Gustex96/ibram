@@ -1555,19 +1555,6 @@ fun NewInspectionScreen(
                                                     color = Color(diag.grauBemEstar.colorHex)
                                                 )
                                             }
-
-                                            Surface(
-                                                color = if (diag.gerouBoletimOcorrencia) Color(0xFFFFCDD2) else Color(0xFFC8E6C9),
-                                                shape = RoundedCornerShape(4.dp)
-                                            ) {
-                                                Text(
-                                                    text = if (diag.gerouBoletimOcorrencia) "BO POLICIAL" else "SEM BO",
-                                                    fontSize = 9.5.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (diag.gerouBoletimOcorrencia) Color(0xFFB71C1C) else Color(0xFF1B5E20),
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
                                         }
 
                                         Spacer(modifier = Modifier.height(4.dp))

@@ -338,7 +338,6 @@ private fun IndividualAnimalCard(
     onDelete: () -> Unit
 ) {
     var showTutorMenu by remember { mutableStateOf(false) }
-    var showManualQualDialog by remember { mutableStateOf(false) }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
@@ -562,20 +561,6 @@ private fun IndividualAnimalCard(
                             onClick = { showTutorMenu = false }
                         )
                     }
-
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = "Digitar qualificação manual...",
-                                color = Color(0xFFD0BCFF),
-                                fontSize = 12.5.sp
-                            )
-                        },
-                        onClick = {
-                            showTutorMenu = false
-                            showManualQualDialog = true
-                        }
-                    )
                 }
             }
 
@@ -714,57 +699,6 @@ private fun IndividualAnimalCard(
                 }
             }
 
-            if (showManualQualDialog) {
-                var manualText by remember { mutableStateOf(item.tutorQualification) }
-                AlertDialog(
-                    onDismissRequest = { showManualQualDialog = false },
-                    title = {
-                        Text(
-                            text = "Qualificação do Responsável",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    text = {
-                        Column {
-                            Text(
-                                text = "Informe o nome e CPF do responsável por este exemplar:",
-                                color = Color(0xFFE2E8F0),
-                                fontSize = 13.sp
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            OutlinedTextField(
-                                value = manualText,
-                                onValueChange = { manualText = it },
-                                placeholder = { Text("Ex: João da Silva (CPF: 000.000.000-00)") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                onUpdateTutorQualification(manualText.trim())
-                                if (item.tagOrCpf.isBlank() && manualText.isNotBlank()) {
-                                    onUpdateTagOrCpf(manualText.trim())
-                                }
-                                showManualQualDialog = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF65558F))
-                        ) {
-                            Text("Confirmar")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showManualQualDialog = false }) {
-                            Text("Cancelar", color = Color(0xFFE2E8F0))
-                        }
-                    },
-                    containerColor = Color(0xFF282828)
-                )
-            }
         }
     }
 }

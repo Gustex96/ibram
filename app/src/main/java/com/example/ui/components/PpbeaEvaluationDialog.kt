@@ -473,7 +473,6 @@ private fun PpbeaSwitchCriterionCard(
  *     * Configura maus-tratos (baixo e muito baixo)
  *     * Não configura maus-tratos, mas precisa de recomendações e retorno (regular)
  *     * Não configura maus-tratos e não precisa de retorno (alto e muito alto)
- * - Gerou boletim de ocorrências? Sim / Não
  * - Observações
  */
 @Composable
@@ -685,8 +684,7 @@ fun DiagnosticoGeralView(
                             .clickable {
                                 onUpdateDiagnosis(
                                     diagnosis.copy(
-                                        ocorrenciaMausTratos = enq,
-                                        gerouBoletimOcorrencia = (enq == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS)
+                                        ocorrenciaMausTratos = enq
                                     )
                                 )
                             }
@@ -696,8 +694,7 @@ fun DiagnosticoGeralView(
                             onClick = {
                                 onUpdateDiagnosis(
                                     diagnosis.copy(
-                                        ocorrenciaMausTratos = enq,
-                                        gerouBoletimOcorrencia = (enq == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS)
+                                        ocorrenciaMausTratos = enq
                                     )
                                 )
                             },
@@ -721,66 +718,7 @@ fun DiagnosticoGeralView(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SEÇÃO 4: Gerou boletim de ocorrências? Sim / Não
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Gerou boletim de ocorrências?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            onUpdateDiagnosis(diagnosis.copy(gerouBoletimOcorrencia = true))
-                        }
-                    ) {
-                        RadioButton(
-                            selected = diagnosis.gerouBoletimOcorrencia,
-                            onClick = { onUpdateDiagnosis(diagnosis.copy(gerouBoletimOcorrencia = true)) },
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text("Sim", fontSize = 12.sp, fontWeight = if (diagnosis.gerouBoletimOcorrencia) FontWeight.Bold else FontWeight.Normal)
-                    }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            onUpdateDiagnosis(diagnosis.copy(gerouBoletimOcorrencia = false))
-                        }
-                    ) {
-                        RadioButton(
-                            selected = !diagnosis.gerouBoletimOcorrencia,
-                            onClick = { onUpdateDiagnosis(diagnosis.copy(gerouBoletimOcorrencia = false)) },
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text("Não", fontSize = 12.sp, fontWeight = if (!diagnosis.gerouBoletimOcorrencia) FontWeight.Bold else FontWeight.Normal)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // SEÇÃO 5: Observações:
+        // SEÇÃO: Observações:
         Text(
             text = "Observações:",
             fontWeight = FontWeight.Bold,
