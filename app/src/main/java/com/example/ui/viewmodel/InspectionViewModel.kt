@@ -551,10 +551,16 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun updateHorseCount(count: Int) {
         if (count >= 1) {
-            val clampedMistreated = draft.value.mistreatedHorseCount.coerceAtMost(count)
+            val autoMistreated = if (draft.value.individualEvaluations.isNotEmpty()) {
+                draft.value.mistreatedHorseCount.coerceAtMost(count)
+            } else if (draft.value.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                count
+            } else {
+                0
+            }
             draft.value = draft.value.copy(
                 horseCount = count,
-                mistreatedHorseCount = clampedMistreated
+                mistreatedHorseCount = autoMistreated
             )
         }
     }
@@ -624,10 +630,10 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
 
-        val updatedMistreatedCount = if (diagnosis.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS && draft.value.mistreatedHorseCount == 0) {
+        val updatedMistreatedCount = if (diagnosis.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
             draft.value.horseCount
         } else {
-            draft.value.mistreatedHorseCount
+            0
         }
 
         draft.value = draft.value.copy(
@@ -639,7 +645,10 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun clearPpbeaDiagnosis() {
-        draft.value = draft.value.copy(ppbeaDiagnosis = null)
+        draft.value = draft.value.copy(
+            ppbeaDiagnosis = null,
+            mistreatedHorseCount = if (draft.value.individualEvaluations.isNotEmpty()) draft.value.mistreatedHorseCount else 0
+        )
     }
 
     fun updateIndividualEvaluations(list: List<com.example.data.model.IndividualAnimalEvaluation>) {

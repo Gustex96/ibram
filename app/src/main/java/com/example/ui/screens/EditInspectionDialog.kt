@@ -1127,7 +1127,13 @@ fun EditInspectionDialog(
                                     onClick = {
                                         if (horseCount > 1) {
                                             horseCount -= 1
-                                            if (mistreatedHorseCount > horseCount) mistreatedHorseCount = horseCount
+                                            if (individualEvaluations.isNotEmpty()) {
+                                                mistreatedHorseCount = individualEvaluations.count { it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                                            } else if (ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                                                mistreatedHorseCount = horseCount
+                                            } else {
+                                                mistreatedHorseCount = 0
+                                            }
                                         }
                                     },
                                     modifier = Modifier
@@ -1163,7 +1169,16 @@ fun EditInspectionDialog(
                                 }
 
                                 IconButton(
-                                    onClick = { horseCount += 1 },
+                                    onClick = {
+                                        horseCount += 1
+                                        if (individualEvaluations.isNotEmpty()) {
+                                            mistreatedHorseCount = individualEvaluations.count { it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                                        } else if (ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                                            mistreatedHorseCount = horseCount
+                                        } else {
+                                            mistreatedHorseCount = 0
+                                        }
+                                    },
                                     modifier = Modifier
                                         .size(44.dp)
                                         .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
@@ -1194,7 +1209,13 @@ fun EditInspectionDialog(
                                         .clip(RoundedCornerShape(8.dp))
                                         .clickable {
                                             horseCount = count
-                                            if (mistreatedHorseCount > count) mistreatedHorseCount = count
+                                            if (individualEvaluations.isNotEmpty()) {
+                                                mistreatedHorseCount = individualEvaluations.count { it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                                            } else if (ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                                                mistreatedHorseCount = count
+                                            } else {
+                                                mistreatedHorseCount = 0
+                                            }
                                         }
                                         .border(
                                             width = if (isSelected) 2.dp else 1.dp,
@@ -1210,123 +1231,6 @@ fun EditInspectionDialog(
                                         fontSize = 12.sp,
                                         color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Sinais de Maus-Tratos Field
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 12.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = if (isDog) "Cães c/ Sinais de Maus-Tratos" else "Sinais de Maus-Tratos",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = if (mistreatedHorseCount > 0) Color(0xFFC62828) else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    if (mistreatedHorseCount > 0) {
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            color = Color(0xFFFFEBEE),
-                                            shape = RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text(
-                                                text = "ALERTA",
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFC62828),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                                Text(
-                                    text = if (isDog) "Caninos com ferimentos, sarna, caquexia ou correntes curtas" else "Animais com ferimentos, caquexia ou arreios lesivos",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            // Stepper controller for mistreated horses
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        if (mistreatedHorseCount > 0) {
-                                            mistreatedHorseCount -= 1
-                                        }
-                                    },
-                                    enabled = mistreatedHorseCount > 0,
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(
-                                            if (mistreatedHorseCount > 0) Color(0xFFFFCDD2) else MaterialTheme.colorScheme.surfaceVariant,
-                                            CircleShape
-                                        )
-                                        .testTag("decrease_mistreated_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Remove,
-                                        contentDescription = "Diminuir maus-tratos",
-                                        tint = if (mistreatedHorseCount > 0) Color(0xFFB71C1C) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = if (mistreatedHorseCount > 0) Color(0xFFC62828) else MaterialTheme.colorScheme.surfaceVariant,
-                                    modifier = Modifier
-                                        .width(54.dp)
-                                        .height(44.dp)
-                                        .testTag("mistreated_count_display")
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = mistreatedHorseCount.toString(),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 20.sp,
-                                            color = if (mistreatedHorseCount > 0) Color.White else MaterialTheme.colorScheme.onSurface,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        if (mistreatedHorseCount < horseCount) {
-                                            mistreatedHorseCount += 1
-                                        }
-                                    },
-                                    enabled = mistreatedHorseCount < horseCount,
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .background(
-                                            if (mistreatedHorseCount < horseCount) Color(0xFFFFCDD2) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                            CircleShape
-                                        )
-                                        .testTag("increase_mistreated_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Aumentar maus-tratos",
-                                        tint = if (mistreatedHorseCount < horseCount) Color(0xFFB71C1C) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -1745,6 +1649,7 @@ fun EditInspectionDialog(
                                                         answersMap.clear()
                                                         mistreatmentIndicators = emptyList()
                                                         adequateIndicators = emptyList()
+                                                        mistreatedHorseCount = 0
                                                     },
                                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                                                 ) {
@@ -2490,10 +2395,14 @@ fun EditInspectionDialog(
                 mistreatmentIndicators = newMistreatments
                 adequateIndicators = newAdequates
 
-                if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS && mistreatedHorseCount == 0) {
-                    mistreatedHorseCount = horseCount
-                } else if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS && newMistreatments.isEmpty()) {
-                    mistreatedHorseCount = 0
+                if (individualEvaluations.isNotEmpty()) {
+                    mistreatedHorseCount = individualEvaluations.count { it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                } else {
+                    mistreatedHorseCount = if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                        horseCount
+                    } else {
+                        0
+                    }
                 }
 
                 showPpbeaEvaluationDialog = false

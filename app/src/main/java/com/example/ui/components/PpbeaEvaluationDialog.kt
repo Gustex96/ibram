@@ -752,7 +752,7 @@ fun DiagnosticoGeralView(
                 onClick = onBackToSwitches,
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Revisar Switches Sim/Não", fontSize = 12.sp)
+                Text("Editar critérios", fontSize = 12.sp)
             }
 
             Button(
