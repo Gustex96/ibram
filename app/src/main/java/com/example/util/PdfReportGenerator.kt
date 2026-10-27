@@ -815,9 +815,30 @@ object PdfReportGenerator {
         pageManager.canvas.drawText("Apoio em Fiscalização / Bem-Estar Animal", col2X, pageManager.y + 11f, valuePaint)
         pageManager.y += 26f
 
-        // SECTION 2: 2. QUANTIFICAÇÃO E AVALIAÇÃO PPBEA
+        // SECTION 2: 2. IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
+        val tutors = inspection.allTutors
+        pageManager.ensureSpace(30f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "2. IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS (${tutors.size})", margin, pageManager.y, contentWidth)
+        if (tutors.isEmpty()) {
+            pageManager.ensureSpace(16f)
+            pageManager.canvas.drawText("Nenhum tutor ou responsável identificado no local da vistoria.", col1X, pageManager.y, valuePaint)
+            pageManager.y += 16f
+        } else {
+            for ((tIdx, tutor) in tutors.withIndex()) {
+                pageManager.ensureSpace(16f)
+                val tName = tutor.name.ifBlank { "Não informado" }
+                val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
+                val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
+                pageManager.canvas.drawText("TUTOR / RESPONSÁVEL #${tIdx + 1}: $tName", col1X, pageManager.y, valuePaint)
+                pageManager.canvas.drawText("$docLabel: $tCpf", col2X, pageManager.y, valuePaint)
+                pageManager.y += 14f
+            }
+        }
+        pageManager.y += 4f
+
+        // SECTION 3: 3. QUANTIFICAÇÃO E AVALIAÇÃO PPBEA
         pageManager.ensureSpace(28f)
-        pageManager.y = drawSectionHeader(pageManager.canvas, "2. QUANTIFICAÇÃO E AVALIAÇÃO PPBEA", margin, pageManager.y, contentWidth)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "3. QUANTIFICAÇÃO E AVALIAÇÃO PPBEA", margin, pageManager.y, contentWidth)
 
         pageManager.ensureSpace(26f)
         val quantLabel = if (inspection.individualEvaluations.isNotEmpty()) {
@@ -932,109 +953,14 @@ object PdfReportGenerator {
             pageManager.y += 14f
         }
 
-        // SECTION 3: 3. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO
-        pageManager.ensureSpace(30f)
-        pageManager.y = drawSectionHeader(pageManager.canvas, "3. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO", margin, pageManager.y, contentWidth)
-
-        val col3W = (contentWidth - 12f) / 3f
-        val c1 = margin + 4f
-        val c2 = margin + col3W + 6f
-        val c3 = margin + (col3W * 2f) + 8f
-
-        val boStatus = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) "SIM (REGISTRADO)" else "NÃO"
-        val boPaint = Paint().apply {
-            color = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) Color.rgb(198, 40, 40) else Color.rgb(46, 125, 50)
-            textSize = 8.5f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-        }
-
-        val seagriStatus = if (isDog) "N/A (NÃO APLICÁVEL)" else if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
-        val seagriPaint = if (inspection.requiresSeagriApprehension) {
-            Paint().apply { color = Color.rgb(230, 81, 0); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-        } else valuePaint
-
-        val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO"
-        val pmdfPaint = if (inspection.requiresPmdfSupport) {
-            Paint().apply { color = Color.rgb(21, 101, 192); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-        } else valuePaint
-
-        pageManager.ensureSpace(28f)
-        pageManager.canvas.drawText("BOLETIM DE OCORRÊNCIA (BO):", c1, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(boStatus, c1, pageManager.y + 11f, boPaint)
-
-        pageManager.canvas.drawText("APREENSÃO (SEAGRI-DF):", c2, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(seagriStatus, c2, pageManager.y + 11f, seagriPaint)
-
-        pageManager.canvas.drawText("APOIO POLICIAL (PMDF/BPMA):", c3, pageManager.y, labelPaint)
-        pageManager.canvas.drawText(pmdfStatus, c3, pageManager.y + 11f, pmdfPaint)
-        pageManager.y += 26f
-
-        if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) {
-            pageManager.ensureSpace(18f)
-            pageManager.canvas.drawText("OBSERVAÇÕES DA APREENSÃO:", col1X, pageManager.y, labelPaint)
-            pageManager.y += 10f
-            drawWrappedText(pageManager, inspection.seagriNotes, col1X, contentWidth - 16f, valuePaint, 11f)
-            pageManager.y += 4f
-        }
-        if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
-            pageManager.ensureSpace(18f)
-            pageManager.canvas.drawText("JUSTIFICATIVA APOIO PMDF / BPMA:", col1X, pageManager.y, labelPaint)
-            pageManager.y += 10f
-            drawWrappedText(pageManager, inspection.pmdfNotes, col1X, contentWidth - 16f, valuePaint, 11f)
-            pageManager.y += 4f
-        }
-        if (inspection.requiresOtherAgencySupport) {
-            val otherStatus = "SIM (SOLICITADO)"
-            val otherPaint = Paint().apply { color = Color.rgb(106, 27, 154); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
-            pageManager.ensureSpace(24f)
-            pageManager.canvas.drawText("REQUISIÇÃO DE OUTRO ÓRGÃO PÚBLICO:", col1X, pageManager.y, labelPaint)
-            pageManager.canvas.drawText(otherStatus, col1X, pageManager.y + 11f, otherPaint)
-
-            if (inspection.otherAgencyName.isNotBlank()) {
-                pageManager.canvas.drawText("ÓRGÃO REQUISITADO:", col2X, pageManager.y, labelPaint)
-                pageManager.canvas.drawText(inspection.otherAgencyName, col2X, pageManager.y + 11f, valuePaint)
-            }
-            pageManager.y += 24f
-
-            if (inspection.otherAgencyNotes.isNotBlank()) {
-                pageManager.ensureSpace(18f)
-                pageManager.canvas.drawText("PROVIDÊNCIAS REQUERIDAS / JUSTIFICATIVA:", col1X, pageManager.y, labelPaint)
-                pageManager.y += 10f
-                drawWrappedText(pageManager, inspection.otherAgencyNotes, col1X, contentWidth - 16f, valuePaint, 11f)
-                pageManager.y += 4f
-            }
-        }
-
-        // SECTION 4: 4. IDENTIFICAÇÃO DOS TUTORES
-        val tutors = inspection.allTutors
-        pageManager.ensureSpace(30f)
-        pageManager.y = drawSectionHeader(pageManager.canvas, "4. IDENTIFICAÇÃO DOS TUTORES (${tutors.size})", margin, pageManager.y, contentWidth)
-        if (tutors.isEmpty()) {
-            pageManager.ensureSpace(16f)
-            pageManager.canvas.drawText("Nenhum tutor ou responsável identificado no local da vistoria.", col1X, pageManager.y, valuePaint)
-            pageManager.y += 16f
-        } else {
-            for ((tIdx, tutor) in tutors.withIndex()) {
-                pageManager.ensureSpace(16f)
-                val tName = tutor.name.ifBlank { "Não informado" }
-                val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
-                val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
-                pageManager.canvas.drawText("TUTOR #${tIdx + 1}: $tName", col1X, pageManager.y, valuePaint)
-                pageManager.canvas.drawText("$docLabel: $tCpf", col2X, pageManager.y, valuePaint)
-                pageManager.y += 14f
-            }
-        }
-        pageManager.y += 4f
-
-        // SECTION 5: 5. DIAGNÓSTICO GERAL & PARECER TÉCNICO
+        // SECTION 4: 4. DIAGNÓSTICO GERAL & PARECER TÉCNICO
         pageManager.ensureSpace(34f)
-        val section5Title = if (inspection.individualEvaluations.isNotEmpty()) {
-            "5. DIAGNÓSTICO E PARECER TÉCNICO INDIVIDUALIZADO (${inspection.individualEvaluations.size} ANIMAIS)"
+        val section4Title = if (inspection.individualEvaluations.isNotEmpty()) {
+            "4. DIAGNÓSTICO E PARECER TÉCNICO INDIVIDUALIZADO (${inspection.individualEvaluations.size} ANIMAIS)"
         } else {
-            "5. DIAGNÓSTICO GERAL & PARECER TÉCNICO"
+            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO"
         }
-        pageManager.y = drawSectionHeader(pageManager.canvas, section5Title, margin, pageManager.y, contentWidth)
+        pageManager.y = drawSectionHeader(pageManager.canvas, section4Title, margin, pageManager.y, contentWidth)
 
         val relatorioGeral = cleanEccTerms(
             inspection.horseDescription.trim().ifBlank {
@@ -1195,6 +1121,80 @@ object PdfReportGenerator {
                 drawWrappedText(pageManager, extraNotes, col1X, contentWidth - 20f, valuePaint, 11f)
             }
             pageManager.y = diagBoxTop + totalBoxHeight + 10f
+        }
+
+        // SECTION 5: 5. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO
+        pageManager.ensureSpace(30f)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "5. PROVIDÊNCIAS OPERACIONAIS, BO E APOIO", margin, pageManager.y, contentWidth)
+
+        val col3W = (contentWidth - 12f) / 3f
+        val c1 = margin + 4f
+        val c2 = margin + col3W + 6f
+        val c3 = margin + (col3W * 2f) + 8f
+
+        val boStatus = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) "SIM (REGISTRADO)" else "NÃO"
+        val boPaint = Paint().apply {
+            color = if (inspection.ppbeaDiagnosis?.gerouBoletimOcorrencia == true) Color.rgb(198, 40, 40) else Color.rgb(46, 125, 50)
+            textSize = 8.5f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            isAntiAlias = true
+        }
+
+        val seagriStatus = if (isDog) "N/A (NÃO APLICÁVEL)" else if (inspection.requiresSeagriApprehension) "SIM (SOLICITADO)" else "NÃO"
+        val seagriPaint = if (inspection.requiresSeagriApprehension) {
+            Paint().apply { color = Color.rgb(230, 81, 0); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+        } else valuePaint
+
+        val pmdfStatus = if (inspection.requiresPmdfSupport) "SIM (SOLICITADO)" else "NÃO"
+        val pmdfPaint = if (inspection.requiresPmdfSupport) {
+            Paint().apply { color = Color.rgb(21, 101, 192); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+        } else valuePaint
+
+        pageManager.ensureSpace(28f)
+        pageManager.canvas.drawText("BOLETIM DE OCORRÊNCIA (BO):", c1, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(boStatus, c1, pageManager.y + 11f, boPaint)
+
+        pageManager.canvas.drawText("APREENSÃO (SEAGRI-DF):", c2, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(seagriStatus, c2, pageManager.y + 11f, seagriPaint)
+
+        pageManager.canvas.drawText("APOIO POLICIAL (PMDF/BPMA):", c3, pageManager.y, labelPaint)
+        pageManager.canvas.drawText(pmdfStatus, c3, pageManager.y + 11f, pmdfPaint)
+        pageManager.y += 26f
+
+        if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) {
+            pageManager.ensureSpace(18f)
+            pageManager.canvas.drawText("OBSERVAÇÕES DA APREENSÃO:", col1X, pageManager.y, labelPaint)
+            pageManager.y += 10f
+            drawWrappedText(pageManager, inspection.seagriNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+            pageManager.y += 4f
+        }
+        if (inspection.requiresPmdfSupport && inspection.pmdfNotes.isNotBlank()) {
+            pageManager.ensureSpace(18f)
+            pageManager.canvas.drawText("JUSTIFICATIVA APOIO PMDF / BPMA:", col1X, pageManager.y, labelPaint)
+            pageManager.y += 10f
+            drawWrappedText(pageManager, inspection.pmdfNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+            pageManager.y += 4f
+        }
+        if (inspection.requiresOtherAgencySupport) {
+            val otherStatus = "SIM (SOLICITADO)"
+            val otherPaint = Paint().apply { color = Color.rgb(106, 27, 154); textSize = 8.5f; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD); isAntiAlias = true }
+            pageManager.ensureSpace(24f)
+            pageManager.canvas.drawText("REQUISIÇÃO DE OUTRO ÓRGÃO PÚBLICO:", col1X, pageManager.y, labelPaint)
+            pageManager.canvas.drawText(otherStatus, col1X, pageManager.y + 11f, otherPaint)
+
+            if (inspection.otherAgencyName.isNotBlank()) {
+                pageManager.canvas.drawText("ÓRGÃO REQUISITADO:", col2X, pageManager.y, labelPaint)
+                pageManager.canvas.drawText(inspection.otherAgencyName, col2X, pageManager.y + 11f, valuePaint)
+            }
+            pageManager.y += 24f
+
+            if (inspection.otherAgencyNotes.isNotBlank()) {
+                pageManager.ensureSpace(18f)
+                pageManager.canvas.drawText("PROVIDÊNCIAS REQUERIDAS / JUSTIFICATIVA:", col1X, pageManager.y, labelPaint)
+                pageManager.y += 10f
+                drawWrappedText(pageManager, inspection.otherAgencyNotes, col1X, contentWidth - 16f, valuePaint, 11f)
+                pageManager.y += 4f
+            }
         }
 
         // SECTION 6: 6. REGISTRO FOTOGRÁFICO GEORREFERENCIADO
