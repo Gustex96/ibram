@@ -499,4 +499,40 @@ class ExampleRobolectricTest {
         assertEquals("BRINCO-001 / João da Silva", inspection.individualEvaluations[0].tagOrCpf)
         assertEquals("TAG-882 / Maria Pereira", inspection.individualEvaluations[1].tagOrCpf)
     }
+
+    @Test
+    fun testPdfReportTextWrapping() {
+        val paint = android.graphics.Paint().apply {
+            textSize = 12f
+        }
+        val maxWidth = 30f
+
+        // 1. Long continuous text with no spaces (e.g. URL or continuous string)
+        val unbrokenText = "https://www.google.com/maps?q=-15.641438,-47.646636_continuous_token_1234567890_abcdefghijklmnopqrstuvwxyz_0123456789_abcdefghijklmnopqrstuvwxyz"
+        val unbrokenLines = com.example.util.PdfReportGenerator.splitTextIntoLines(unbrokenText, maxWidth, paint)
+        assertTrue("Expected multiple lines, got: ${unbrokenLines.size}", unbrokenLines.size > 1)
+        for (line in unbrokenLines) {
+            assertTrue("Line '$line' must not exceed maxWidth ($maxWidth vs ${paint.measureText(line)})", paint.measureText(line) <= maxWidth)
+        }
+
+        // 2. Multi-word paragraph
+        val paragraph = "O animal foi encontrado em condições regulares necessitando de cuidados na nutrição e conforto segundo o protocolo PPBEA."
+        val paragraphLines = com.example.util.PdfReportGenerator.splitTextIntoLines(paragraph, maxWidth, paint)
+        assertTrue("Expected multiple lines for paragraph, got: ${paragraphLines.size}", paragraphLines.size > 1)
+        for (line in paragraphLines) {
+            assertTrue("Paragraph line '$line' must not exceed maxWidth ($maxWidth vs ${paint.measureText(line)})", paint.measureText(line) <= maxWidth)
+        }
+
+        // 3. Empty text
+        val emptyLines = com.example.util.PdfReportGenerator.splitTextIntoLines("", maxWidth, paint)
+        assertTrue(emptyLines.isEmpty())
+
+        // 4. Text with explicit newlines
+        val multiLineText = "Linha 1\nLinha 2 com texto longo o suficiente para quebrar com certeza em várias linhas\nLinha 3"
+        val resultLines = com.example.util.PdfReportGenerator.splitTextIntoLines(multiLineText, maxWidth, paint)
+        assertTrue(resultLines.size >= 3)
+        for (line in resultLines) {
+            assertTrue("Multi-line piece '$line' must not exceed maxWidth", paint.measureText(line) <= maxWidth)
+        }
+    }
 }
