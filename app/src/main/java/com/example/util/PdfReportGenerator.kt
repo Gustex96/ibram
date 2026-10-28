@@ -805,9 +805,9 @@ object PdfReportGenerator {
             val speciesList = inspection.individualEvaluations.map { it.species }.distinct()
             "Individualizada (${speciesList.joinToString(", ")})"
         } else if (inspection.isDog) {
-            "${inspection.speciesEmoji} Cachorro"
+            "Amostragem (${inspection.speciesEmoji} Cachorro)"
         } else {
-            "${inspection.speciesEmoji} Cavalo"
+            "Amostragem (${inspection.speciesEmoji} Cavalo)"
         }
         pageManager.canvas.drawText(speciesInfoText, col1X, pageManager.y + 11f, audValPaint)
 
@@ -844,9 +844,9 @@ object PdfReportGenerator {
         val quantLabel = if (inspection.individualEvaluations.isNotEmpty()) {
             "ANIMAIS PERICIADOS (INDIVIDUALIZADOS):"
         } else if (isDog) {
-            "QUANTIDADE TOTAL DE CÃES:"
+            "QUANTIDADE DE CÃES (AMOSTRAGEM GERAL):"
         } else {
-            "QUANTIDADE TOTAL DE ANIMAIS:"
+            "QUANTIDADE DE ANIMAIS (AMOSTRAGEM GERAL):"
         }
         pageManager.canvas.drawText(quantLabel, col1X, pageManager.y, labelPaint)
         val quantValue = if (inspection.individualEvaluations.isNotEmpty()) {
@@ -958,7 +958,7 @@ object PdfReportGenerator {
         val section4Title = if (inspection.individualEvaluations.isNotEmpty()) {
             "4. DIAGNÓSTICO E PARECER TÉCNICO INDIVIDUALIZADO (${inspection.individualEvaluations.size} ANIMAIS)"
         } else {
-            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO"
+            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO (AMOSTRAGEM)"
         }
         pageManager.y = drawSectionHeader(pageManager.canvas, section4Title, margin, pageManager.y, contentWidth)
 

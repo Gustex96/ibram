@@ -24,11 +24,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,6 +67,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -84,11 +87,146 @@ import com.example.data.model.PpbeaDomain
  * e tela do Diagnóstico Geral idêntica à imagem image.png.
  */
 @Composable
+fun SamplingCountCard(
+    count: Int,
+    onCountChange: (Int) -> Unit,
+    isDog: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = Color(0xFFF1F8F4),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("ppbea_sampling_count_bar"),
+        border = BorderStroke(1.2.dp, Color(0xFFA5D6A7)),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isDog) "Quantidade de cães periciados (geral):" else "Quantidade de cavalos periciados (geral):",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color(0xFF1B5E20)
+                    )
+                    Text(
+                        text = "Amostragem geral avaliada sob o Protocolo PPBEA",
+                        fontSize = 10.5.sp,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    IconButton(
+                        onClick = { if (count > 1) onCountChange(count - 1) },
+                        enabled = count > 1,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(if (count > 1) Color(0xFFC8E6C9) else Color(0xFFE0E0E0), CircleShape)
+                            .testTag("ppbea_decrease_sampling_count")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "Diminuir quantidade",
+                            tint = if (count > 1) Color(0xFF1B5E20) else Color.Gray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF1B5E20),
+                        modifier = Modifier
+                            .width(46.dp)
+                            .height(36.dp)
+                            .testTag("ppbea_sampling_count_display")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = count.toString(),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { onCountChange(count + 1) },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFFC8E6C9), CircleShape)
+                            .testTag("ppbea_increase_sampling_count")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Aumentar quantidade",
+                            tint = Color(0xFF1B5E20),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Presets rápidos (1, 2, 3, 5, 10+)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf(1, 2, 3, 5, 10).forEach { pCount ->
+                    val isSel = count == pCount
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onCountChange(pCount) }
+                            .border(
+                                width = if (isSel) 1.5.dp else 0.8.dp,
+                                color = if (isSel) Color(0xFF1B5E20) else Color(0xFFA5D6A7),
+                                shape = RoundedCornerShape(6.dp)
+                            ),
+                        color = if (isSel) Color(0xFF2E7D32) else Color.White
+                    ) {
+                        Text(
+                            text = if (pCount == 10) "10+" else "$pCount",
+                            textAlign = TextAlign.Center,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 11.sp,
+                            color = if (isSel) Color.White else Color(0xFF1B5E20),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun PpbeaEvaluationDialog(
     initialDiagnosis: PpbeaDiagnosis?,
+    initialAnimalCount: Int = 1,
+    isDog: Boolean = false,
+    isSamplingMode: Boolean = true,
     onDismiss: () -> Unit,
-    onSaveDiagnosis: (PpbeaDiagnosis) -> Unit
+    onSaveDiagnosis: (PpbeaDiagnosis, Int) -> Unit
 ) {
+    var samplingCount by remember(initialAnimalCount) { mutableIntStateOf(maxOf(1, initialAnimalCount)) }
+
     // Armazena as respostas dos switches: criterionId -> isYes (true = SIM, false = NÃO)
     val answersState = remember(initialDiagnosis) {
         mutableStateMapOf<String, Boolean>().apply {
@@ -125,10 +263,14 @@ fun PpbeaEvaluationDialog(
                 // TELA DO DIAGNÓSTICO GERAL (IDÊNTICA À IMAGE.PNG ANEXADA)
                 DiagnosticoGeralView(
                     diagnosis = currentDiagnosis,
+                    samplingCount = samplingCount,
+                    onSamplingCountChange = { samplingCount = it },
+                    isSamplingMode = isSamplingMode,
+                    isDog = isDog,
                     onUpdateDiagnosis = { currentDiagnosis = it },
                     onBackToSwitches = { showResultScreen = false },
                     onConfirmDiagnosis = {
-                        onSaveDiagnosis(currentDiagnosis)
+                        onSaveDiagnosis(currentDiagnosis, samplingCount)
                         onDismiss()
                     }
                 )
@@ -176,6 +318,14 @@ fun PpbeaEvaluationDialog(
                                         color = Color.White,
                                         letterSpacing = 0.5.sp
                                     )
+                                    if (isSamplingMode) {
+                                        Text(
+                                            text = "Amostragem Geral",
+                                            fontSize = 10.sp,
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
                                 }
                             }
 
@@ -193,6 +343,16 @@ fun PpbeaEvaluationDialog(
                                 )
                             }
                         }
+                    }
+
+                    // Seletor de Animais por Amostragem (se estiver em modo amostragem)
+                    if (isSamplingMode) {
+                        SamplingCountCard(
+                            count = samplingCount,
+                            onCountChange = { samplingCount = it },
+                            isDog = isDog,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
                     }
 
                     // Abas dos 4 Domínios do Manual
@@ -476,8 +636,38 @@ private fun PpbeaSwitchCriterionCard(
  * - Observações
  */
 @Composable
+fun PpbeaEvaluationDialog(
+    initialDiagnosis: PpbeaDiagnosis?,
+    onDismiss: () -> Unit,
+    onSaveDiagnosis: (PpbeaDiagnosis) -> Unit
+) {
+    PpbeaEvaluationDialog(
+        initialDiagnosis = initialDiagnosis,
+        initialAnimalCount = 1,
+        isDog = false,
+        isSamplingMode = false,
+        onDismiss = onDismiss,
+        onSaveDiagnosis = { diag, _ -> onSaveDiagnosis(diag) }
+    )
+}
+
+/**
+ * Visualização do DIAGNÓSTICO GERAL baseada exatamente na image.png anexada pelo usuário:
+ * - Inadequação de quais conjuntos de indicadores? (Nutricionais, De conforto, De Saúde, Comportamentais)
+ * - Grau de bem estar: (Muito alto, Alto, Regular, Baixo, Muito baixo)
+ * - Ocorrência de maus-tratos:
+ *     * Configura maus-tratos (baixo e muito baixo)
+ *     * Não configura maus-tratos, mas precisa de recomendações e retorno (regular)
+ *     * Não configura maus-tratos e não precisa de retorno (alto e muito alto)
+ * - Observações
+ */
+@Composable
 fun DiagnosticoGeralView(
     diagnosis: PpbeaDiagnosis,
+    samplingCount: Int = 1,
+    onSamplingCountChange: (Int) -> Unit = {},
+    isSamplingMode: Boolean = false,
+    isDog: Boolean = false,
     onUpdateDiagnosis: (PpbeaDiagnosis) -> Unit,
     onBackToSwitches: () -> Unit,
     onConfirmDiagnosis: () -> Unit,
@@ -503,12 +693,21 @@ fun DiagnosticoGeralView(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Diagnóstico Geral",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = Color.White
-                )
+                Column {
+                    Text(
+                        text = "Diagnóstico Geral",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Color.White
+                    )
+                    if (isSamplingMode) {
+                        Text(
+                            text = "Amostragem Geral ($samplingCount ${if (isDog) "cães" else "cavalos"})",
+                            fontSize = 10.5.sp,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                }
 
                 Surface(
                     color = Color(diagnosis.grauBemEstar.colorHex),
@@ -525,7 +724,17 @@ fun DiagnosticoGeralView(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Seletor de animais por amostragem dentro do Diagnóstico Geral
+        if (isSamplingMode) {
+            SamplingCountCard(
+                count = samplingCount,
+                onCountChange = onSamplingCountChange,
+                isDog = isDog,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+        }
 
         // SEÇÃO 1: Inadequação de quais conjuntos de indicadores?
         Card(

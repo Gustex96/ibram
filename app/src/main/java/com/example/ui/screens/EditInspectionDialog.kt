@@ -2311,6 +2311,7 @@ fun EditInspectionDialog(
             },
             onSelectSampling = {
                 showPpbeaSelectionModal = false
+                individualEvaluations = emptyList()
                 showPpbeaEvaluationDialog = true
             }
         )
@@ -2369,8 +2370,12 @@ fun EditInspectionDialog(
     if (showPpbeaEvaluationDialog) {
         PpbeaEvaluationDialog(
             initialDiagnosis = ppbeaDiagnosis,
+            initialAnimalCount = horseCount,
+            isDog = isDog,
+            isSamplingMode = true,
             onDismiss = { showPpbeaEvaluationDialog = false },
-            onSaveDiagnosis = { diagnosis ->
+            onSaveDiagnosis = { diagnosis, samplingCount ->
+                horseCount = samplingCount
                 ppbeaDiagnosis = diagnosis
                 answersMap = diagnosis.answersMap.toMutableMap()
 
@@ -2395,14 +2400,10 @@ fun EditInspectionDialog(
                 mistreatmentIndicators = newMistreatments
                 adequateIndicators = newAdequates
 
-                if (individualEvaluations.isNotEmpty()) {
-                    mistreatedHorseCount = individualEvaluations.count { it.ppbeaDiagnosis?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS }
+                if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+                    mistreatedHorseCount = samplingCount
                 } else {
-                    mistreatedHorseCount = if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
-                        horseCount
-                    } else {
-                        0
-                    }
+                    mistreatedHorseCount = 0
                 }
 
                 showPpbeaEvaluationDialog = false

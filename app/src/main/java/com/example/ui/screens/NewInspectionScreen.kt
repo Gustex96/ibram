@@ -2343,8 +2343,12 @@ fun NewInspectionScreen(
     if (showPpbeaEvaluationDialog) {
         com.example.ui.components.PpbeaEvaluationDialog(
             initialDiagnosis = draft.ppbeaDiagnosis,
+            initialAnimalCount = draft.horseCount,
+            isDog = draft.isDog,
+            isSamplingMode = true,
             onDismiss = { showPpbeaEvaluationDialog = false },
-            onSaveDiagnosis = { diagnosis ->
+            onSaveDiagnosis = { diagnosis, samplingCount ->
+                viewModel.updateHorseCount(samplingCount)
                 viewModel.setPpbeaDiagnosis(diagnosis)
                 showPpbeaEvaluationDialog = false
             }
@@ -2361,6 +2365,7 @@ fun NewInspectionScreen(
             },
             onSelectSampling = {
                 showPpbeaSelectionModal = false
+                viewModel.updateIndividualEvaluations(emptyList())
                 showPpbeaEvaluationDialog = true
             }
         )
