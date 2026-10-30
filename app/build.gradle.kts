@@ -27,7 +27,7 @@ android {
   defaultConfig {
     applicationId = "com.aistudio.levo.kpmv"
     minSdk = 24
-    targetSdk = 36
+    targetSdk = 35
     versionCode = appVersionCode
     versionName = appVersionName
 
