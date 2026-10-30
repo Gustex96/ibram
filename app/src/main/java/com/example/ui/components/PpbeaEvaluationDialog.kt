@@ -91,6 +91,7 @@ fun SamplingCountCard(
     count: Int,
     onCountChange: (Int) -> Unit,
     isDog: Boolean,
+    totalAnimalsOnSite: Int? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -113,13 +114,18 @@ fun SamplingCountCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isDog) "Quantidade de cães periciados (geral):" else "Quantidade de cavalos periciados (geral):",
+                        text = if (isDog) "Cães avaliados por amostragem:" else "Cavalos avaliados por amostragem:",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = Color(0xFF1B5E20)
                     )
+                    val subtitle = if (totalAnimalsOnSite != null && totalAnimalsOnSite > 0) {
+                        "Amostra periciada sob o PPBEA (Total no local: $totalAnimalsOnSite)"
+                    } else {
+                        "Amostra periciada sob o Protocolo PPBEA"
+                    }
                     Text(
-                        text = "Amostragem geral avaliada sob o Protocolo PPBEA",
+                        text = subtitle,
                         fontSize = 10.5.sp,
                         color = Color(0xFF2E7D32)
                     )
@@ -220,6 +226,7 @@ fun SamplingCountCard(
 fun PpbeaEvaluationDialog(
     initialDiagnosis: PpbeaDiagnosis?,
     initialAnimalCount: Int = 1,
+    totalAnimalsOnSite: Int? = null,
     isDog: Boolean = false,
     isSamplingMode: Boolean = true,
     onDismiss: () -> Unit,
@@ -264,6 +271,7 @@ fun PpbeaEvaluationDialog(
                 DiagnosticoGeralView(
                     diagnosis = currentDiagnosis,
                     samplingCount = samplingCount,
+                    totalAnimalsOnSite = totalAnimalsOnSite,
                     onSamplingCountChange = { samplingCount = it },
                     isSamplingMode = isSamplingMode,
                     isDog = isDog,
@@ -351,6 +359,7 @@ fun PpbeaEvaluationDialog(
                             count = samplingCount,
                             onCountChange = { samplingCount = it },
                             isDog = isDog,
+                            totalAnimalsOnSite = totalAnimalsOnSite,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
@@ -665,6 +674,7 @@ fun PpbeaEvaluationDialog(
 fun DiagnosticoGeralView(
     diagnosis: PpbeaDiagnosis,
     samplingCount: Int = 1,
+    totalAnimalsOnSite: Int? = null,
     onSamplingCountChange: (Int) -> Unit = {},
     isSamplingMode: Boolean = false,
     isDog: Boolean = false,
@@ -701,8 +711,9 @@ fun DiagnosticoGeralView(
                         color = Color.White
                     )
                     if (isSamplingMode) {
+                        val totalInfo = if (totalAnimalsOnSite != null && totalAnimalsOnSite > 0) " de $totalAnimalsOnSite no local" else ""
                         Text(
-                            text = "Amostragem Geral ($samplingCount ${if (isDog) "cães" else "cavalos"})",
+                            text = "Amostragem: $samplingCount avaliado(s)$totalInfo (${if (isDog) "cães" else "cavalos"})",
                             fontSize = 10.5.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -732,6 +743,7 @@ fun DiagnosticoGeralView(
                 count = samplingCount,
                 onCountChange = onSamplingCountChange,
                 isDog = isDog,
+                totalAnimalsOnSite = totalAnimalsOnSite,
                 modifier = Modifier.padding(bottom = 10.dp)
             )
         }

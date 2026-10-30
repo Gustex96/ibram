@@ -26,6 +26,8 @@ data class HorseInspection(
     // Descrição do cavalo (pelagem, porte, ferimentos, características físicas)
     val horseDescription: String = "",
     val horseCount: Int = 1,
+    // Quantidade de animais avaliados pelo protocolo PPBEA (quando por amostragem geral)
+    val sampledAnimalCount: Int = 0,
     // Quantidade de cavalos que apresentam possíveis sinais de maus-tratos
     val mistreatedHorseCount: Int = 0,
     // Indicadores técnicos de maus-tratos (Resolução CFMV 1.236/2018 e CRMV-MS) separados por ;;
@@ -75,6 +77,14 @@ data class HorseInspection(
             return if (map.isNotEmpty()) {
                 PpbeaCriteriaRepository.evaluate(map)
             } else null
+        }
+
+    val effectiveSampledCount: Int
+        get() = when {
+            sampledAnimalCount > 0 -> sampledAnimalCount
+            individualEvaluations.isNotEmpty() -> individualEvaluations.size
+            ppbeaDiagnosis != null -> if (horseCount > 0) horseCount else 1
+            else -> 0
         }
 
     val isDog: Boolean

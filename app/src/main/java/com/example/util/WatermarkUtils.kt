@@ -60,7 +60,7 @@ object WatermarkUtils {
         }
         val uniqueSuffix = java.util.UUID.randomUUID().toString().take(6)
         val tagSuffix = if (!photoTag.isNullOrBlank()) "_TAG_${photoTag.trim().take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")}" else ""
-        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
+        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpeg")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -106,7 +106,7 @@ object WatermarkUtils {
         }
         val uniqueSuffix = java.util.UUID.randomUUID().toString().take(6)
         val tagSuffix = if (!photoTag.isNullOrBlank()) "_TAG_${photoTag.trim().take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")}" else ""
-        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpg")
+        val outputFile = File(photosDir, "FOTO_${protocol}_Foto${exemplarIndex}${tagSuffix}_${System.currentTimeMillis()}_$uniqueSuffix.jpeg")
 
         return try {
             FileOutputStream(outputFile).use { out ->
@@ -207,24 +207,24 @@ object WatermarkUtils {
         val scaleFactor = (baseDimension / 1000f).coerceIn(1f, 3.5f)
 
         val bannerPadding = 16f * scaleFactor
-        val titleTextSize = (if (isLandscape) 19f else 22f) * scaleFactor
         val bodyTextSize = (if (isLandscape) 16f else 18f) * scaleFactor
-        val smallTextSize = (if (isLandscape) 13f else 14f) * scaleFactor
-        val lineHeight = bodyTextSize * 1.35f
+        val lineHeight = bodyTextSize * 1.4f
 
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
         val dateString = sdf.format(Date(captureTimeMillis))
-        val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f° (GPS)", latitude, longitude)
-        val raString = "RA: $administrativeRegion"
+        val coordsString = String.format(Locale.US, "LAT: %.6f° | LON: %.6f°", latitude, longitude)
 
-        val tagLine = if (!photoTag.isNullOrBlank()) {
-            "🏷️ TAG: ${photoTag.trim().take(20)}"
-        } else {
-            "🐴 REGISTRO FOTOGRÁFICO: Foto #$exemplarIndex"
-        }
+        // 1. A tag digitada pelo fiscal
+        val tagLine = "TAG: " + if (!photoTag.isNullOrBlank()) photoTag.trim().take(30) else "Não informada"
+        // 2. Coordenadas geográficas
+        val coordsLine = "COORDENADAS: $coordsString"
+        // 3. Data e hora
+        val dateLine = "DATA/HORA: $dateString"
+        // 4. Região administrativa
+        val raLine = "REGIÃO ADMINISTRATIVA: $administrativeRegion"
 
         val bgPaint = Paint().apply {
-            color = Color.argb(215, 15, 23, 42) // Slate 900 translucent
+            color = Color.argb(215, 15, 23, 42) // Slate 900 translúcido
             style = Paint.Style.FILL
         }
 
@@ -234,120 +234,77 @@ object WatermarkUtils {
             style = Paint.Style.FILL
         }
 
-        val titlePaint = Paint().apply {
-            color = Color.rgb(254, 240, 138) // Light gold
-            textSize = titleTextSize
+        val tagPaint = Paint().apply {
+            color = Color.rgb(56, 189, 248) // Sky 400
+            textSize = bodyTextSize * 1.05f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
-            setShadowLayer(4f, 1f, 1f, Color.BLACK)
+            setShadowLayer(3f, 1f, 1f, Color.BLACK)
         }
 
-        val protoText = "REF: $protocol"
-        val protoPaint = Paint().apply {
-            color = Color.rgb(148, 163, 184) // Slate 400
-            textSize = smallTextSize * 0.9f
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
-            isAntiAlias = true
-        }
-
-        val bodyPaint = Paint().apply {
+        val coordsPaint = Paint().apply {
             color = Color.WHITE
             textSize = bodyTextSize
+            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            isAntiAlias = true
+            setShadowLayer(3f, 1f, 1f, Color.BLACK)
+        }
+
+        val datePaint = Paint().apply {
+            color = Color.rgb(254, 240, 138) // Light gold
+            textSize = bodyTextSize
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             isAntiAlias = true
             setShadowLayer(3f, 1f, 1f, Color.BLACK)
         }
 
-        val highlightPaint = Paint().apply {
-            color = Color.rgb(56, 189, 248) // Sky 400
-            textSize = bodyTextSize
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            isAntiAlias = true
-            setShadowLayer(3f, 1f, 1f, Color.BLACK)
-        }
-
-        val subPaint = Paint().apply {
+        val raPaint = Paint().apply {
             color = Color.rgb(203, 213, 225) // Slate 300
             textSize = bodyTextSize
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
             setShadowLayer(3f, 1f, 1f, Color.BLACK)
         }
 
         if (isLandscape) {
-            // MODO PAISAGEM: Banner horizontal compacto com 2 colunas para manter proporção perfeita
-            val bannerHeight = (2 * lineHeight) + titleTextSize + (bannerPadding * 2.2f)
+            // MODO PAISAGEM: Banner horizontal compacto com 2 colunas contendo exclusivamente as 4 informações
+            val bannerHeight = (2 * lineHeight) + (bannerPadding * 2f)
             val bannerTop = height - bannerHeight
 
-            // Fundo escuro translúcido
             canvas.drawRect(0f, bannerTop, width.toFloat(), height.toFloat(), bgPaint)
-            // Faixa dourada no topo do banner
             canvas.drawRect(0f, bannerTop, width.toFloat(), bannerTop + (3.5f * scaleFactor), stripePaint)
 
-            val titleY = bannerTop + bannerPadding + titleTextSize
-            canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, titleY, titlePaint)
-
-            val rightMargin = (bannerPadding * 2f).coerceAtLeast(32f * scaleFactor)
-            val protoWidth = protoPaint.measureText(protoText)
-            val protoX = width - rightMargin - protoWidth
-            canvas.drawText(protoText, protoX.coerceAtLeast(width * 0.65f), titleY, protoPaint)
-
-            val col2X = (width * 0.50f).coerceAtLeast(bannerPadding + 420f * scaleFactor)
-            val row1Y = titleY + lineHeight + (4f * scaleFactor)
+            val col2X = (width * 0.50f).coerceAtLeast(bannerPadding + 400f * scaleFactor)
+            val row1Y = bannerTop + bannerPadding + bodyTextSize
             val row2Y = row1Y + lineHeight
 
-            // Coluna 1: Tag/Identificação + Coordenadas GPS
-            canvas.drawText(tagLine, bannerPadding, row1Y, highlightPaint)
-            canvas.drawText("📍 COORDENADAS: $coordsString", bannerPadding, row2Y, bodyPaint)
+            // Coluna 1: 1. Tag digitada pelo fiscal | 2. Coordenadas geográficas
+            canvas.drawText(tagLine, bannerPadding, row1Y, tagPaint)
+            canvas.drawText(coordsLine, bannerPadding, row2Y, coordsPaint)
 
-            // Coluna 2: Data/Hora + Região Administrativa
-            canvas.drawText("📅 DATA/HORA: $dateString", col2X, row1Y, subPaint)
-            canvas.drawText("🏛 REGIÃO: $raString", col2X, row2Y, subPaint)
+            // Coluna 2: 3. Data e hora | 4. Região administrativa
+            canvas.drawText(dateLine, col2X, row1Y, datePaint)
+            canvas.drawText(raLine, col2X, row2Y, raPaint)
         } else {
-            // MODO RETRATO: Formato empilhado tradicional vertical
-            val lines = listOf(
-                tagLine,
-                "📍 COORDENADAS: $coordsString",
-                "📅 DATA/HORA: $dateString",
-                "🏛 REGIÃO: $raString"
-            )
-
-            val bannerHeight = (lines.size * lineHeight) + titleTextSize + (bannerPadding * 2.4f)
+            // MODO RETRATO: Formato empilhado contendo exclusivamente as 4 informações
+            val bannerHeight = (4 * lineHeight) + (bannerPadding * 2f)
             val bannerTop = height - bannerHeight
 
             canvas.drawRect(0f, bannerTop, width.toFloat(), height.toFloat(), bgPaint)
             canvas.drawRect(0f, bannerTop, width.toFloat(), bannerTop + (4f * scaleFactor), stripePaint)
 
-            var currentY = bannerTop + bannerPadding + titleTextSize
-            canvas.drawText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO", bannerPadding, currentY, titlePaint)
-
-            val titleWidth = titlePaint.measureText("★ LEVANTAMENTO DE CAMPO | APOIO À FISCALIZAÇÃO")
-            val rightMargin = (bannerPadding * 2.2f).coerceAtLeast(32f * scaleFactor)
-            val maxProtoWidth = (width - rightMargin - bannerPadding - titleWidth - (16f * scaleFactor)).coerceAtLeast(width * 0.35f)
-            while (protoPaint.measureText(protoText) > maxProtoWidth && protoPaint.textSize > 6.5f * scaleFactor) {
-                protoPaint.textSize -= 0.5f
-            }
-            val protoWidth = protoPaint.measureText(protoText)
-            val protoX = width - rightMargin - protoWidth
-            if (protoX > bannerPadding + titleWidth + (12f * scaleFactor)) {
-                canvas.drawText(protoText, protoX, currentY, protoPaint)
-            } else {
-                val safeX = (width - rightMargin - protoWidth).coerceAtLeast(bannerPadding)
-                canvas.drawText(protoText, safeX, currentY - (titleTextSize * 0.3f), protoPaint)
-            }
-
-            currentY += lineHeight * 0.4f
-            for (i in lines.indices) {
-                currentY += lineHeight
-                val text = lines[i]
-                if (i == 0) {
-                    canvas.drawText(text, bannerPadding, currentY, highlightPaint)
-                } else if (i == lines.size - 1) {
-                    canvas.drawText(text, bannerPadding, currentY, subPaint)
-                } else {
-                    canvas.drawText(text, bannerPadding, currentY, bodyPaint)
-                }
-            }
+            var currentY = bannerTop + bannerPadding + bodyTextSize
+            // 1. Tag digitada pelo fiscal
+            canvas.drawText(tagLine, bannerPadding, currentY, tagPaint)
+            currentY += lineHeight
+            // 2. Coordenadas geográficas
+            canvas.drawText(coordsLine, bannerPadding, currentY, coordsPaint)
+            currentY += lineHeight
+            // 3. Data e hora
+            canvas.drawText(dateLine, bannerPadding, currentY, datePaint)
+            currentY += lineHeight
+            // 4. Região administrativa
+            canvas.drawText(raLine, bannerPadding, currentY, raPaint)
         }
 
         return result
@@ -479,5 +436,15 @@ object WatermarkUtils {
         } catch (_: Exception) {
             bitmap
         }
+    }
+
+    /**
+     * Extrai a TAG inserida pelo fiscal a partir do nome do arquivo salvo da foto georreferenciada.
+     */
+    fun extractTagFromPhotoPath(path: String): String? {
+        if (path.isBlank()) return null
+        val filename = File(path).name
+        val match = Regex("_TAG_([^_]+)_").find(filename)
+        return match?.groupValues?.get(1)?.trim()?.takeIf { it.isNotBlank() }
     }
 }

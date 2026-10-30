@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -197,7 +198,8 @@ fun EditInspectionDialog(
         auditorName: String,
         ppbeaAnswersData: String,
         photoPaths: List<String>,
-        individualEvaluationsData: String
+        individualEvaluationsData: String,
+        sampledAnimalCount: Int
     ) -> Unit
 ) {
     var auditorName by remember { mutableStateOf(inspection.auditorName) }
@@ -208,6 +210,7 @@ fun EditInspectionDialog(
     var numero by remember { mutableStateOf(inspection.numero) }
     var horseDescription by remember { mutableStateOf(inspection.horseDescription) }
     var horseCount by remember { mutableIntStateOf(inspection.horseCount) }
+    var sampledAnimalCount by remember { mutableIntStateOf(inspection.sampledAnimalCount) }
     var mistreatedHorseCount by remember { mutableIntStateOf(inspection.mistreatedHorseCount) }
     var mistreatmentIndicators by remember { mutableStateOf(inspection.mistreatmentList) }
     var adequateIndicators by remember { mutableStateOf(inspection.adequateList) }
@@ -225,6 +228,17 @@ fun EditInspectionDialog(
 
     // Gestão Dinâmica de Fotos (Anexar e Retirar Fotos durante Edição)
     var photoPaths by remember { mutableStateOf(inspection.allPhotoPaths) }
+    var capturedPhotoTags by remember {
+        mutableStateOf(
+            inspection.allPhotoPaths.mapNotNull { com.example.util.WatermarkUtils.extractTagFromPhotoPath(it) }.distinct()
+        )
+    }
+    val availablePhotoTags = remember(capturedPhotoTags, photoPaths) {
+        (capturedPhotoTags + photoPaths.mapNotNull { com.example.util.WatermarkUtils.extractTagFromPhotoPath(it) })
+            .distinct()
+            .filter { it.isNotBlank() }
+            .sorted()
+    }
     var selectedPhotoIndex by remember { mutableIntStateOf(0) }
     var previewPhotoPath by remember { mutableStateOf<String?>(null) }
     var isProcessingPhoto by remember { mutableStateOf(false) }
@@ -441,7 +455,7 @@ fun EditInspectionDialog(
                                     requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
                                     otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
                                     prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
-                                    photoPaths, indivToSave
+                                    photoPaths, indivToSave, sampledAnimalCount
                                 )
                             },
                             modifier = Modifier
@@ -917,10 +931,10 @@ fun EditInspectionDialog(
                     }
                 }
 
-                // 2. SECTION: ENDEREÇO DA AÇÃO FISCAL & LOCALIZAÇÃO
+                // 2. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
                 SectionHeader(
-                    title = "2. Endereço da Ação Fiscal & Localização (DF)",
-                    description = "Informe o endereço completo (RA, Quadra, Conjunto e Número) e confirme as coordenadas de GPS."
+                    title = "2. Identificação dos Tutores & CPFs",
+                    description = "Cadastre um ou múltiplos tutores e CPFs dos responsáveis identificados na ação fiscal."
                 )
 
                 Card(
@@ -928,153 +942,165 @@ fun EditInspectionDialog(
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "Endereço da Ocorrência",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        tutorsList.forEachIndexed { index, tutor ->
+                            val isDocValid = CpfValidator.isValid(tutor.cpf)
+                            val isDocFilled = tutor.cpf.isNotBlank()
+                            val isCnpj = CpfValidator.isCnpj(tutor.cpf)
+                            val docType = CpfValidator.getDocumentType(tutor.cpf)
 
-                        // Região Administrativa (RA)
-                        Text(
-                            text = "Região Administrativa (RA) *",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showRaSelector = true }
-                                .testTag("ra_selector"),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocationOn,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (index == 0) "Tutor 1 (Principal)" else "Tutor ${index + 1}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+
+                                        if (tutorsList.size > 1) {
+                                            IconButton(
+                                                onClick = {
+                                                    tutorsList = tutorsList.filterIndexed { i, _ -> i != index }
+                                                },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Remover tutor",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    AppOutlinedTextField(
+                                        value = tutor.name,
+                                        onValueChange = { newName ->
+                                            tutorsList = tutorsList.mapIndexed { i, t ->
+                                                if (i == index) t.copy(name = newName) else t
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("tutor_name_field_$index"),
+                                        label = { Text("Nome do Tutor / Empresa ${index + 1}") },
+                                        placeholder = { Text("Ex: João da Silva ou Agropecuária Ltda") },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = ra.ifBlank { "Selecione a Região Administrativa" },
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 15.sp
-                                    )
-                                }
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "Alterar RA",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AppOutlinedTextField(
+                                            value = tutor.cpf,
+                                            onValueChange = { newCpf ->
+                                                tutorsList = tutorsList.mapIndexed { i, t ->
+                                                    if (i == index) t.copy(cpf = newCpf) else t
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .testTag("tutor_cpf_field_$index"),
+                                            label = { Text("CPF / CNPJ do Tutor ${index + 1}") },
+                                            placeholder = { Text("000.000.000-00 ou CNPJ") },
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp),
+                                            trailingIcon = {
+                                                if (isDocFilled) {
+                                                    if (isDocValid) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = "$docType Válido",
+                                                            tint = Color(0xFF2E7D32)
+                                                        )
+                                                    } else {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Warning,
+                                                            contentDescription = "Documento Incompleto",
+                                                            tint = Color(0xFFE65100)
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                            supportingText = {
+                                                if (isDocFilled && !isDocValid) {
+                                                    Text(
+                                                        text = if (isCnpj) "CNPJ com 14 dígitos." else "CPF (11 dígitos) ou CNPJ (14 dígitos).",
+                                                        color = Color(0xFFE65100),
+                                                        fontSize = 11.sp
+                                                    )
+                                                }
+                                            }
+                                        )
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        FilledTonalButton(
+                                            onClick = {
+                                                CnpjConsultationHelper.abrirConsultaReceitaFederal(context, tutor.cpf)
+                                            },
+                                            modifier = Modifier
+                                                .height(56.dp)
+                                                .testTag("consultar_cnpj_button_$index"),
+                                            shape = RoundedCornerShape(10.dp),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Search,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "Consultar\nCNPJ",
+                                                    fontSize = 10.sp,
+                                                    lineHeight = 11.sp,
+                                                    textAlign = TextAlign.Center,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Quadra
-                        AppOutlinedTextField(
-                            value = quadra,
-                            onValueChange = { quadra = it },
+                        OutlinedButton(
+                            onClick = { tutorsList = tutorsList + TutorEntry("", "") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag("address_quadra_field"),
-                            label = { Text("Quadra (Q.)") },
-                            placeholder = { Text("Ex: Quadra 04, QNM 18, SQS 308, Chácara 12...") },
-                            singleLine = true,
+                                .testTag("add_tutor_button"),
                             shape = RoundedCornerShape(10.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Conjunto e Número (lado a lado)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            AppOutlinedTextField(
-                                value = conjunto,
-                                onValueChange = { conjunto = it },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("address_conjunto_field"),
-                                label = { Text("Conjunto (Conj.)") },
-                                placeholder = { Text("Ex: Conj. A, B...") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-
-                            AppOutlinedTextField(
-                                value = numero,
-                                onValueChange = { numero = it },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("address_numero_field"),
-                                label = { Text("Número / Lote (Nº)") },
-                                placeholder = { Text("Ex: Lote 05, Casa 02, S/N...") },
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // GPS Coordinates Box
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Coordenadas GPS Registradas:",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                val coordsFormatted = String.format(
-                                    java.util.Locale.US,
-                                    "Lat: %.6f° | Lon: %.6f° (SIRGAS 2000 / WGS 84)",
-                                    inspection.latitude,
-                                    inspection.longitude
-                                )
-                                Text(
-                                    text = coordsFormatted,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("+ Adicionar Outro Tutor")
                         }
                     }
                 }
@@ -1587,6 +1613,30 @@ fun EditInspectionDialog(
                                                 color = Color(diag.ocorrenciaMausTratos.colorHex)
                                             )
 
+                                            if (individualEvaluations.isEmpty()) {
+                                                val sampleSize = if (sampledAnimalCount > 0) sampledAnimalCount else 1
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Surface(
+                                                    color = Color(0xFF1B5E20).copy(alpha = 0.08f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+                                                        Text(
+                                                            text = "Metodologia: Amostragem Geral",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF1B5E20)
+                                                        )
+                                                        Text(
+                                                            text = "• Total no local: $horseCount | Amostra periciada: $sampleSize | Sinais de maus-tratos apurados: $mistreatedHorseCount",
+                                                            fontSize = 10.5.sp,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = "Pareceres: Nutrição [${diag.nutricionalParecer.label}] • Conforto [${diag.confortoParecer.label}] • Saúde [${diag.saudeParecer.label}] • Comportamento [${diag.comportamentalParecer.label}]",
@@ -1721,9 +1771,169 @@ fun EditInspectionDialog(
                     }
                 }
 
-                // 4. SECTION: PROVIDÊNCIAS OPERACIONAIS
+                // 4. SECTION: ENDEREÇO DA AÇÃO FISCAL & LOCALIZAÇÃO
                 SectionHeader(
-                    title = if (isDog) "4. Apoio Policial & Providências Interinstitucionais" else "4. Apreensão, Apoio Policial e Outros Órgãos",
+                    title = "4. Endereço da Ação Fiscal & Localização (DF)",
+                    description = "Informe o endereço completo (RA, Quadra, Conjunto e Número) e confirme as coordenadas de GPS."
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Endereço da Ocorrência",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 1. Região Administrativa (RA)
+                        Text(
+                            text = "Região Administrativa (RA) *",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showRaSelector = true }
+                                .testTag("ra_selector"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = ra.ifBlank { "Selecione a Região Administrativa" },
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Alterar RA",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // 2. Quadra
+                        AppOutlinedTextField(
+                            value = quadra,
+                            onValueChange = { quadra = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("address_quadra_field"),
+                            label = { Text("Quadra (Q.)") },
+                            placeholder = { Text("Ex: Quadra 04, QNM 18, SQS 308, Chácara 12...") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // 3. Conjunto e Número
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AppOutlinedTextField(
+                                value = conjunto,
+                                onValueChange = { conjunto = it },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("address_conjunto_field"),
+                                label = { Text("Conjunto (Conj.)") },
+                                placeholder = { Text("Ex: Conj. A, B...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+
+                            AppOutlinedTextField(
+                                value = numero,
+                                onValueChange = { numero = it },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("address_numero_field"),
+                                label = { Text("Número / Lote (Nº)") },
+                                placeholder = { Text("Ex: Lote 05, Casa 02, S/N...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // GPS Coordinates Box
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.GpsFixed,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Coordenadas Geográficas (GPS)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = if (inspection.latitude != 0.0 || inspection.longitude != 0.0)
+                                        String.format(java.util.Locale.US, "%.5f, %.5f", inspection.latitude, inspection.longitude)
+                                    else
+                                        "Não capturadas",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 5. SECTION: PROVIDÊNCIAS OPERACIONAIS
+                SectionHeader(
+                    title = if (isDog) "5. Apoio Policial & Providências Interinstitucionais" else "5. Apreensão, Apoio Policial e Outros Órgãos",
                     description = if (isDog) "Defina se a ação fiscal precisará de apoio policial (BPMA / PMDF / DEMA) ou requisição de outro órgão para apoio e apreensão." else "Defina se a ação fiscal necessita de apreensão pela SEAGRI, apoio da Polícia Militar ou requisição de outro órgão público para apoio aos auditores."
                 )
 
@@ -2086,9 +2296,9 @@ fun EditInspectionDialog(
                     }
                 }
 
-                // 5. SECTION: OBSERVAÇÕES COMPLEMENTARES DE CAMPO
+                // 6. SECTION: OBSERVAÇÕES COMPLEMENTARES DE CAMPO
                 SectionHeader(
-                    title = "5. Observações Complementares de Campo (Opcional)",
+                    title = "6. Observações Complementares de Campo (Opcional)",
                     description = "Fatos adicionais ou notas de campo que complementem o Parecer Geral (opcional)."
                 )
 
@@ -2123,180 +2333,6 @@ fun EditInspectionDialog(
                     }
                 }
 
-                // 6. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
-                SectionHeader(
-                    title = "6. Identificação dos Tutores & CPFs",
-                    description = "Cadastre um ou múltiplos tutores e CPFs dos responsáveis identificados na ação fiscal."
-                )
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        tutorsList.forEachIndexed { index, tutor ->
-                            val isDocValid = CpfValidator.isValid(tutor.cpf)
-                            val isDocFilled = tutor.cpf.isNotBlank()
-                            val isCnpj = CpfValidator.isCnpj(tutor.cpf)
-                            val docType = CpfValidator.getDocumentType(tutor.cpf)
-
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = if (index == 0) "Tutor 1 (Principal)" else "Tutor ${index + 1}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-
-                                        if (tutorsList.size > 1) {
-                                            IconButton(
-                                                onClick = {
-                                                    tutorsList = tutorsList.filterIndexed { i, _ -> i != index }
-                                                },
-                                                modifier = Modifier.size(28.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Delete,
-                                                    contentDescription = "Remover tutor",
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    AppOutlinedTextField(
-                                        value = tutor.name,
-                                        onValueChange = { newName ->
-                                            tutorsList = tutorsList.mapIndexed { i, t ->
-                                                if (i == index) t.copy(name = newName) else t
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("tutor_name_field_$index"),
-                                        label = { Text("Nome do Tutor / Empresa ${index + 1}") },
-                                        placeholder = { Text("Ex: João da Silva ou Agropecuária Ltda") },
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        AppOutlinedTextField(
-                                            value = tutor.cpf,
-                                            onValueChange = { newCpf ->
-                                                tutorsList = tutorsList.mapIndexed { i, t ->
-                                                    if (i == index) t.copy(cpf = newCpf) else t
-                                                }
-                                            },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .testTag("tutor_cpf_field_$index"),
-                                            label = { Text("CPF / CNPJ do Tutor ${index + 1}") },
-                                            placeholder = { Text("000.000.000-00 ou CNPJ") },
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp),
-                                            trailingIcon = {
-                                                if (isDocFilled) {
-                                                    if (isDocValid) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Check,
-                                                            contentDescription = "$docType Válido",
-                                                            tint = Color(0xFF2E7D32)
-                                                        )
-                                                    } else {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Warning,
-                                                            contentDescription = "Documento Incompleto",
-                                                            tint = Color(0xFFE65100)
-                                                        )
-                                                    }
-                                                }
-                                            },
-                                            supportingText = {
-                                                if (isDocFilled && !isDocValid) {
-                                                    Text(
-                                                        text = if (isCnpj) "CNPJ com 14 dígitos." else "CPF (11 dígitos) ou CNPJ (14 dígitos).",
-                                                        color = Color(0xFFE65100),
-                                                        fontSize = 11.sp
-                                                    )
-                                                }
-                                            }
-                                        )
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        FilledTonalButton(
-                                            onClick = {
-                                                CnpjConsultationHelper.abrirConsultaReceitaFederal(context, tutor.cpf)
-                                            },
-                                            modifier = Modifier
-                                                .height(56.dp)
-                                                .testTag("consultar_cnpj_button_$index"),
-                                            shape = RoundedCornerShape(10.dp),
-                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                                        ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Search,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(2.dp))
-                                                Text(
-                                                    text = "Consultar\nCNPJ",
-                                                    fontSize = 10.sp,
-                                                    lineHeight = 11.sp,
-                                                    textAlign = TextAlign.Center,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        OutlinedButton(
-                            onClick = { tutorsList = tutorsList + TutorEntry("", "") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("add_tutor_button"),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("+ Adicionar Outro Tutor")
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -2322,6 +2358,7 @@ fun EditInspectionDialog(
             initialEvaluations = individualEvaluations,
             defaultSpecies = inspection.species,
             availableTutors = tutorsList,
+            availablePhotoTags = availablePhotoTags,
             onSaveAndClose = { updatedList: List<IndividualAnimalEvaluation> ->
                 individualEvaluations = updatedList
                 if (updatedList.isNotEmpty()) {
@@ -2370,12 +2407,13 @@ fun EditInspectionDialog(
     if (showPpbeaEvaluationDialog) {
         PpbeaEvaluationDialog(
             initialDiagnosis = ppbeaDiagnosis,
-            initialAnimalCount = horseCount,
+            initialAnimalCount = if (sampledAnimalCount > 0) sampledAnimalCount else 1,
+            totalAnimalsOnSite = horseCount,
             isDog = isDog,
             isSamplingMode = true,
             onDismiss = { showPpbeaEvaluationDialog = false },
-            onSaveDiagnosis = { diagnosis, samplingCount ->
-                horseCount = samplingCount
+            onSaveDiagnosis = { diagnosis, newSamplingCount ->
+                sampledAnimalCount = newSamplingCount
                 ppbeaDiagnosis = diagnosis
                 answersMap = diagnosis.answersMap.toMutableMap()
 
@@ -2401,7 +2439,7 @@ fun EditInspectionDialog(
                 adequateIndicators = newAdequates
 
                 if (diagnosis.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
-                    mistreatedHorseCount = samplingCount
+                    mistreatedHorseCount = newSamplingCount
                 } else {
                     mistreatedHorseCount = 0
                 }
@@ -2467,6 +2505,13 @@ fun EditInspectionDialog(
             protocolNumber = inspection.protocolNumber,
             capturedPhotosCount = photoPaths.size,
             onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag, orientationDegrees ->
+                showLiveCamera = false
+                if (!photoTag.isNullOrBlank()) {
+                    val trimmed = photoTag.trim()
+                    if (!capturedPhotoTags.contains(trimmed)) {
+                        capturedPhotoTags = capturedPhotoTags + trimmed
+                    }
+                }
                 isProcessingPhoto = true
                 coroutineScope.launch(Dispatchers.IO) {
                     val watermarked = WatermarkUtils.applyWatermarkAndSave(
@@ -2495,6 +2540,7 @@ fun EditInspectionDialog(
             },
             onPickFromGallery = {
                 galleryLauncher.launch("image/*")
+                showLiveCamera = false
             },
             onClose = {
                 showLiveCamera = false

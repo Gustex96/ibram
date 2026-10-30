@@ -535,4 +535,51 @@ class ExampleRobolectricTest {
             assertTrue("Multi-line piece '$line' must not exceed maxWidth", paint.measureText(line) <= maxWidth)
         }
     }
+
+    @Test
+    fun testDecoupledSamplingCountAndEffectiveCount() {
+        val inspection = HorseInspection(
+            protocolNumber = "DF-EQU-DECOUPLED-001",
+            photoPath = "/mock/path/photo.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Planaltina (RA II)",
+            horseCount = 25, // 25 animais no local
+            sampledAnimalCount = 6, // 6 animais avaliados na amostragem PPBEA
+            mistreatedHorseCount = 6 // 6 animais com maus-tratos apurados na amostra
+        )
+
+        assertEquals(25, inspection.horseCount)
+        assertEquals(6, inspection.sampledAnimalCount)
+        assertEquals(6, inspection.effectiveSampledCount)
+        assertEquals(6, inspection.mistreatedHorseCount)
+
+        // Caso com legado de avaliação geral onde sampledAnimalCount = 0
+        val legacyInspection = HorseInspection(
+            protocolNumber = "DF-EQU-DECOUPLED-002",
+            photoPath = "/mock/path/photo.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Guará (RA X)",
+            horseCount = 8,
+            sampledAnimalCount = 0,
+            ppbeaAnswersData = "1.1:true"
+        )
+        assertEquals(8, legacyInspection.horseCount)
+        assertEquals(0, legacyInspection.sampledAnimalCount)
+        assertEquals(8, legacyInspection.effectiveSampledCount)
+
+        // Caso sem diagnóstico PPBEA
+        val noDiagInspection = HorseInspection(
+            protocolNumber = "DF-EQU-DECOUPLED-003",
+            photoPath = "/mock/path/photo.jpg",
+            latitude = -15.7942,
+            longitude = -47.8822,
+            administrativeRegion = "Guará (RA X)",
+            horseCount = 12,
+            sampledAnimalCount = 0
+        )
+        assertEquals(12, noDiagInspection.horseCount)
+        assertEquals(0, noDiagInspection.effectiveSampledCount)
+    }
 }

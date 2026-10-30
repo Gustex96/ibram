@@ -102,15 +102,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-private data class PendingPhotoCapture(
-    val uri: Uri,
-    val exactLat: Double,
-    val exactLng: Double,
-    val exactTime: Long,
-    val exactRa: String,
-    val orientationDegrees: Int
-)
-
 /**
  * Câmera Técnica de Campo para Fiscalização Ambiental e Bem-Estar Animal.
  * - Orientação das fotos e da marca d'água sincronizada com a rotação do aparelho (Paisagem / Retrato).
@@ -203,7 +194,6 @@ fun CameraCaptureScreen(
 
     var isCapturing by remember { mutableStateOf(false) }
     var flashAnimation by remember { mutableStateOf(false) }
-    var pendingPhotoCapture by remember { mutableStateOf<PendingPhotoCapture?>(null) }
     var photoTagInput by remember { mutableStateOf("") }
 
     // Stream contínuo de coordenadas dinâmicas e relógio
@@ -248,13 +238,14 @@ fun CameraCaptureScreen(
             val exactTime = currentTimestampMillis
             val exactRa = currentDynamicRa
             val captureOrientation = currentDeviceOrientation
+            val finalTag = photoTagInput.trim().ifEmpty { null }
 
             val capture = imageCapture
             if (capture != null) {
                 val photosDir = File(context.cacheDir, "camera_raw").apply {
                     if (!exists()) mkdirs()
                 }
-                val photoFile = File(photosDir, "CAM_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpg")
+                val photoFile = File(photosDir, "CAM_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpeg")
                 val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
                 capture.takePicture(
@@ -265,27 +256,48 @@ fun CameraCaptureScreen(
                             flashAnimation = false
                             isCapturing = false
                             val uri = Uri.fromFile(photoFile)
-                            pendingPhotoCapture = PendingPhotoCapture(uri, exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                            photoTagInput = ""
+                            onPhotoCaptured(
+                                uri,
+                                exactLat,
+                                exactLng,
+                                exactTime,
+                                exactRa,
+                                finalTag,
+                                captureOrientation
+                            )
                         }
 
                         override fun onError(exception: ImageCaptureException) {
                             val isPhotoLandscape = (captureOrientation == 90 || captureOrientation == 270 || isScreenLandscape)
-                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape)
+                            val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape, finalTag)
                             flashAnimation = false
                             isCapturing = false
-                            pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                            photoTagInput = ""
+                            onPhotoCaptured(
+                                Uri.fromFile(fallbackFile),
+                                exactLat,
+                                exactLng,
+                                exactTime,
+                                exactRa,
+                                finalTag,
+                                captureOrientation
+                            )
                         }
                     }
                 )
             } else {
                 val isPhotoLandscape = (captureOrientation == 90 || captureOrientation == 270 || isScreenLandscape)
-                val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape)
+                val fallbackFile = createFallbackFieldPhoto(context, exactLat, exactLng, exactRa, protocolNumber, exactTime, photoNumber, isPhotoLandscape, finalTag)
                 flashAnimation = false
                 isCapturing = false
-                pendingPhotoCapture = PendingPhotoCapture(Uri.fromFile(fallbackFile), exactLat, exactLng, exactTime, exactRa, captureOrientation)
-                photoTagInput = ""
+                onPhotoCaptured(
+                    Uri.fromFile(fallbackFile),
+                    exactLat,
+                    exactLng,
+                    exactTime,
+                    exactRa,
+                    finalTag,
+                    captureOrientation
+                )
             }
         }
     }
@@ -762,133 +774,48 @@ fun CameraCaptureScreen(
                 }
             }
         }
-    }
 
-    // Diálogo opcional para inserção de Tag na foto (máximo 20 caracteres)
-    pendingPhotoCapture?.let { pending ->
-        AlertDialog(
-            onDismissRequest = {
-                onPhotoCaptured(
-                    pending.uri,
-                    pending.exactLat,
-                    pending.exactLng,
-                    pending.exactTime,
-                    pending.exactRa,
-                    null,
-                    pending.orientationDegrees
-                )
-                Toast.makeText(context, "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
-                pendingPhotoCapture = null
-                photoTagInput = ""
-            },
+        // =========================================================================
+        // 5. CAMPO DE IDENTIFICAÇÃO / TAG DA FOTO
+        // O fiscal digita a etiqueta antes de fotografar; ao bater a foto, retorna direto!
+        // =========================================================================
+        Surface(
             shape = RoundedCornerShape(20.dp),
-            icon = {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(54.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Sell,
-                            contentDescription = "Tag",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            },
-            title = {
-                Text(
-                    text = "Deseja colocar uma tag na foto?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+            color = Color.Black.copy(alpha = 0.70f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+            modifier = Modifier
+                .align(if (isScreenLandscape) Alignment.BottomStart else Alignment.BottomCenter)
+                .padding(
+                    start = if (isScreenLandscape) 20.dp else 16.dp,
+                    end = if (isScreenLandscape) 140.dp else 16.dp,
+                    bottom = if (isScreenLandscape) 16.dp else 168.dp
                 )
-            },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "Identifique o animal ou detalhe da foto para registro (limite de 20 caracteres):",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    AppOutlinedTextField(
-                        value = photoTagInput,
-                        onValueChange = { photoTagInput = it.take(20) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("photo_tag_input_field"),
-                        label = { Text("Tag da Foto") },
-                        placeholder = { Text("Ex: Baio, Potro, Pata dir.") },
-                        singleLine = true,
-                        maxLength = 20,
-                        supportingText = {
-                            Text(
-                                text = "${photoTagInput.length}/20 caracteres",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.End,
-                                fontSize = 11.sp
-                            )
-                        }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val finalTag = photoTagInput.trim().ifEmpty { null }
-                        onPhotoCaptured(
-                            pending.uri,
-                            pending.exactLat,
-                            pending.exactLng,
-                            pending.exactTime,
-                            pending.exactRa,
-                            finalTag,
-                            pending.orientationDegrees
-                        )
-                        Toast.makeText(
-                            context,
-                            if (finalTag != null) "Foto com tag salva no relatório e na Galeria!" else "Foto salva no relatório e na Galeria!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        pendingPhotoCapture = null
-                        photoTagInput = ""
-                    },
-                    modifier = Modifier.testTag("confirm_photo_tag_button"),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Salvar Tag", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        onPhotoCaptured(
-                            pending.uri,
-                            pending.exactLat,
-                            pending.exactLng,
-                            pending.exactTime,
-                            pending.exactRa,
-                            null,
-                            pending.orientationDegrees
-                        )
-                        Toast.makeText(context, "Foto salva no relatório e na Galeria!", Toast.LENGTH_SHORT).show()
-                        pendingPhotoCapture = null
-                        photoTagInput = ""
-                    },
-                    modifier = Modifier.testTag("skip_photo_tag_button"),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text("Sem Tag")
-                }
+                .widthIn(max = 380.dp)
+                .graphicsLayer { rotationZ = uiRotationDegrees }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sell,
+                    contentDescription = "Tag",
+                    tint = Color(0xFF38BDF8),
+                    modifier = Modifier.size(18.dp)
+                )
+                AppOutlinedTextField(
+                    value = photoTagInput,
+                    onValueChange = { photoTagInput = it.take(30) },
+                    placeholder = { Text("Tag da foto (ex: Baio, Ferimento)", fontSize = 12.sp, color = Color.LightGray) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("photo_tag_input_field"),
+                    singleLine = true,
+                    maxLength = 30
+                )
             }
-        )
+        }
     }
 }
 
@@ -900,7 +827,8 @@ private fun createFallbackFieldPhoto(
     protocolNumber: String,
     timestamp: Long = System.currentTimeMillis(),
     photoNumber: Int = 1,
-    isLandscape: Boolean = false
+    isLandscape: Boolean = false,
+    photoTag: String? = null
 ): File {
     val width = if (isLandscape) 1200 else 900
     val height = if (isLandscape) 900 else 1200
@@ -914,30 +842,43 @@ private fun createFallbackFieldPhoto(
 
     val textPaint = Paint().apply {
         color = AndroidColor.rgb(240, 240, 240)
-        textSize = if (isLandscape) 30f else 34f
+        textSize = if (isLandscape) 26f else 30f
         typeface = Typeface.DEFAULT_BOLD
         isAntiAlias = true
     }
-    canvas.drawText("LEVANTAMENTO DE CAMPO • APOIO À FISCALIZAÇÃO", 60f, if (isLandscape) 160f else 200f, textPaint)
-
-    textPaint.textSize = if (isLandscape) 24f else 28f
-    textPaint.typeface = Typeface.DEFAULT
-    textPaint.color = AndroidColor.rgb(254, 240, 138)
-    canvas.drawText("Levantamento: $protocolNumber", 60f, if (isLandscape) 210f else 260f, textPaint)
-    canvas.drawText("Registro Fotográfico nº $photoNumber", 60f, if (isLandscape) 260f else 310f, textPaint)
-    canvas.drawText("Região Administrativa: $administrativeRegion", 60f, if (isLandscape) 310f else 360f, textPaint)
-
-    textPaint.color = AndroidColor.rgb(134, 239, 172)
-    canvas.drawText(String.format(Locale.US, "GPS Dinâmico: %.6f°, %.6f°", latitude, longitude), 60f, if (isLandscape) 360f else 410f, textPaint)
     val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
-    canvas.drawText("Data/Hora: ${sdf.format(Date(timestamp))}", 60f, if (isLandscape) 410f else 460f, textPaint)
+
+    // Somente as 4 informações solicitadas:
+    // 1. Tag digitada pelo fiscal
+    val tagText = "TAG: " + if (!photoTag.isNullOrBlank()) photoTag.trim() else "Não informada"
+    // 2. Coordenadas geográficas
+    val coordsText = String.format(Locale.US, "COORDENADAS: LAT %.6f° | LON %.6f°", latitude, longitude)
+    // 3. Data e hora
+    val dateText = "DATA/HORA: ${sdf.format(Date(timestamp))}"
+    // 4. Região administrativa
+    val raText = "REGIÃO ADMINISTRATIVA: $administrativeRegion"
+
+    val startY = if (isLandscape) 200f else 260f
+    val stepY = if (isLandscape) 60f else 70f
+
+    textPaint.color = AndroidColor.rgb(56, 189, 248)
+    canvas.drawText(tagText, 60f, startY, textPaint)
+
+    textPaint.color = AndroidColor.WHITE
+    canvas.drawText(coordsText, 60f, startY + stepY, textPaint)
+
+    textPaint.color = AndroidColor.rgb(254, 240, 138)
+    canvas.drawText(dateText, 60f, startY + (stepY * 2), textPaint)
+
+    textPaint.color = AndroidColor.rgb(203, 213, 225)
+    canvas.drawText(raText, 60f, startY + (stepY * 3), textPaint)
 
     val photosDir = File(context.cacheDir, "camera_raw").apply {
         if (!exists()) mkdirs()
     }
-    val fallbackFile = File(photosDir, "FIELD_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpg")
+    val fallbackFile = File(photosDir, "FIELD_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(6)}.jpeg")
     FileOutputStream(fallbackFile).use { out ->
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
     }
     return fallbackFile
 }

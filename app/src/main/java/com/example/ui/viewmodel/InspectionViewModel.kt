@@ -53,6 +53,7 @@ data class InspectionDraftState(
     val auditorName: String = "",
     val horseDescription: String = "",
     val horseCount: Int = 1,
+    val sampledAnimalCount: Int = 0,
     val mistreatedHorseCount: Int = 0,
     val mistreatmentIndicators: List<String> = emptyList(),
     val adequateIndicators: List<String> = emptyList(),
@@ -72,6 +73,7 @@ data class InspectionDraftState(
     val protocolNumber: String = generateProtocol(),
     val ppbeaDiagnosis: com.example.data.model.PpbeaDiagnosis? = null,
     val individualEvaluations: List<com.example.data.model.IndividualAnimalEvaluation> = emptyList(),
+    val photoTags: List<String> = emptyList(),
 ) {
     val isDog: Boolean
         get() = DfConstants.isDogSpecies(species)
@@ -426,11 +428,16 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     if (!updatedUris.contains(uri)) {
                         updatedUris.add(uri)
                     }
+                    val updatedPhotoTags = if (!photoTag.isNullOrBlank()) {
+                        val trimmed = photoTag.trim()
+                        if (!draft.value.photoTags.contains(trimmed)) draft.value.photoTags + trimmed else draft.value.photoTags
+                    } else draft.value.photoTags
                     draft.value = draft.value.copy(
                         photoUri = updatedUris.firstOrNull(),
                         photoUris = updatedUris,
                         watermarkedPhotoPath = updatedList.firstOrNull(),
                         watermarkedPhotoPaths = updatedList,
+                        photoTags = updatedPhotoTags,
                         isWatermarking = false
                     )
                 } else {
@@ -438,6 +445,17 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
         }
+    }
+
+    /**
+     * Retorna a lista de todas as TAGs inseridas nas fotos georreferenciadas (GET).
+     */
+    fun getGeoreferencedPhotoTags(): List<String> {
+        val tags = draft.value.photoTags.toMutableSet()
+        draft.value.allPhotoPaths.forEach { path ->
+            WatermarkUtils.extractTagFromPhotoPath(path)?.let { tags.add(it) }
+        }
+        return tags.filter { it.isNotBlank() }.sorted()
     }
 
     fun addDraftPhotoUris(uris: List<Uri>) {
@@ -551,15 +569,21 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun updateHorseCount(count: Int) {
         if (count >= 1) {
-            val autoMistreated = if (draft.value.individualEvaluations.isNotEmpty()) {
-                draft.value.mistreatedHorseCount.coerceAtMost(count)
-            } else if (draft.value.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
+            draft.value = draft.value.copy(
+                horseCount = count
+            )
+        }
+    }
+
+    fun updateSampledAnimalCount(count: Int) {
+        if (count >= 1) {
+            val autoMistreated = if (draft.value.ppbeaDiagnosis?.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
                 count
             } else {
                 0
             }
             draft.value = draft.value.copy(
-                horseCount = count,
+                sampledAnimalCount = count,
                 mistreatedHorseCount = autoMistreated
             )
         }
@@ -610,7 +634,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         draft.value = draft.value.copy(adequateIndicators = emptyList())
     }
 
-    fun setPpbeaDiagnosis(diagnosis: com.example.data.model.PpbeaDiagnosis) {
+    fun setPpbeaDiagnosis(diagnosis: com.example.data.model.PpbeaDiagnosis, samplingCount: Int? = null) {
         val newMistreatments = draft.value.mistreatmentIndicators.toMutableList()
         val newAdequates = draft.value.adequateIndicators.toMutableList()
 
@@ -630,14 +654,16 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
 
+        val effectiveSampleCount = samplingCount ?: (if (draft.value.sampledAnimalCount > 0) draft.value.sampledAnimalCount else 1)
         val updatedMistreatedCount = if (diagnosis.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
-            draft.value.horseCount
+            effectiveSampleCount
         } else {
             0
         }
 
         draft.value = draft.value.copy(
             ppbeaDiagnosis = diagnosis,
+            sampledAnimalCount = effectiveSampleCount,
             mistreatmentIndicators = newMistreatments,
             adequateIndicators = newAdequates,
             mistreatedHorseCount = updatedMistreatedCount
@@ -865,6 +891,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     auditorName = savedAuditor,
                     horseDescription = current.horseDescription,
                     horseCount = current.horseCount,
+                    sampledAnimalCount = current.sampledAnimalCount,
                     mistreatedHorseCount = current.mistreatedHorseCount,
                     mistreatmentIndicators = current.mistreatmentIndicators.joinToString(";;"),
                     adequateIndicators = current.adequateIndicators.joinToString(";;"),
@@ -967,6 +994,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         auditorName = savedAuditor,
                         horseDescription = current.horseDescription,
                         horseCount = current.horseCount,
+                        sampledAnimalCount = current.sampledAnimalCount,
                         mistreatedHorseCount = current.mistreatedHorseCount,
                         mistreatmentIndicators = current.mistreatmentIndicators.joinToString(";;"),
                         adequateIndicators = current.adequateIndicators.joinToString(";;"),
@@ -1012,6 +1040,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newAuditorName: String = original.auditorName,
         newHorseDescription: String = original.horseDescription,
         newHorseCount: Int,
+        newSampledAnimalCount: Int = original.sampledAnimalCount,
         newMistreatedHorseCount: Int = original.mistreatedHorseCount,
         newMistreatmentIndicators: String = original.mistreatmentIndicators,
         newAdequateIndicators: String = original.adequateIndicators,
@@ -1037,7 +1066,8 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             val riskInfo = riskLevels.find { it.level == newRiskLevel }
             val justification = riskInfo?.summary ?: "Risco nível $newRiskLevel"
             val safetyAssessment = newSafetyRiskAssessment.ifBlank { justification }
-            val clampedMistreated = newMistreatedHorseCount.coerceIn(0, newHorseCount)
+            val maxCap = if (newSampledAnimalCount > 0) newSampledAnimalCount else newHorseCount
+            val clampedMistreated = newMistreatedHorseCount.coerceIn(0, maxCap)
             val indicatorsToSave = if (clampedMistreated == 0) "" else newMistreatmentIndicators
 
             val finalPhotos = if (newPhotoPaths.isNotEmpty()) newPhotoPaths else listOf(original.photoPath)
@@ -1056,6 +1086,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 auditorName = newAuditorName,
                 horseDescription = newHorseDescription,
                 horseCount = newHorseCount,
+                sampledAnimalCount = newSampledAnimalCount,
                 mistreatedHorseCount = clampedMistreated,
                 mistreatmentIndicators = indicatorsToSave,
                 adequateIndicators = newAdequateIndicators,

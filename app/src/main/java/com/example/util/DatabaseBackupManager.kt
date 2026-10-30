@@ -293,6 +293,7 @@ object DatabaseBackupManager {
                 auditorName = obj.optString("auditorName", ""),
                 horseDescription = obj.optString("horseDescription", ""),
                 horseCount = obj.optInt("horseCount", 1),
+                sampledAnimalCount = obj.optInt("sampledAnimalCount", 0),
                 mistreatedHorseCount = obj.optInt("mistreatedHorseCount", 0),
                 mistreatmentIndicators = obj.optString("mistreatmentIndicators", ""),
                 adequateIndicators = obj.optString("adequateIndicators", ""),

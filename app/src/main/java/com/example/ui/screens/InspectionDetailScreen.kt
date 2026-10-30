@@ -558,6 +558,29 @@ fun InspectionDetailScreen(
                                 )
                             }
                         }
+
+                        if (inspection.individualEvaluations.isEmpty()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF1B5E20).copy(alpha = 0.08f)
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                    Text(
+                                        text = "Metodologia: Amostragem Geral",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                    Text(
+                                        text = "Total no local: ${inspection.horseCount} | Amostra periciada: ${inspection.effectiveSampledCount} | Maus-tratos apurados: ${inspection.mistreatedHorseCount}",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1059,7 +1082,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -1070,6 +1093,7 @@ fun InspectionDetailScreen(
                     newAuditorName = auditorName,
                     newHorseDescription = horseDescription,
                     newHorseCount = horseCount,
+                    newSampledAnimalCount = newSampledCount,
                     newMistreatedHorseCount = mistreatedHorseCount,
                     newMistreatmentIndicators = mistreatmentIndicators,
                     newAdequateIndicators = adequateIndicators,

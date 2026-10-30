@@ -899,7 +899,7 @@ fun HistoryScreen(
         EditInspectionDialog(
             inspection = inspectionToEdit!!,
             onDismiss = { inspectionToEdit = null },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
                 viewModel.updateInspection(
                     original = inspectionToEdit!!,
                     newNotes = notes,
@@ -909,6 +909,7 @@ fun HistoryScreen(
                     newNumero = numero,
                     newHorseDescription = horseDescription,
                     newHorseCount = horseCount,
+                    newSampledAnimalCount = newSampledCount,
                     newMistreatedHorseCount = mistreatedHorseCount,
                     newMistreatmentIndicators = mistreatmentIndicators,
                     newAdequateIndicators = adequateIndicators,

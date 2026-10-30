@@ -909,17 +909,48 @@ object PdfReportGenerator {
         pageManager.ensureSpace(28f)
         pageManager.y = drawSectionHeader(pageManager.canvas, "3. QUANTIFICAÇÃO E AVALIAÇÃO PPBEA", margin, pageManager.y, contentWidth)
 
-        val quantLabel = if (inspection.individualEvaluations.isNotEmpty()) {
-            "ANIMAIS PERICIADOS (INDIVIDUALIZADOS):"
-        } else if (isDog) {
-            "QUANTIDADE DE CÃES (AMOSTRAGEM GERAL):"
+        // Linha 1: Total de Animais no Local & Metodologia
+        val totalOnSiteLabel = if (isDog) "TOTAL DE CÃES NO LOCAL:" else "TOTAL DE ANIMAIS NO LOCAL:"
+        val totalOnSiteValue = formatAnimalCount(inspection.horseCount, isDog)
+
+        val methodLabel = "METODOLOGIA DE AVALIAÇÃO PPBEA:"
+        val methodValue = if (inspection.individualEvaluations.isNotEmpty()) {
+            "Avaliação Individualizada (${inspection.individualEvaluations.size} animais)"
         } else {
-            "QUANTIDADE DE ANIMAIS (AMOSTRAGEM GERAL):"
+            "Amostragem Geral"
         }
-        val quantValue = if (inspection.individualEvaluations.isNotEmpty()) {
+
+        val tLines = splitTextIntoLines(totalOnSiteValue, maxSec1Col1W, valuePaint)
+        val mLines = splitTextIntoLines(methodValue, maxSec1Col2W, valuePaint)
+        val row1Lines = maxOf(tLines.size, mLines.size)
+        val row1H = maxOf(24f, (row1Lines * 11.5f) + 12f)
+        pageManager.ensureSpace(row1H)
+
+        pageManager.canvas.drawText(totalOnSiteLabel, col1X, pageManager.y, labelPaint)
+        var tY = pageManager.y + 11f
+        for (tl in tLines) {
+            pageManager.canvas.drawText(tl, col1X, tY, valuePaint)
+            tY += 11.5f
+        }
+
+        pageManager.canvas.drawText(methodLabel, col2X, pageManager.y, labelPaint)
+        var mY = pageManager.y + 11f
+        for (ml in mLines) {
+            pageManager.canvas.drawText(ml, col2X, mY, valuePaint)
+            mY += 11.5f
+        }
+        pageManager.y += row1H
+
+        // Linha 2: Animais Avaliados no Protocolo & Sinais de Maus-Tratos no Grupo Avaliado
+        val evaluatedLabel = if (inspection.individualEvaluations.isNotEmpty()) {
+            "ANIMAIS AVALIADOS NO PROTOCOLO (INDIVIDUAL):"
+        } else {
+            "ANIMAIS AVALIADOS NO PROTOCOLO (AMOSTRAGEM):"
+        }
+        val evaluatedValue = if (inspection.individualEvaluations.isNotEmpty()) {
             "${inspection.individualEvaluations.size} exemplar(es) periciado(s)"
         } else {
-            formatAnimalCount(inspection.horseCount, isDog)
+            "${inspection.effectiveSampledCount} exemplar(es) avaliado(s) sob amostragem"
         }
 
         val countText = if (inspection.mistreatedHorseCount > 0) {
@@ -934,26 +965,26 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        val qLines = splitTextIntoLines(quantValue, maxSec1Col1W, valuePaint)
+        val eLines = splitTextIntoLines(evaluatedValue, maxSec1Col1W, valuePaint)
         val sLines = splitTextIntoLines(countText, maxSec1Col2W, countValPaint)
-        val sec3Lines = maxOf(qLines.size, sLines.size)
-        val sec3H = maxOf(26f, (sec3Lines * 11.5f) + 14f)
-        pageManager.ensureSpace(sec3H)
+        val row2Lines = maxOf(eLines.size, sLines.size)
+        val row2H = maxOf(24f, (row2Lines * 11.5f) + 12f)
+        pageManager.ensureSpace(row2H)
 
-        pageManager.canvas.drawText(quantLabel, col1X, pageManager.y, labelPaint)
-        var qY = pageManager.y + 11f
-        for (ql in qLines) {
-            pageManager.canvas.drawText(ql, col1X, qY, valuePaint)
-            qY += 11.5f
+        pageManager.canvas.drawText(evaluatedLabel, col1X, pageManager.y, labelPaint)
+        var eY = pageManager.y + 11f
+        for (el in eLines) {
+            pageManager.canvas.drawText(el, col1X, eY, valuePaint)
+            eY += 11.5f
         }
 
-        pageManager.canvas.drawText("SINAIS DE MAUS-TRATOS:", col2X, pageManager.y, labelPaint)
+        pageManager.canvas.drawText("SINAIS DE MAUS-TRATOS (NO GRUPO EXAMINADO):", col2X, pageManager.y, labelPaint)
         var sY = pageManager.y + 11f
         for (sl in sLines) {
             pageManager.canvas.drawText(sl, col2X, sY, countValPaint)
             sY += 11.5f
         }
-        pageManager.y += sec3H
+        pageManager.y += row2H
 
         // Linha/Tabela Resumo dos 4 Domínios (Nutrição, Conforto, Saúde, Comportamento)
         val domains = listOf(
@@ -1042,7 +1073,7 @@ object PdfReportGenerator {
         val section4Title = if (inspection.individualEvaluations.isNotEmpty()) {
             "4. DIAGNÓSTICO E PARECER TÉCNICO INDIVIDUALIZADO (${inspection.individualEvaluations.size} ANIMAIS)"
         } else {
-            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO (AMOSTRAGEM)"
+            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO (AMOSTRAGEM - ${inspection.effectiveSampledCount} DE ${inspection.horseCount} ANIMAIS)"
         }
         pageManager.y = drawSectionHeader(pageManager.canvas, section4Title, margin, pageManager.y, contentWidth)
 
