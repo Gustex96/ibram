@@ -87,38 +87,6 @@ object PdfReportGenerator {
         }
     }
 
-    private fun isDomainAdequate(domainName: String, inspection: HorseInspection): Boolean {
-        if (inspection.individualEvaluations.isNotEmpty()) {
-            val evaluatedAnimals = inspection.individualEvaluations.mapNotNull { it.ppbeaDiagnosis }
-            if (evaluatedAnimals.isNotEmpty()) {
-                return when (domainName) {
-                    "Nutrição" -> evaluatedAnimals.all { it.nutricionalParecer == ParecerDomain.ADEQUADO }
-                    "Conforto" -> evaluatedAnimals.all { it.confortoParecer == ParecerDomain.ADEQUADO }
-                    "Saúde" -> evaluatedAnimals.all { it.saudeParecer == ParecerDomain.ADEQUADO }
-                    "Comportamento" -> evaluatedAnimals.all { it.comportamentalParecer == ParecerDomain.ADEQUADO }
-                    else -> true
-                }
-            }
-        }
-        val diag = inspection.ppbeaDiagnosis
-        if (diag != null) {
-            return when (domainName) {
-                "Nutrição" -> diag.nutricionalParecer == ParecerDomain.ADEQUADO
-                "Conforto" -> diag.confortoParecer == ParecerDomain.ADEQUADO
-                "Saúde" -> diag.saudeParecer == ParecerDomain.ADEQUADO
-                "Comportamento" -> diag.comportamentalParecer == ParecerDomain.ADEQUADO
-                else -> true
-            }
-        }
-        val mList = inspection.mistreatmentList.map { it.lowercase() }
-        return when (domainName) {
-            "Nutrição" -> !mList.any { it.contains("nutri") || it.contains("magro") || it.contains("água") || it.contains("comida") || it.contains("alimenta") || it.contains("fome") || it.contains("costela") }
-            "Conforto" -> !mList.any { it.contains("confort") || it.contains("abrigo") || it.contains("lama") || it.contains("chuva") || it.contains("sol") || it.contains("espaço") || it.contains("amarrado") || it.contains("corrente") || it.contains("piso") }
-            "Saúde" -> !mList.any { it.contains("saúde") || it.contains("saude") || it.contains("ferid") || it.contains("lesão") || it.contains("manca") || it.contains("doen") || it.contains("dor") || it.contains("sangue") || it.contains("carrapato") }
-            "Comportamento" -> !mList.any { it.contains("comport") || it.contains("medo") || it.contains("agressiv") || it.contains("estresse") || it.contains("apatia") || it.contains("estereotip") }
-            else -> true
-        }
-    }
 
     private fun calculateEstimatedTextPages(inspection: HorseInspection): Int {
         var estimatedH = 0f

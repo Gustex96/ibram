@@ -147,26 +147,6 @@ data class HorseInspection(
             return sdf.format(Date(captureTimestamp))
         }
 
-    val riskDescription: String
-        get() = when (riskLevel) {
-            1 -> "1 - Muito Baixo (Área rural cercada, sem tráfego próximo)"
-            2 -> "2 - Baixo (Área semiurbana, baixa velocidade, animais contidos)"
-            3 -> "3 - Moderado (Próximo a vias coletoras, cercamento frágil)"
-            4 -> "4 - Alto (Margens de rodovias do DF - EPTG/EPIA/Estrutural)"
-            5 -> "5 - Crítico / Iminente (Animais na pista / risco fatal iminente)"
-            else -> "Risco $riskLevel"
-        }
-
-    val riskBadgeTitle: String
-        get() = when (riskLevel) {
-            1 -> "Muito Baixo"
-            2 -> "Baixo"
-            3 -> "Moderado"
-            4 -> "Alto"
-            5 -> "Crítico"
-            else -> "Nível $riskLevel"
-        }
-
     val hasMistreatmentSigns: Boolean
         get() = mistreatedHorseCount > 0
 

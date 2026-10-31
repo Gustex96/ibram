@@ -111,13 +111,6 @@ object DfConstants {
         return closestRa
     }
 
-    data class RiskLevelInfo(
-        val level: Int,
-        val title: String,
-        val summary: String,
-        val safetyParameters: List<String>,
-        val colorHex: Long
-    )
 
 
     const val DEFAULT_DF_LATITUDE = -15.7975
@@ -312,69 +305,6 @@ object DfConstants {
         )
     )
 
-    val DOG_RISK_LEVELS = listOf(
-        RiskLevelInfo(
-            level = 1,
-            title = "Muito Baixo",
-            summary = "Cão em residência segura, quintal cercado, sem risco de fuga para vias públicas.",
-            safetyParameters = listOf(
-                "Imóvel com portão fechado e muro íntegro sem frestas",
-                "Animal seguro e recolhido em área protegida",
-                "Água e alimentação disponíveis no local",
-                "Distância segura de vias de trânsito rápido"
-            ),
-            colorHex = 0xFF2E7D32
-        ),
-        RiskLevelInfo(
-            level = 2,
-            title = "Baixo",
-            summary = "Área residencial calma ou chácara com circulação local reduzida de veículos.",
-            safetyParameters = listOf(
-                "Rua residencial sem tráfego intenso (até 30 km/h)",
-                "Animal contido ou com monitoramento de tutor",
-                "Baixo risco de fuga para vias movimentadas",
-                "Tutor presente ou responsável contatável"
-            ),
-            colorHex = 0xFF689F38
-        ),
-        RiskLevelInfo(
-            level = 3,
-            title = "Moderado",
-            summary = "Cão perambulando solto próximo a avenidas urbanas de RA (risco de atropelamento).",
-            safetyParameters = listOf(
-                "Animal solto na calçada ou via coletora urbana (ex: Ceilândia, Samambaia, Taguatinga)",
-                "Fluxo contínuo de veículos locais, ônibus e pedestres",
-                "Risco moderado de atropelamento ou conflito com outros animais",
-                "Portão aberto ou cerca residencial danificada"
-            ),
-            colorHex = 0xFFF57C00
-        ),
-        RiskLevelInfo(
-            level = 4,
-            title = "Alto",
-            summary = "Cão sem contenção às margens de vias expressas ou rodovias do DF (EPTG, EPIA, Estrutural).",
-            safetyParameters = listOf(
-                "Cão perambulando no canteiro ou acostamento de rodovias distritais/federais",
-                "Velocidade dos veículos na via superior a 60 km/h",
-                "Alto risco de desorientação e invasão da pista de rolamento",
-                "Horário de pico ou baixa luminosidade aumentando risco de impacto"
-            ),
-            colorHex = 0xFFE65100
-        ),
-        RiskLevelInfo(
-            level = 5,
-            title = "Crítico / Iminente",
-            summary = "Emergência fiscal/resgate: cão ferido na pista ou risco iminente de colisão fatal.",
-            safetyParameters = listOf(
-                "Animal sobre as faixas de rolamento ou ferido em via expressa",
-                "Risco imediato de atropelamento com acidentes em cadeia ou capotamento",
-                "Cão agonizante, atropelado ou em sofrimento agudo exigindo socorro urgente",
-                "Acionamento emergencial do BPMA/PMDF, socorro veterinário ou órgãos de trânsito"
-            ),
-            colorHex = 0xFFC62828
-        )
-    )
-
     fun isDogSpecies(species: String): Boolean {
         return species.equals("Cachorro", ignoreCase = true) ||
             species.equals("dog", ignoreCase = true) ||
@@ -388,9 +318,5 @@ object DfConstants {
 
     fun getAdequateCategories(species: String): List<AdequateCategory> {
         return if (isDogSpecies(species)) DOG_ADEQUATE_CATEGORIES else ADEQUATE_CATEGORIES
-    }
-
-    fun getRiskLevels(species: String): List<RiskLevelInfo> {
-        return if (isDogSpecies(species)) DOG_RISK_LEVELS else RISK_LEVELS
     }
 }

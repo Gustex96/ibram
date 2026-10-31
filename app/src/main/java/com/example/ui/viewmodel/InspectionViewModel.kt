@@ -287,7 +287,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     val searchQuery = MutableStateFlow("")
-    val selectedRiskFilter = MutableStateFlow<Int?>(null) // null = all
     val selectedRaFilter = MutableStateFlow<String?>(null)
     val selectedSpeciesFilter = MutableStateFlow<String?>("Cavalo")
 
@@ -299,10 +298,9 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     val filteredInspections: StateFlow<List<HorseInspection>> = combine(
         allInspections,
         searchQuery,
-        selectedRiskFilter,
         selectedRaFilter,
         selectedSpeciesFilter
-    ) { list, query, risk, ra, speciesFilter ->
+    ) { list, query, ra, speciesFilter ->
         list.filter { item ->
             val matchesQuery = query.isBlank() ||
                 item.administrativeRegion.contains(query, ignoreCase = true) ||
@@ -315,7 +313,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 item.species.contains(query, ignoreCase = true) ||
                 item.auditorName.contains(query, ignoreCase = true)
 
-            val matchesRisk = (risk == null) || (item.riskLevel == risk)
             val matchesRa = ra == null || item.administrativeRegion == ra
 
             val matchesSpecies = if (speciesFilter == null || speciesFilter == "Todos") {
@@ -326,7 +323,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 !item.isDog
             }
 
-            matchesQuery && matchesRisk && matchesRa && matchesSpecies
+            matchesQuery && matchesRa && matchesSpecies
         }
     }.stateIn(
         scope = viewModelScope,
@@ -763,12 +760,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         draft.value = draft.value.copy(safetyRiskAssessment = assessment)
     }
 
-    fun updateRiskLevel(risk: Int) {
-        if (risk in 1..5) {
-            draft.value = draft.value.copy(riskLevel = risk)
-        }
-    }
-
     fun updateImageNotes(notes: String) {
         draft.value = draft.value.copy(imageNotes = notes)
     }
@@ -859,9 +850,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 draft.value = draft.value.copy(isSaving = true)
 
-                val riskInfo = DfConstants.RISK_LEVELS.find { it.level == current.riskLevel }
-                val justification = riskInfo?.summary ?: "Risco nível ${current.riskLevel}"
-                val safetyAssessment = current.safetyRiskAssessment.ifBlank { justification }
+                val safetyAssessment = current.safetyRiskAssessment
 
                 val allPhotos = current.allPhotoPaths
                 val primaryPhoto = allPhotos.firstOrNull() ?: current.watermarkedPhotoPath ?: ""
@@ -903,7 +892,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     otherAgencyName = current.otherAgencyName,
                     otherAgencyNotes = current.otherAgencyNotes,
                     riskLevel = current.riskLevel,
-                    riskJustification = justification,
                     safetyRiskAssessment = safetyAssessment,
                     imageNotes = current.imageNotes,
                     ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
@@ -966,10 +954,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
             withContext(Dispatchers.Main) {
                 if (watermarked != null) {
-                    val riskLevels = DfConstants.getRiskLevels(current.species)
-                    val riskInfo = riskLevels.find { it.level == current.riskLevel }
-                    val justification = riskInfo?.summary ?: "Risco nível ${current.riskLevel}"
-                    val safetyAssessment = current.safetyRiskAssessment.ifBlank { justification }
+                    val safetyAssessment = current.safetyRiskAssessment
 
                     val validTutors = current.tutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
                     val primTutor = validTutors.firstOrNull() ?: current.tutors.firstOrNull() ?: TutorEntry("", "")
@@ -1006,7 +991,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         otherAgencyName = current.otherAgencyName,
                         otherAgencyNotes = current.otherAgencyNotes,
                         riskLevel = current.riskLevel,
-                        riskJustification = justification,
                         safetyRiskAssessment = safetyAssessment,
                         imageNotes = current.imageNotes,
                         ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
@@ -1062,10 +1046,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
-            val riskLevels = DfConstants.getRiskLevels(newSpecies)
-            val riskInfo = riskLevels.find { it.level == newRiskLevel }
-            val justification = riskInfo?.summary ?: "Risco nível $newRiskLevel"
-            val safetyAssessment = newSafetyRiskAssessment.ifBlank { justification }
+            val safetyAssessment = newSafetyRiskAssessment
             val maxCap = if (newSampledAnimalCount > 0) newSampledAnimalCount else newHorseCount
             val clampedMistreated = newMistreatedHorseCount.coerceIn(0, maxCap)
             val indicatorsToSave = if (clampedMistreated == 0) "" else newMistreatmentIndicators
@@ -1098,7 +1079,6 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 otherAgencyName = newOtherAgencyName,
                 otherAgencyNotes = newOtherAgencyNotes,
                 riskLevel = newRiskLevel,
-                riskJustification = justification,
                 safetyRiskAssessment = safetyAssessment,
                 tutorName = newTutorName,
                 tutorCpf = CpfValidator.format(newTutorCpf),

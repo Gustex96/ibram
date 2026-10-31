@@ -68,7 +68,6 @@ class ExampleRobolectricTest {
     @Test
     fun testDfConstants() {
         assertEquals(35, DfConstants.REGIOES_ADMINISTRATIVAS.size)
-        assertEquals(5, DfConstants.RISK_LEVELS.size)
     }
 
     @Test
