@@ -60,6 +60,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,6 +84,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -807,13 +809,24 @@ fun CameraCaptureScreen(
                 AppOutlinedTextField(
                     value = photoTagInput,
                     onValueChange = { photoTagInput = it.take(30) },
-                    placeholder = { Text("Tag da foto (ex: Baio, Ferimento)", fontSize = 12.sp, color = Color.LightGray) },
+                    placeholder = { Text("Tag da foto (ex: Baio, Ferimento)", fontSize = 12.sp, color = Color.LightGray.copy(alpha = 0.8f)) },
+                    textStyle = TextStyle(color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedPlaceholderColor = Color.LightGray.copy(alpha = 0.8f),
+                        unfocusedPlaceholderColor = Color.LightGray.copy(alpha = 0.8f),
+                        focusedBorderColor = Color(0xFF38BDF8),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.35f)
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("photo_tag_input_field"),
                     singleLine = true,
                     maxLength = 30
                 )
+
             }
         }
     }

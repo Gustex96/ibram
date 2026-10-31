@@ -119,69 +119,6 @@ object DfConstants {
         val colorHex: Long
     )
 
-    val RISK_LEVELS = listOf(
-        RiskLevelInfo(
-            level = 1,
-            title = "Muito Baixo",
-            summary = "Ambiente rural seguro, animais devidamente confinados e protegidos.",
-            safetyParameters = listOf(
-                "Propriedade rural com cercamento íntegro e pasto delimitado",
-                "Distância segura (> 5 km) de rodovias expressas do DF",
-                "Ausência de risco de evasão para vias públicas",
-                "Água e alimentação disponíveis no local"
-            ),
-            colorHex = 0xFF2E7D32 // Forest Green
-        ),
-        RiskLevelInfo(
-            level = 2,
-            title = "Baixo",
-            summary = "Área semiurbana ou chácara com contenção estável e vigilância.",
-            safetyParameters = listOf(
-                "Área de chácara ou setor habitacional com porteiras",
-                "Vias próximas de velocidade máxima reduzida (até 40 km/h)",
-                "Contenção adequada mas com movimentação periódica de veículos",
-                "Tutor ou caseiro presente na propriedade"
-            ),
-            colorHex = 0xFF689F38 // Light Green / Lime
-        ),
-        RiskLevelInfo(
-            level = 3,
-            title = "Moderado",
-            summary = "Proximidade de vias urbanas coletoras ou cercamento precário.",
-            safetyParameters = listOf(
-                "Animais pastando próximos a avenidas internas de RA (ex: Ceilândia, Samambaia)",
-                "Cerca de arame farpado com avarias ou amarração provisória com corda",
-                "Fluxo contínuo de veículos locais e pedestres",
-                "Risco de fuga para a via em caso de susto ou tempestade"
-            ),
-            colorHex = 0xFFF57C00 // Orange
-        ),
-        RiskLevelInfo(
-            level = 4,
-            title = "Alto",
-            summary = "Animais às margens de rodovias de alta velocidade do DF (EPTG, EPIA, DF-001).",
-            safetyParameters = listOf(
-                "Pastoreio irregular no canteiro lateral ou acostamento de rodovias expressas",
-                "Velocidade regulamentada da via superior a 60 km/h",
-                "Risco iminente de invasão da pista de rolamento",
-                "Horário noturno ou baixa visibilidade sem sinalização",
-                "Ausência de responsável ou tutor no local"
-            ),
-            colorHex = 0xFFE65100 // Deep Orange
-        ),
-        RiskLevelInfo(
-            level = 5,
-            title = "Crítico / Iminente",
-            summary = "Emergência de fiscalização ambiental: animais soltos na pista ou risco fatal de colisão.",
-            safetyParameters = listOf(
-                "Equinos sobre as faixas de tráfego de rodovia distrital ou federal",
-                "Risco imediato de colisão com vítimas fatais ou capotamento",
-                "Animal em pânico, ferido ou desidratado causando frenagens bruscas",
-                "Necessidade imediata de acionamento do Batalhão de Trânsito (BPTran/PMDF) ou DER-DF"
-            ),
-            colorHex = 0xFFC62828 // Red / Emergency
-        )
-    )
 
     const val DEFAULT_DF_LATITUDE = -15.7975
     const val DEFAULT_DF_LONGITUDE = -47.8919

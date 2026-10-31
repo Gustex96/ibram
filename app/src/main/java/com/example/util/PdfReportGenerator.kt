@@ -124,13 +124,8 @@ object PdfReportGenerator {
         var estimatedH = 0f
         // Section 1: Loc & GPS
         estimatedH += 145f
-        // Section 2: Quant & PPBEA (table + mistreatments)
-        estimatedH += 85f
-        val mistreatments = inspection.mistreatmentList
-            .map { cleanEccTerms(it) }
-            .filter { it.isNotBlank() }
-            .distinct()
-        estimatedH += mistreatments.size * 13f
+        // Section 3: Quant & PPBEA (totais e metodologia)
+        estimatedH += 50f
         // Providências & Apoio
         estimatedH += 65f
         if (inspection.requiresSeagriApprehension && inspection.seagriNotes.isNotBlank()) estimatedH += 25f
@@ -1153,88 +1148,7 @@ object PdfReportGenerator {
             sY += 11.5f
         }
         pageManager.y += row2H
-
-        // Linha/Tabela Resumo dos 4 Domínios (Nutrição, Conforto, Saúde, Comportamento)
-        val domains = listOf(
-            "Nutrição" to isDomainAdequate("Nutrição", inspection),
-            "Conforto" to isDomainAdequate("Conforto", inspection),
-            "Saúde" to isDomainAdequate("Saúde", inspection),
-            "Comportamento" to isDomainAdequate("Comportamento", inspection)
-        )
-        val colW = (contentWidth - 18f) / 4f
-        val cardH = 26f
-        pageManager.ensureSpace(cardH + 12f)
-        val topCardY = pageManager.y
-        for (i in domains.indices) {
-            val (dName, isOk) = domains[i]
-            val cardX = margin + (i * (colW + 6f))
-            val bgP = Paint().apply {
-                color = if (isOk) Color.rgb(240, 253, 244) else Color.rgb(254, 242, 242)
-                style = Paint.Style.FILL
-            }
-            val borderP = Paint().apply {
-                color = if (isOk) Color.rgb(187, 247, 208) else Color.rgb(254, 202, 202)
-                style = Paint.Style.STROKE
-                strokeWidth = 0.8f
-            }
-            pageManager.canvas.drawRoundRect(RectF(cardX, topCardY, cardX + colW, topCardY + cardH), 4f, 4f, bgP)
-            pageManager.canvas.drawRoundRect(RectF(cardX, topCardY, cardX + colW, topCardY + cardH), 4f, 4f, borderP)
-
-            val titleP = Paint().apply {
-                color = Color.rgb(71, 85, 105)
-                textSize = 7.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            val statusP = Paint().apply {
-                color = if (isOk) Color.rgb(22, 101, 52) else Color.rgb(185, 28, 28)
-                textSize = 8.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            pageManager.canvas.drawText(dName, cardX + 6f, topCardY + 10f, titleP)
-            val statusText = if (isOk) "ADEQUADO" else "IRREGULAR"
-            pageManager.canvas.drawText(statusText, cardX + 6f, topCardY + 21f, statusP)
-        }
-        pageManager.y = topCardY + cardH + 10f
-
-        val cleanedMistreatments = inspection.mistreatmentList
-            .map { cleanEccTerms(it) }
-            .map { it.replace(Regex("""^\[.*?\]\s*"""), "").replace("?", "").trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-
-        if (cleanedMistreatments.isNotEmpty()) {
-            pageManager.ensureSpace(22f)
-            val alertLabelPaint = Paint().apply {
-                color = Color.rgb(198, 40, 40)
-                textSize = 8.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            pageManager.canvas.drawText("INCONFORMIDADES / ALERTAS CONSTATADOS (PROTOCOLO PPBEA):", col1X, pageManager.y, alertLabelPaint)
-            pageManager.y += 11f
-            val alertValPaint = Paint().apply {
-                color = Color.rgb(185, 28, 28)
-                textSize = 8.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                isAntiAlias = true
-            }
-            for (ind in cleanedMistreatments) {
-                drawWrappedText(pageManager, "• $ind", col1X + 4f, contentWidth - 16f, alertValPaint, 11.5f)
-            }
-            pageManager.y += 4f
-        } else {
-            pageManager.ensureSpace(14f)
-            val goodValPaint = Paint().apply {
-                color = Color.rgb(46, 125, 50)
-                textSize = 8.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            pageManager.canvas.drawText("✓ Nenhuma inconformidade técnica de maus-tratos apontada nos domínios do Protocolo PPBEA.", col1X, pageManager.y, goodValPaint)
-            pageManager.y += 14f
-        }
+        pageManager.y += 6f
 
         // SECTION 4: 4. DIAGNÓSTICO GERAL & PARECER TÉCNICO
         pageManager.ensureSpace(34f)
