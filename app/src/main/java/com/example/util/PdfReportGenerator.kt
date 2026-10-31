@@ -140,7 +140,8 @@ object PdfReportGenerator {
         estimatedH += 35f + (inspection.allTutors.size * 15f)
         // Section 5: Diagnostico Geral & Parecer
         if (inspection.individualEvaluations.isNotEmpty()) {
-            estimatedH += 45f + (inspection.individualEvaluations.size * 135f)
+            val perCardH = if (inspection.allPhotoPaths.isNotEmpty()) 315f else 145f
+            estimatedH += 45f + (inspection.individualEvaluations.size * perCardH)
         } else {
             estimatedH += 85f
             val notesLen = (inspection.horseDescription + " " + (inspection.ppbeaDiagnosis?.observacoes ?: "")).length
@@ -424,6 +425,59 @@ object PdfReportGenerator {
         return curY
     }
 
+    /**
+     * Localiza as fotografias georreferenciadas associadas a este exemplar catalogado específico,
+     * priorizando correspondência de TAG, número do exemplar (Foto1, Foto2...) ou índice sequencial.
+     */
+    fun getPhotosForAnimal(
+        animal: IndividualAnimalEvaluation,
+        index: Int,
+        allPhotos: List<String>,
+        allAnimals: List<IndividualAnimalEvaluation>
+    ): List<String> {
+        val matched = mutableListOf<String>()
+        val tag = animal.tagOrCpf.trim()
+
+        // 1. Busca por correspondência exata ou parcial da TAG
+        if (tag.isNotBlank()) {
+            val cleanTag = tag.take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+            for (photoPath in allPhotos) {
+                val extractedTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(photoPath)
+                if (extractedTag != null && (extractedTag.equals(tag, ignoreCase = true) || extractedTag.contains(tag, ignoreCase = true) || tag.contains(extractedTag, ignoreCase = true))) {
+                    if (!matched.contains(photoPath)) matched.add(photoPath)
+                } else if (photoPath.contains("_TAG_${cleanTag}_", ignoreCase = true) || photoPath.contains("_TAG_${tag}_", ignoreCase = true)) {
+                    if (!matched.contains(photoPath)) matched.add(photoPath)
+                }
+            }
+        }
+
+        // 2. Busca pelo padrão de exemplar Foto{index+1}_ ou Foto{index+1}.
+        if (matched.isEmpty()) {
+            val exemplarStr = "Foto${index + 1}_"
+            val exemplarStrAlt = "Foto${index + 1}."
+            for (photoPath in allPhotos) {
+                if (photoPath.contains(exemplarStr, ignoreCase = true) || photoPath.contains(exemplarStrAlt, ignoreCase = true)) {
+                    if (!matched.contains(photoPath)) matched.add(photoPath)
+                }
+            }
+        }
+
+        // 3. Se ainda não associou e o índice existe na lista de fotos,
+        // verifica se a foto correspondente não tem TAG exclusiva de outro exemplar
+        if (matched.isEmpty() && index < allPhotos.size) {
+            val candidate = allPhotos[index]
+            val candidateTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(candidate)
+            val isOtherTag = candidateTag != null && allAnimals.any {
+                it.id != animal.id && it.tagOrCpf.isNotBlank() && it.tagOrCpf.equals(candidateTag, ignoreCase = true)
+            }
+            if (!isOtherTag) {
+                matched.add(candidate)
+            }
+        }
+
+        return matched
+    }
+
     private fun drawIndividualAnimalEvaluationInPdf(
         pageManager: TextPageManager,
         index: Int,
@@ -431,7 +485,8 @@ object PdfReportGenerator {
         margin: Float,
         contentWidth: Float,
         col1X: Float,
-        col2X: Float
+        col2X: Float,
+        animalPhotos: List<String> = emptyList()
     ) {
         val diag = animal.ppbeaDiagnosis
         val isMausTratos = diag?.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS
@@ -538,7 +593,16 @@ object PdfReportGenerator {
         val enquadRowH = (enquadRowLines * 11f) + 4f
 
         val topSectionH = topRowH + enquadRowH + 28f
-        val cardTotalH = topSectionH + calculatedAlertsH + calculatedNotesH + 10f
+        val photoSectionH = if (animalPhotos.isNotEmpty()) {
+            if (animalPhotos.size == 1) {
+                168f
+            } else {
+                16f + (((animalPhotos.size + 1) / 2) * 136f)
+            }
+        } else {
+            0f
+        }
+        val cardTotalH = topSectionH + calculatedAlertsH + calculatedNotesH + photoSectionH + 10f
 
         // Garante que o card inteiro cabe na página atual, sem quebras indesejadas
         pageManager.ensureSpace(cardTotalH + 12f)
@@ -694,6 +758,95 @@ object PdfReportGenerator {
             curY = drawTextLinesOnCanvas(pageManager.canvas, animal.notes, col1X + 4f, curY, textMaxWidth, noteP, 9.5f)
         }
 
+        // 5. Fotografia Georreferenciada do Exemplar (Individualizada no card)
+        if (animalPhotos.isNotEmpty()) {
+            val photoDivY = curY + 4f
+            val photoDivPaint = Paint().apply {
+                color = borderPaint.color
+                strokeWidth = 0.8f
+            }
+            pageManager.canvas.drawLine(col1X, photoDivY, margin + contentWidth - 8f, photoDivY, photoDivPaint)
+
+            var photoY = photoDivY + 11f
+            val photoHeaderP = Paint().apply {
+                color = Color.rgb(30, 41, 59)
+                textSize = 7.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            val tagInfo = if (animal.tagOrCpf.isNotBlank()) " • TAG: ${animal.tagOrCpf}" else ""
+            val tutorInfo = if (animal.tutorQualification.isNotBlank()) " • Resp: ${animal.tutorQualification}" else ""
+            pageManager.canvas.drawText("FOTOGRAFIA GEORREFERENCIADA DO EXEMPLAR #${index + 1}$tagInfo$tutorInfo:", col1X, photoY, photoHeaderP)
+            photoY += 8f
+
+            val photoBorderPaint = Paint().apply {
+                color = borderPaint.color
+                style = Paint.Style.STROKE
+                strokeWidth = 1f
+            }
+
+            if (animalPhotos.size == 1) {
+                val photoPath = animalPhotos[0]
+                val maxW = minOf(300f, contentWidth - 24f)
+                val maxH = 140f
+                val photoX = margin + 10f + ((contentWidth - 20f - maxW) / 2f)
+                val photoRect = RectF(photoX, photoY, photoX + maxW, photoY + maxH)
+                val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
+                pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, bgFramePaint)
+
+                val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 900)
+                if (optBitmap != null) {
+                    val bRatio = optBitmap.width.toFloat() / optBitmap.height.toFloat()
+                    var dw = maxW
+                    var dh = dw / bRatio
+                    if (dh > maxH) {
+                        dh = maxH
+                        dw = dh * bRatio
+                    }
+                    val drawX = photoX + ((maxW - dw) / 2f)
+                    val drawY = photoY + ((maxH - dh) / 2f)
+                    val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+                    pageManager.canvas.drawBitmap(optBitmap, null, drawRect, null)
+                    pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, photoBorderPaint)
+                } else {
+                    pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, photoBorderPaint)
+                    val missingP = Paint().apply { color = Color.rgb(100, 116, 139); textSize = 8f; isAntiAlias = true }
+                    pageManager.canvas.drawText("[Fotografia não disponível no armazenamento]", photoX + 10f, photoY + (maxH / 2f), missingP)
+                }
+            } else {
+                val slotW = (contentWidth - 28f) / 2f
+                val slotH = 120f
+                val pairs = animalPhotos.chunked(2)
+                for (pair in pairs) {
+                    for ((subIdx, photoPath) in pair.withIndex()) {
+                        val photoX = margin + 8f + (subIdx * (slotW + 6f))
+                        val photoRect = RectF(photoX, photoY, photoX + slotW, photoY + slotH)
+                        val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
+                        pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, bgFramePaint)
+
+                        val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 800)
+                        if (optBitmap != null) {
+                            val bRatio = optBitmap.width.toFloat() / optBitmap.height.toFloat()
+                            var dw = slotW
+                            var dh = dw / bRatio
+                            if (dh > slotH) {
+                                dh = slotH
+                                dw = dh * bRatio
+                            }
+                            val drawX = photoX + ((slotW - dw) / 2f)
+                            val drawY = photoY + ((slotH - dh) / 2f)
+                            val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+                            pageManager.canvas.drawBitmap(optBitmap, null, drawRect, null)
+                            pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, photoBorderPaint)
+                        } else {
+                            pageManager.canvas.drawRoundRect(photoRect, 4f, 4f, photoBorderPaint)
+                        }
+                    }
+                    photoY += slotH + 6f
+                }
+            }
+        }
+
         pageManager.y = cardTop + cardTotalH + 8f
     }
 
@@ -707,7 +860,22 @@ object PdfReportGenerator {
         val allPhotos = inspection.allPhotoPaths
         val isDog = inspection.isDog
 
-        val photoPagesCount = if (allPhotos.isEmpty()) 0 else ((allPhotos.size + 1) / 2)
+        // Mapeia as fotografias para cada exemplar individualizado
+        val animalPhotosMap = mutableMapOf<String, List<String>>()
+        if (inspection.individualEvaluations.isNotEmpty()) {
+            for ((idx, animal) in inspection.individualEvaluations.withIndex()) {
+                val matched = getPhotosForAnimal(animal, idx, allPhotos, inspection.individualEvaluations)
+                animalPhotosMap[animal.id] = matched
+            }
+        }
+        val allAssignedPhotos = animalPhotosMap.values.flatten().toSet()
+        val remainingPhotos = if (inspection.individualEvaluations.isNotEmpty()) {
+            allPhotos.filter { it !in allAssignedPhotos }
+        } else {
+            allPhotos
+        }
+
+        val photoPagesCount = if (remainingPhotos.isEmpty()) 0 else ((remainingPhotos.size + 1) / 2)
         val estimatedTextPages = calculateEstimatedTextPages(inspection)
         val totalDocumentPages = estimatedTextPages + photoPagesCount
 
@@ -1104,6 +1272,7 @@ object PdfReportGenerator {
         if (inspection.individualEvaluations.isNotEmpty()) {
             // AVALIAÇÃO INDIVIDUALIZADA: Desenha cada exemplar com seus dados periciais
             for ((idx, animal) in inspection.individualEvaluations.withIndex()) {
+                val photosForThisAnimal = animalPhotosMap[animal.id] ?: emptyList()
                 drawIndividualAnimalEvaluationInPdf(
                     pageManager = pageManager,
                     index = idx,
@@ -1111,7 +1280,8 @@ object PdfReportGenerator {
                     margin = margin,
                     contentWidth = contentWidth,
                     col1X = col1X,
-                    col2X = col2X
+                    col2X = col2X,
+                    animalPhotos = photosForThisAnimal
                 )
             }
 
@@ -1305,8 +1475,8 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        if (allPhotos.isNotEmpty()) {
-            val photoChunks = allPhotos.chunked(2)
+        if (remainingPhotos.isNotEmpty()) {
+            val photoChunks = remainingPhotos.chunked(2)
             val startPhotoPageNumber = pageManager.currentPageNumber + 1
 
             photoChunks.forEachIndexed { pageChunkIndex, chunk ->
@@ -1334,7 +1504,11 @@ object PdfReportGenerator {
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                     isAntiAlias = true
                 }
-                pCanvas.drawText("ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL", margin, py, headerSubPaint)
+                val annexTitle = if (inspection.individualEvaluations.isNotEmpty())
+                    "ANEXO FOTOGRÁFICO COMPLEMENTAR • DEMAIS REGISTROS DA AÇÃO FISCAL"
+                else
+                    "ANEXO FOTOGRÁFICO GEORREFERENCIADO • LEVANTAMENTO OPERACIONAL"
+                pCanvas.drawText(annexTitle, margin, py, headerSubPaint)
                 py += 15f
                 pCanvas.drawText("Levantamento: ${inspection.protocolNumber} • RA: ${inspection.administrativeRegion} • ${inspection.formattedCaptureDate}", margin, py, headerSmallPaint)
                 py += 20f
