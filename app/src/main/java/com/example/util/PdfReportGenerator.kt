@@ -1137,7 +1137,7 @@ object PdfReportGenerator {
         } else {
             "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO (AMOSTRAGEM - ${inspection.effectiveSampledCount} DE ${inspection.horseCount} ANIMAIS)"
         }
-        pageManager.y = drawSectionHeader(pageManager.canvas, section4Title, margin, pageManager.y, contentWidth)
+        
 
         val relatorioGeral = cleanEccTerms(
             inspection.horseDescription.trim().ifBlank {
