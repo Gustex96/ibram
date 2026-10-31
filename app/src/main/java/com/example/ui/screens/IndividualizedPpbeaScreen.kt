@@ -298,11 +298,14 @@ fun IndividualizedPpbeaScreen(
 
         PpbeaEvaluationDialog(
             initialDiagnosis = activeDiagnosis,
+            species = activeAnimal.species,
+            isDog = com.example.data.model.DfConstants.isDogSpecies(activeAnimal.species),
             onDismiss = { activeEvaluatingAnimalIndex = null },
             onSaveDiagnosis = { savedDiagnosis ->
                 val answersString = PpbeaCriteriaRepository.mapToAnswersString(savedDiagnosis.answersMap)
                 evaluationsList[currentActiveIndex] = activeAnimal.copy(
-                    ppbeaAnswersData = answersString
+                    ppbeaAnswersData = answersString,
+                    notes = savedDiagnosis.observacoes
                 )
                 activeEvaluatingAnimalIndex = null
             }

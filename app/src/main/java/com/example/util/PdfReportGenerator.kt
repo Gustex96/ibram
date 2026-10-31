@@ -499,10 +499,11 @@ object PdfReportGenerator {
             calculatedAlertsH += 16f // Mensagem de conformidade
         }
 
+        val effectiveNotes = animal.notes.ifBlank { diag?.observacoes ?: "" }.trim()
         var calculatedNotesH = 0f
-        if (animal.notes.isNotBlank()) {
-            val lines = countWrappedLines("Observações: ${animal.notes}", textMaxWidth, noteP)
-            calculatedNotesH += (lines * 10.5f) + 4f
+        if (effectiveNotes.isNotBlank()) {
+            val lines = countWrappedLines("Observações: $effectiveNotes", textMaxWidth, noteP)
+            calculatedNotesH += (lines * 10.5f) + 18f
         }
 
         // 1. Linha Superior: Exemplar + Espécie | TAG / Proprietário
@@ -565,7 +566,7 @@ object PdfReportGenerator {
         } else {
             0f
         }
-        val cardTotalH = topSectionH + calculatedAlertsH + calculatedNotesH + photoSectionH + 10f
+        val cardTotalH = topSectionH + calculatedAlertsH + photoSectionH + calculatedNotesH + 10f
 
         // Garante que o card inteiro cabe na página atual, sem quebras indesejadas
         pageManager.ensureSpace(cardTotalH + 12f)
@@ -709,18 +710,6 @@ object PdfReportGenerator {
             curY += 12f
         }
 
-        if (animal.notes.isNotBlank()) {
-            val noteHeaderP = Paint().apply {
-                color = Color.rgb(71, 85, 105)
-                textSize = 7.5f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                isAntiAlias = true
-            }
-            pageManager.canvas.drawText("Observações:", col1X, curY, noteHeaderP)
-            curY += 9f
-            curY = drawTextLinesOnCanvas(pageManager.canvas, animal.notes, col1X + 4f, curY, textMaxWidth, noteP, 9.5f)
-        }
-
         // 5. Fotografia Georreferenciada do Exemplar (Individualizada no card)
         if (animalPhotos.isNotEmpty()) {
             val photoDivY = curY + 4f
@@ -776,6 +765,7 @@ object PdfReportGenerator {
                     val missingP = Paint().apply { color = Color.rgb(100, 116, 139); textSize = 8f; isAntiAlias = true }
                     pageManager.canvas.drawText("[Fotografia não disponível no armazenamento]", photoX + 10f, photoY + (maxH / 2f), missingP)
                 }
+                curY = photoY + maxH + 4f
             } else {
                 val slotW = (contentWidth - 28f) / 2f
                 val slotH = 120f
@@ -807,7 +797,29 @@ object PdfReportGenerator {
                     }
                     photoY += slotH + 6f
                 }
+                curY = photoY
             }
+        }
+
+        // 6. Observações periciais digitadas na janela de diagnóstico (ABAIXO DAS FOTOS DO RESPECTIVO EXEMPLAR)
+        if (effectiveNotes.isNotBlank()) {
+            val noteDivY = curY + 4f
+            val noteDivPaint = Paint().apply {
+                color = borderPaint.color
+                strokeWidth = 0.8f
+            }
+            pageManager.canvas.drawLine(col1X, noteDivY, margin + contentWidth - 8f, noteDivY, noteDivPaint)
+
+            var noteY = noteDivY + 11f
+            val noteHeaderP = Paint().apply {
+                color = Color.rgb(71, 85, 105)
+                textSize = 7.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                isAntiAlias = true
+            }
+            pageManager.canvas.drawText("Observações Periciais do Exemplar #${index + 1}:", col1X, noteY, noteHeaderP)
+            noteY += 9f
+            curY = drawTextLinesOnCanvas(pageManager.canvas, effectiveNotes, col1X + 4f, noteY, textMaxWidth, noteP, 9.5f)
         }
 
         pageManager.y = cardTop + cardTotalH + 8f
@@ -1401,7 +1413,7 @@ object PdfReportGenerator {
                     val globalPhotoIdx = pageChunkIndex * 2
                     val photoPath = chunk[0]
                     val maxW = 500f
-                    val maxH = 460f
+                    val maxH = 430f
                     val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 1200)
 
                     val photoX = (pageWidth - maxW) / 2f
@@ -1427,13 +1439,36 @@ object PdfReportGenerator {
                         pCanvas.drawText("[Arquivo de fotografia não disponível no armazenamento]", photoX + 20f, py + (maxH / 2f), valuePaint)
                     }
 
-                    py += maxH + 16f
-                    // Clean caption below photo without repetition of RA/Date/Coords
-                    val caption = "Evidência Fotográfica #${globalPhotoIdx + 1} — Protocolo ${inspection.protocolNumber}"
+                    py += maxH + 14f
+                    val matchedAnimal = if (inspection.individualEvaluations.isNotEmpty()) {
+                        inspection.individualEvaluations.firstOrNull { animal ->
+                            animalPhotosMap[animal.id]?.contains(photoPath) == true
+                        }
+                    } else null
+                    val matchedNotes = matchedAnimal?.notes?.ifBlank { matchedAnimal.ppbeaDiagnosis?.observacoes ?: "" }?.trim()
+                        ?: if (inspection.individualEvaluations.isEmpty()) inspection.ppbeaDiagnosis?.observacoes?.trim() ?: "" else ""
+
+                    val exemplarPrefix = if (matchedAnimal != null) {
+                        val animalIdx = inspection.individualEvaluations.indexOf(matchedAnimal)
+                        "Exemplar #${animalIdx + 1} (${matchedAnimal.species}) • "
+                    } else ""
+                    val caption = "Evidência Fotográfica #${globalPhotoIdx + 1} — ${exemplarPrefix}Protocolo ${inspection.protocolNumber}"
                     pCanvas.drawText(caption, photoX, py, captionTitlePaint)
+
+                    if (matchedNotes.isNotBlank()) {
+                        py += 11f
+                        val notePaint = Paint().apply {
+                            color = Color.rgb(71, 85, 105)
+                            textSize = 8f
+                            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                            isAntiAlias = true
+                        }
+                        val displayNotes = if (matchedNotes.length > 130) matchedNotes.take(127) + "..." else matchedNotes
+                        pCanvas.drawText("Observações Periciais: $displayNotes", photoX, py, notePaint)
+                    }
                 } else {
                     // 2 photos on the page: stacked vertically
-                    val slotMaxH = 280f
+                    val slotMaxH = 265f
                     val slotMaxW = 490f
                     val photoX = (pageWidth - slotMaxW) / 2f
 
@@ -1463,10 +1498,36 @@ object PdfReportGenerator {
                             pCanvas.drawText("[Arquivo de fotografia não disponível]", photoX + 20f, py + (slotMaxH / 2f), valuePaint)
                         }
 
-                        py += slotMaxH + 12f
-                        val caption = "Evidência Fotográfica #${globalPhotoIdx + 1} — Protocolo ${inspection.protocolNumber}"
+                        py += slotMaxH + 11f
+                        val matchedAnimal = if (inspection.individualEvaluations.isNotEmpty()) {
+                            inspection.individualEvaluations.firstOrNull { animal ->
+                                animalPhotosMap[animal.id]?.contains(photoPath) == true
+                            }
+                        } else null
+                        val matchedNotes = matchedAnimal?.notes?.ifBlank { matchedAnimal.ppbeaDiagnosis?.observacoes ?: "" }?.trim()
+                            ?: if (inspection.individualEvaluations.isEmpty()) inspection.ppbeaDiagnosis?.observacoes?.trim() ?: "" else ""
+
+                        val exemplarPrefix = if (matchedAnimal != null) {
+                            val animalIdx = inspection.individualEvaluations.indexOf(matchedAnimal)
+                            "Exemplar #${animalIdx + 1} (${matchedAnimal.species}) • "
+                        } else ""
+                        val caption = "Evidência Fotográfica #${globalPhotoIdx + 1} — ${exemplarPrefix}Protocolo ${inspection.protocolNumber}"
                         pCanvas.drawText(caption, photoX, py, captionTitlePaint)
-                        py += 24f
+
+                        if (matchedNotes.isNotBlank()) {
+                            py += 10f
+                            val notePaint = Paint().apply {
+                                color = Color.rgb(71, 85, 105)
+                                textSize = 7.5f
+                                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                                isAntiAlias = true
+                            }
+                            val displayNotes = if (matchedNotes.length > 130) matchedNotes.take(127) + "..." else matchedNotes
+                            pCanvas.drawText("Observações Periciais: $displayNotes", photoX, py, notePaint)
+                            py += 14f
+                        } else {
+                            py += 22f
+                        }
                     }
                 }
 

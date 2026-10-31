@@ -2401,6 +2401,7 @@ fun NewInspectionScreen(
             initialAnimalCount = if (draft.sampledAnimalCount > 0) draft.sampledAnimalCount else 1,
             totalAnimalsOnSite = draft.horseCount,
             isDog = draft.isDog,
+            species = draft.species,
             isSamplingMode = true,
             onDismiss = { showPpbeaEvaluationDialog = false },
             onSaveDiagnosis = { diagnosis, samplingCount ->

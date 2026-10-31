@@ -75,7 +75,7 @@ data class HorseInspection(
         get() {
             val map = ppbeaAnswersMap
             return if (map.isNotEmpty()) {
-                PpbeaCriteriaRepository.evaluate(map)
+                PpbeaCriteriaRepository.evaluate(map).copy(observacoes = imageNotes)
             } else null
         }
 

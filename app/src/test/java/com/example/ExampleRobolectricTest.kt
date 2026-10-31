@@ -581,4 +581,45 @@ class ExampleRobolectricTest {
         assertEquals(12, noDiagInspection.horseCount)
         assertEquals(0, noDiagInspection.effectiveSampledCount)
     }
+
+    @Test
+    fun testPpbeaObservacoesBlankByDefaultAndSpeciesResolution() {
+        // Verifica que o laudo gerado por evaluate NÃO anexa texto jurídico longo automaticamente
+        val diagnosis = com.example.data.model.PpbeaCriteriaRepository.evaluate(emptyMap())
+        assertEquals("", diagnosis.observacoes)
+
+        // Verifica resolução de espécies para o pop-up de Conhecimento
+        assertEquals(com.example.ui.components.AnimalSpecies.DOG, com.example.ui.components.resolveAnimalSpecies("Cachorro", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.DOG, com.example.ui.components.resolveAnimalSpecies("Canino", isDog = true))
+        assertEquals(com.example.ui.components.AnimalSpecies.HORSE, com.example.ui.components.resolveAnimalSpecies("Cavalo", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.HORSE, com.example.ui.components.resolveAnimalSpecies("Equino", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.CAT, com.example.ui.components.resolveAnimalSpecies("Gato", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.POULTRY, com.example.ui.components.resolveAnimalSpecies("Galináceos", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.OUTROS, com.example.ui.components.resolveAnimalSpecies("Suíno", isDog = false))
+    }
+
+    @Test
+    fun testIndividualAnimalNotesPreservationAndSerialization() {
+        val animal = com.example.data.model.IndividualAnimalEvaluation(
+            tagOrCpf = "TAG-001",
+            species = "Cavalo",
+            ppbeaAnswersData = "1.1:false;;1.2:false",
+            notes = "Animal com claudicação moderada no membro anterior direito.",
+            tutorQualification = "Tutor João"
+        )
+
+        // Verifica que o diagnóstico individualizado preserva a observação digitada
+        val diag = animal.ppbeaDiagnosis
+        assertNotNull(diag)
+        assertEquals("Animal com claudicação moderada no membro anterior direito.", diag?.observacoes)
+
+        // Verifica serialização e desserialização com observações
+        val serialized = com.example.data.model.IndividualAnimalSerializer.serializeList(listOf(animal))
+        val deserialized = com.example.data.model.IndividualAnimalSerializer.deserializeList(serialized)
+        assertEquals(1, deserialized.size)
+        assertEquals("Animal com claudicação moderada no membro anterior direito.", deserialized[0].notes)
+        assertEquals("Animal com claudicação moderada no membro anterior direito.", deserialized[0].ppbeaDiagnosis?.observacoes)
+    }
 }
+
+

@@ -68,3 +68,20 @@ enum class AnimalSpecies(
         badgeText = "Personalizar"
     )
 }
+
+/**
+ * Converte a espécie textual/status em um valor do enum AnimalSpecies
+ * para abertura assertiva dos guias técnicos e do Anexo F.
+ */
+fun resolveAnimalSpecies(species: String?, isDog: Boolean = false): AnimalSpecies {
+    val norm = species?.trim()?.lowercase() ?: ""
+    return when {
+        norm.contains("gato") || norm.contains("felin") || norm == "cat" -> AnimalSpecies.CAT
+        isDog || norm.contains("cão") || norm.contains("cao") || norm.contains("cachorro") || norm.contains("canin") || norm == "dog" -> AnimalSpecies.DOG
+        norm.contains("gal") || norm.contains("ave") || norm.contains("poultry") -> AnimalSpecies.POULTRY
+        norm.contains("cavalo") || norm.contains("equin") || norm.contains("equid") || norm == "horse" -> AnimalSpecies.HORSE
+        norm.isNotBlank() && !norm.contains("cavalo") && !norm.contains("horse") -> AnimalSpecies.OUTROS
+        else -> if (isDog) AnimalSpecies.DOG else AnimalSpecies.HORSE
+    }
+}
+

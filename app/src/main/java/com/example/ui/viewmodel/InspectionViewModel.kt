@@ -893,7 +893,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     otherAgencyNotes = current.otherAgencyNotes,
                     riskLevel = current.riskLevel,
                     safetyRiskAssessment = safetyAssessment,
-                    imageNotes = current.imageNotes,
+                    imageNotes = current.ppbeaDiagnosis?.observacoes?.ifBlank { current.imageNotes } ?: current.imageNotes,
                     ppbeaAnswersData = com.example.data.model.PpbeaCriteriaRepository.mapToAnswersString(current.ppbeaDiagnosis?.answersMap ?: emptyMap()),
                     individualEvaluationsData = com.example.data.model.IndividualAnimalSerializer.serializeList(current.individualEvaluations),
                     tutorName = primTutor.name,

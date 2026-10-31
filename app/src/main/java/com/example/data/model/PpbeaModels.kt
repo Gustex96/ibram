@@ -369,31 +369,6 @@ object PpbeaCriteriaRepository {
             GrauBemEstar.ALTO, GrauBemEstar.MUITO_ALTO -> EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS
         }
 
-        // Geração do Laudo Pericial de Observações
-        val obs = buildString {
-            append("Protocolo de Perícia em Bem-Estar Animal (PPBEA - Resolução CFMV nº 1.236/2018). ")
-            when (ocorrencia) {
-                EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS -> {
-                    append("Constatado Grau de Bem-Estar ")
-                    append(grau.label.uppercase())
-                    append(". Pareceres setoriais: Nutrição [${nutParecer.label}], Conforto [${confParecer.label}], Saúde [${saudeParecer.label}], Comportamento [${compParecer.label}]. ")
-                    append("CONFIGURA CRIME DE MAUS-TRATOS (Art. 32 da Lei Federal 9.605/1998 c/c Lei 14.064/2020). Requer lavratura de Auto de Infração e medidas de apreensão/recolhimento.")
-                }
-                EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO -> {
-                    append("Constatado Grau de Bem-Estar ")
-                    append(grau.label.uppercase())
-                    append(". Pareceres setoriais: Nutrição [${nutParecer.label}], Conforto [${confParecer.label}], Saúde [${saudeParecer.label}], Comportamento [${compParecer.label}]. ")
-                    append("NÃO CONFIGURA CRIME IMEDIATO DE MAUS-TRATOS, mas exige emissão de Termo de Orientação com recomendações de melhoria e agendamento de retorno obrigatório para reavaliação.")
-                }
-                EnquadramentoMausTratos.NAO_CONFIGURA_MAUS_TRATOS -> {
-                    append("Constatado Grau de Bem-Estar ")
-                    append(grau.label.uppercase())
-                    append(". Todos os parâmetros satisfatórios ou com desvios mínimos irrelevantes. ")
-                    append("NÃO CONFIGURA MAUS-TRATOS. Sugere-se arquivamento da denúncia com orientações preventivas gerais de posse responsável.")
-                }
-            }
-        }
-
         return PpbeaDiagnosis(
             nutricionalParecer = nutParecer,
             confortoParecer = confParecer,
@@ -402,7 +377,7 @@ object PpbeaCriteriaRepository {
             grauBemEstar = grau,
             ocorrenciaMausTratos = ocorrencia,
             gerouBoletimOcorrencia = (ocorrencia == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS),
-            observacoes = obs,
+            observacoes = "",
             isEvaluated = true,
             answersMap = answers
         )
@@ -483,7 +458,7 @@ data class IndividualAnimalEvaluation(
     val ppbeaDiagnosis: PpbeaDiagnosis?
         get() {
             val map = ppbeaAnswersMap
-            return if (map.isNotEmpty()) PpbeaCriteriaRepository.evaluate(map) else null
+            return if (map.isNotEmpty()) PpbeaCriteriaRepository.evaluate(map).copy(observacoes = notes) else null
         }
 
     val isEvaluated: Boolean

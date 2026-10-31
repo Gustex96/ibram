@@ -68,10 +68,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.data.model.EnquadramentoMausTratos
 import com.example.data.model.GrauBemEstar
 import com.example.data.model.ParecerDomain
@@ -79,6 +81,7 @@ import com.example.data.model.PpbeaCriteriaRepository
 import com.example.data.model.PpbeaCriterion
 import com.example.data.model.PpbeaDiagnosis
 import com.example.data.model.PpbeaDomain
+import com.example.ui.screens.DfSafetyInfoDialog
 
 /**
  * Caixa de Diálogo do Campo de Avaliação (ANEXO D – PPBEA)
@@ -228,6 +231,7 @@ fun PpbeaEvaluationDialog(
     initialAnimalCount: Int = 1,
     totalAnimalsOnSite: Int? = null,
     isDog: Boolean = false,
+    species: String? = null,
     isSamplingMode: Boolean = true,
     onDismiss: () -> Unit,
     onSaveDiagnosis: (PpbeaDiagnosis, Int) -> Unit
@@ -275,6 +279,7 @@ fun PpbeaEvaluationDialog(
                     onSamplingCountChange = { samplingCount = it },
                     isSamplingMode = isSamplingMode,
                     isDog = isDog,
+                    species = species,
                     onUpdateDiagnosis = { currentDiagnosis = it },
                     onBackToSwitches = { showResultScreen = false },
                     onConfirmDiagnosis = {
@@ -478,7 +483,7 @@ fun PpbeaEvaluationDialog(
                             Button(
                                 onClick = {
                                     val diagnosis = PpbeaCriteriaRepository.evaluate(answersState.toMap())
-                                    currentDiagnosis = diagnosis
+                                    currentDiagnosis = diagnosis.copy(observacoes = currentDiagnosis.observacoes)
                                     showResultScreen = true
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -647,13 +652,16 @@ private fun PpbeaSwitchCriterionCard(
 @Composable
 fun PpbeaEvaluationDialog(
     initialDiagnosis: PpbeaDiagnosis?,
+    species: String? = null,
+    isDog: Boolean = false,
     onDismiss: () -> Unit,
     onSaveDiagnosis: (PpbeaDiagnosis) -> Unit
 ) {
     PpbeaEvaluationDialog(
         initialDiagnosis = initialDiagnosis,
         initialAnimalCount = 1,
-        isDog = false,
+        isDog = isDog,
+        species = species,
         isSamplingMode = false,
         onDismiss = onDismiss,
         onSaveDiagnosis = { diag, _ -> onSaveDiagnosis(diag) }
@@ -678,12 +686,14 @@ fun DiagnosticoGeralView(
     onSamplingCountChange: (Int) -> Unit = {},
     isSamplingMode: Boolean = false,
     isDog: Boolean = false,
+    species: String? = null,
     onUpdateDiagnosis: (PpbeaDiagnosis) -> Unit,
     onBackToSwitches: () -> Unit,
     onConfirmDiagnosis: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var showKnowledgeDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -939,13 +949,47 @@ fun DiagnosticoGeralView(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SEÇÃO: Observações:
-        Text(
-            text = "Observações:",
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.5.sp,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        // SEÇÃO: Observações: com botão Conhecimento ao lado do título
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Observações:",
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.5.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { showKnowledgeDialog = true }
+                    .testTag("btn_knowledge_guide"),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_owl),
+                        contentDescription = "Conhecimento",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Conhecimento",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 
@@ -958,7 +1002,7 @@ fun DiagnosticoGeralView(
             minLines = 4,
             maxLines = 8,
             shape = RoundedCornerShape(10.dp),
-            placeholder = { Text("Laudo técnico pericial fundamentado conforme CRMV-MS...") }
+            placeholder = { Text("Digite observações periciais da fiscalização...") }
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -990,6 +1034,15 @@ fun DiagnosticoGeralView(
                 Text("Aplicar Laudo", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
+    }
+
+    // Modal de Conhecimento com consultas sobre a espécie selecionada
+    if (showKnowledgeDialog) {
+        val targetSpecies = resolveAnimalSpecies(species = species, isDog = isDog)
+        DfSafetyInfoDialog(
+            species = targetSpecies,
+            onDismiss = { showKnowledgeDialog = false }
+        )
     }
 }
 

@@ -476,8 +476,9 @@ fun EditInspectionDialog(
                                 val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
                                 val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(answersMap)
                                 val indivToSave = IndividualAnimalSerializer.serializeList(individualEvaluations)
+                                val notesToSave = ppbeaDiagnosis?.observacoes?.ifBlank { notes } ?: notes
                                 onSave(
-                                    notes, ra, quadra, conjunto, numero, horseDescription,
+                                    notesToSave, ra, quadra, conjunto, numero, horseDescription,
                                     horseCount, mistreatedHorseCount, alertIndicatorsToSave,
                                     adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
                                     requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
@@ -2469,11 +2470,15 @@ fun EditInspectionDialog(
             initialAnimalCount = if (sampledAnimalCount > 0) sampledAnimalCount else 1,
             totalAnimalsOnSite = horseCount,
             isDog = isDog,
+            species = inspection.species,
             isSamplingMode = true,
             onDismiss = { showPpbeaEvaluationDialog = false },
             onSaveDiagnosis = { diagnosis, newSamplingCount ->
                 sampledAnimalCount = newSamplingCount
                 ppbeaDiagnosis = diagnosis
+                if (diagnosis.observacoes.isNotBlank()) {
+                    notes = diagnosis.observacoes
+                }
                 answersMap = diagnosis.answersMap.toMutableMap()
 
                 val newMistreatments = mistreatmentIndicators.toMutableList()
