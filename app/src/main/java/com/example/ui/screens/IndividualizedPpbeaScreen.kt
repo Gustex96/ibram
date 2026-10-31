@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,12 +30,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -49,9 +54,12 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,6 +67,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,11 +76,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.util.WatermarkUtils
+import java.io.File
 import com.example.data.model.EnquadramentoMausTratos
 import com.example.data.model.IndividualAnimalEvaluation
 import com.example.data.model.PpbeaCriteriaRepository
@@ -99,6 +115,7 @@ fun IndividualizedPpbeaScreen(
     defaultSpecies: String,
     availableTutors: List<TutorEntry> = emptyList(),
     availablePhotoTags: List<String> = emptyList(),
+    availablePhotoPaths: List<String> = emptyList(),
     onSaveAndClose: (List<IndividualAnimalEvaluation>) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -121,6 +138,7 @@ fun IndividualizedPpbeaScreen(
 
     // Controle de qual animal está sendo avaliado no diálogo PPBEA
     var activeEvaluatingAnimalIndex by remember { mutableStateOf<Int?>(null) }
+    var activePhotoTagDialogIndex by remember { mutableStateOf<Int?>(null) }
     var showAddSpeciesDialog by remember { mutableStateOf(false) }
 
     Dialog(
@@ -268,6 +286,9 @@ fun IndividualizedPpbeaScreen(
                     canDelete = evaluationsList.size > 1,
                     availableTutors = availableTutors,
                     availablePhotoTags = availablePhotoTags,
+                    onOpenPhotoTags = {
+                        activePhotoTagDialogIndex = index
+                    },
                     onUpdateTagOrCpf = { newTag ->
                         evaluationsList[index] = item.copy(tagOrCpf = newTag)
                     },
@@ -312,6 +333,24 @@ fun IndividualizedPpbeaScreen(
         )
     }
 
+    // Diálogo Pop-up para seleção de Fotos e múltiplas Tags com switches
+    if (activePhotoTagDialogIndex != null && activePhotoTagDialogIndex in evaluationsList.indices) {
+        val animalIdx = activePhotoTagDialogIndex!!
+        val targetAnimal = evaluationsList[animalIdx]
+
+        PhotoTagSelectionDialog(
+            animalIndex = animalIdx,
+            animal = targetAnimal,
+            availablePhotoPaths = availablePhotoPaths,
+            availablePhotoTags = availablePhotoTags,
+            onDismiss = { activePhotoTagDialogIndex = null },
+            onConfirmTags = { newTagOrCpf ->
+                evaluationsList[animalIdx] = targetAnimal.copy(tagOrCpf = newTagOrCpf)
+                activePhotoTagDialogIndex = null
+            }
+        )
+    }
+
     // Diálogo para escolha da nova espécie a ser adicionada
     if (showAddSpeciesDialog) {
         AddSpeciesSelectionDialog(
@@ -341,6 +380,7 @@ private fun IndividualAnimalCard(
     canDelete: Boolean,
     availableTutors: List<TutorEntry>,
     availablePhotoTags: List<String> = emptyList(),
+    onOpenPhotoTags: () -> Unit,
     onUpdateTagOrCpf: (String) -> Unit,
     onUpdateTutorQualification: (String) -> Unit,
     onUpdateSpecies: (String) -> Unit,
@@ -348,7 +388,6 @@ private fun IndividualAnimalCard(
     onDelete: () -> Unit
 ) {
     var showTutorMenu by remember { mutableStateOf(false) }
-    var showTagMenu by remember { mutableStateOf(false) }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
@@ -578,168 +617,83 @@ private fun IndividualAnimalCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             // CORPO DO CARD CONFORME O DESIGN DO MOCKUP:
-            // Lado Esquerdo: Campo "TAG/Proprietário" | "Identificação do animal"
+            // Lado Esquerdo: Botão com função de abrir pop-up com thumbnails e switches das tags
             // Lado Direito: Botão "Iniciar PPBEA"
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 1. Campo Estilizado em container lilás claro conforme caixa_avaliaçaoindividualizada.png
-                // Inclui menu suspenso com função GET das tags das fotos georreferenciadas
+                // 1. Botão substituindo o campo "TAG/Proprietário" para abrir pop-up com thumbnails e switches de tags
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFE8DEF8), // Tom lavanda/lilás claro do campo no mockup
+                    onClick = onOpenPhotoTags,
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (item.tagOrCpf.isNotBlank()) Color(0xFFE8DEF8) else Color(0xFFF3EDF7),
+                    border = BorderStroke(
+                        width = 1.2.dp,
+                        color = if (item.tagOrCpf.isNotBlank()) Color(0xFF65558F) else Color(0xFFCAC4D0)
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 64.dp)
-                        .testTag("input_tag_owner_$index")
+                        .testTag("btn_select_tags_$index")
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalArrangement = Arrangement.Center
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "TAG/Proprietário",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF49454F) // Label cinza escuro conforme mockup
-                            )
-
-                            // Menu Suspenso (GET das tags das fotos georreferenciadas)
-                            Box {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable { showTagMenu = true }
-                                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                                        .testTag("btn_dropdown_photo_tags_$index"),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PhotoCamera,
-                                        contentDescription = "Tags das fotos georreferenciadas",
-                                        tint = Color(0xFF65558F),
-                                        modifier = Modifier.size(11.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = if (availablePhotoTags.isNotEmpty()) "Tags (${availablePhotoTags.size})" else "Tags",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF65558F)
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = Color(0xFF65558F),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = showTagMenu,
-                                    onDismissRequest = { showTagMenu = false },
-                                    modifier = Modifier
-                                        .background(Color(0xFF282828))
-                                        .testTag("dropdown_photo_tags_menu_$index")
-                                ) {
-                                    if (availablePhotoTags.isNotEmpty()) {
-                                        Text(
-                                            text = "Tags das Fotos Georreferenciadas",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFD0BCFF),
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                                        )
-                                        availablePhotoTags.forEach { photoTag ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Sell,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFFD0BCFF),
-                                                            modifier = Modifier.size(15.dp)
-                                                        )
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(
-                                                            text = photoTag,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = Color.White,
-                                                            fontSize = 13.sp
-                                                        )
-                                                    }
-                                                },
-                                                onClick = {
-                                                    onUpdateTagOrCpf(photoTag)
-                                                    showTagMenu = false
-                                                }
-                                            )
-                                        }
-                                    } else {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = "Nenhuma TAG digitada nas fotos georreferenciadas",
-                                                    color = Color(0xFFB0B0B0),
-                                                    fontSize = 12.sp
-                                                )
-                                            },
-                                            onClick = { showTagMenu = false }
-                                        )
-                                    }
-                                }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = Color(0xFF65558F),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Fotos & Tags do Exemplar",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF49454F)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            if (item.tagOrCpf.isNotBlank()) {
+                                Text(
+                                    text = item.tagOrCpf,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF1D1B20),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else {
+                                Text(
+                                    text = "Vincular fotos / tags...",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF79747E),
+                                    fontStyle = FontStyle.Italic
+                                )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF65558F).copy(alpha = 0.15f),
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                BasicTextField(
-                                    value = item.tagOrCpf,
-                                    onValueChange = onUpdateTagOrCpf,
-                                    singleLine = true,
-                                    textStyle = TextStyle(
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1D1B20)
-                                    ),
-                                    cursorBrush = SolidColor(Color(0xFF65558F)),
-                                    decorationBox = { innerTextField ->
-                                        if (item.tagOrCpf.isEmpty()) {
-                                            Text(
-                                                text = "Identificação do animal",
-                                                fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.Normal,
-                                                color = Color(0xFF79747E)
-                                            )
-                                        }
-                                        innerTextField()
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-
-                            if (availablePhotoTags.isNotEmpty()) {
+                            Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Selecionar Tag",
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = "Selecionar fotos e tags",
                                     tint = Color(0xFF65558F),
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clickable { showTagMenu = true }
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
                         }
@@ -900,4 +854,395 @@ private fun AddSpeciesSelectionDialog(
             }
         }
     )
+}
+
+/**
+ * Item selecionável de foto georreferenciada e sua respectiva TAG.
+ */
+private data class SelectablePhotoTagItem(
+    val photoPath: String,
+    val photoIndex: Int,
+    val tag: String
+) {
+    val itemKey: String
+        get() = if (tag.isNotBlank()) tag else "Foto #$photoIndex"
+}
+
+/**
+ * Pop-up com miniaturas das fotos georreferenciadas e suas respectivas TAGs,
+ * permitindo ao fiscal selecionar múltiplas TAGs por exemplar através de botões switch.
+ */
+@Composable
+private fun PhotoTagSelectionDialog(
+    animalIndex: Int,
+    animal: IndividualAnimalEvaluation,
+    availablePhotoPaths: List<String>,
+    availablePhotoTags: List<String>,
+    onDismiss: () -> Unit,
+    onConfirmTags: (String) -> Unit
+) {
+    val photoItems = remember(availablePhotoPaths, availablePhotoTags) {
+        if (availablePhotoPaths.isNotEmpty()) {
+            availablePhotoPaths.mapIndexed { idx, path ->
+                val extracted = WatermarkUtils.extractTagFromPhotoPath(path)?.trim() ?: ""
+                val fallback = availablePhotoTags.getOrNull(idx)?.trim() ?: ""
+                val effectiveTag = extracted.ifBlank { fallback }
+                SelectablePhotoTagItem(
+                    photoPath = path,
+                    photoIndex = idx + 1,
+                    tag = effectiveTag
+                )
+            }
+        } else if (availablePhotoTags.isNotEmpty()) {
+            availablePhotoTags.mapIndexed { idx, tag ->
+                SelectablePhotoTagItem(
+                    photoPath = "",
+                    photoIndex = idx + 1,
+                    tag = tag
+                )
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+    // Inicializa o estado dos switches com base nas tags já vinculadas ao exemplar
+    val selectedTagsMap = remember(animal.tagOrCpf, photoItems) {
+        val initialSelected = mutableStateMapOf<String, Boolean>()
+        val currentTags = animal.tagOrCpf.split(Regex("[,;•]"))
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+
+        photoItems.forEach { item ->
+            val tagNorm = item.tag.lowercase()
+            val photoKeyNorm = "foto #${item.photoIndex}"
+            val isMatch = currentTags.any { cur ->
+                (tagNorm.isNotBlank() && (tagNorm == cur || tagNorm.contains(cur) || cur.contains(tagNorm))) ||
+                photoKeyNorm == cur
+            }
+            if (isMatch) {
+                initialSelected[item.itemKey] = true
+            }
+        }
+        initialSelected
+    }
+
+    var customTagInput by remember { mutableStateOf("") }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .heightIn(max = 640.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .testTag("dialog_photo_tag_selection"),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+            shadowElevation = 16.dp,
+            border = BorderStroke(1.2.dp, Color(0xFF65558F).copy(alpha = 0.5f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                // Header do Pop-up
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF65558F).copy(alpha = 0.15f),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoLibrary,
+                                    contentDescription = null,
+                                    tint = Color(0xFF65558F),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column {
+                            Text(
+                                text = "Fotos & Tags Georreferenciadas",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Exemplar #${animalIndex + 1} • ${animal.species}",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF65558F),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Selecione as fotos e tags pertencentes a este exemplar utilizando os botões switch. É possível vincular mais de uma tag:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Lista com os thumbnails das fotos, respectivas tags e botões switchs
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (photoItems.isEmpty()) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = null,
+                                        tint = Color(0xFF9E9E9E),
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Nenhuma foto georreferenciada tirada até o momento.",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF757575),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Tire fotos na câmera do app ou digite uma identificação/TAG manual abaixo.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF9E9E9E),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        itemsIndexed(photoItems) { idx, photoItem ->
+                            val isChecked = selectedTagsMap[photoItem.itemKey] == true
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(
+                                        width = if (isChecked) 1.6.dp else 0.8.dp,
+                                        color = if (isChecked) Color(0xFF65558F) else MaterialTheme.colorScheme.outlineVariant,
+                                        shape = RoundedCornerShape(12.dp)
+                                    ),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isChecked) Color(0xFFF3EDF7) else MaterialTheme.colorScheme.surface
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        // Miniatura / Thumbnail da Foto
+                                        if (photoItem.photoPath.isNotBlank() && File(photoItem.photoPath).exists()) {
+                                            AsyncImage(
+                                                model = File(photoItem.photoPath),
+                                                contentDescription = "Miniatura da foto ${photoItem.photoIndex}",
+                                                modifier = Modifier
+                                                    .size(64.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color(0xFFE0E0E0)),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            Surface(
+                                                modifier = Modifier
+                                                    .size(64.dp)
+                                                    .clip(RoundedCornerShape(8.dp)),
+                                                color = Color(0xFFE8DEF8)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.PhotoCamera,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF65558F),
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Foto #${photoItem.photoIndex}",
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+
+                                            Spacer(modifier = Modifier.height(3.dp))
+
+                                            if (photoItem.tag.isNotBlank()) {
+                                                Surface(
+                                                    color = Color(0xFF65558F).copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Sell,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFF65558F),
+                                                            modifier = Modifier.size(12.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text(
+                                                            text = photoItem.tag,
+                                                            fontSize = 11.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF65558F)
+                                                        )
+                                                    }
+                                                }
+                                            } else {
+                                                Text(
+                                                    text = "Sem TAG informada na captura",
+                                                    fontSize = 10.5.sp,
+                                                    color = Color(0xFF888888),
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botão Switch para seleção da foto e respectiva tag
+                                    Switch(
+                                        checked = isChecked,
+                                        onCheckedChange = { checked ->
+                                            selectedTagsMap[photoItem.itemKey] = checked
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = Color(0xFF65558F)
+                                        ),
+                                        modifier = Modifier.testTag("switch_photo_tag_${photoItem.photoIndex}")
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Campo para adicionar identificação / TAG manual adicional se desejado
+                OutlinedTextField(
+                    value = customTagInput,
+                    onValueChange = { customTagInput = it },
+                    label = { Text("Ou digite identificação / TAG adicional", fontSize = 11.5.sp) },
+                    placeholder = { Text("Ex: Cão 1, Baia 3, Registro...", fontSize = 11.sp) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_custom_tag_dialog"),
+                    textStyle = TextStyle(fontSize = 13.sp)
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Botões de Ação
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Cancelar", fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            val activeTags = selectedTagsMap.filter { it.value }.keys.toMutableList()
+                            if (customTagInput.isNotBlank()) {
+                                activeTags.add(customTagInput.trim())
+                            }
+                            val result = activeTags.distinct().joinToString(", ")
+                            onConfirmTags(result)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF65558F),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.testTag("btn_confirm_photo_tags")
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Confirmar Tags", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+    }
 }

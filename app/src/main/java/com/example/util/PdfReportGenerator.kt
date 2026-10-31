@@ -401,15 +401,19 @@ object PdfReportGenerator {
         val matched = mutableListOf<String>()
         val tag = animal.tagOrCpf.trim()
 
-        // 1. Busca por correspondência exata ou parcial da TAG
+        // 1. Busca por correspondência exata ou parcial da TAG (suporta múltiplas TAGs separadas por vírgula ou ponto)
         if (tag.isNotBlank()) {
-            val cleanTag = tag.take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+            val subTags = tag.split(Regex("[,;•]")).map { it.trim() }.filter { it.isNotBlank() }
             for (photoPath in allPhotos) {
                 val extractedTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(photoPath)
-                if (extractedTag != null && (extractedTag.equals(tag, ignoreCase = true) || extractedTag.contains(tag, ignoreCase = true) || tag.contains(extractedTag, ignoreCase = true))) {
-                    if (!matched.contains(photoPath)) matched.add(photoPath)
-                } else if (photoPath.contains("_TAG_${cleanTag}_", ignoreCase = true) || photoPath.contains("_TAG_${tag}_", ignoreCase = true)) {
-                    if (!matched.contains(photoPath)) matched.add(photoPath)
+                val matchesAny = subTags.any { st ->
+                    val cleanSt = st.take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                    (extractedTag != null && (extractedTag.equals(st, ignoreCase = true) || extractedTag.contains(st, ignoreCase = true) || st.contains(extractedTag, ignoreCase = true))) ||
+                    photoPath.contains("_TAG_${cleanSt}_", ignoreCase = true) || photoPath.contains("_TAG_${st}_", ignoreCase = true) ||
+                    photoPath.contains("Foto${st}_", ignoreCase = true) || photoPath.contains("Foto${st}.", ignoreCase = true)
+                }
+                if (matchesAny && !matched.contains(photoPath)) {
+                    matched.add(photoPath)
                 }
             }
         }
@@ -1132,12 +1136,7 @@ object PdfReportGenerator {
 
         // SECTION 4: 4. DIAGNÓSTICO GERAL & PARECER TÉCNICO
         pageManager.ensureSpace(34f)
-        val section4Title = if (inspection.individualEvaluations.isNotEmpty()) {
-            "4. DIAGNÓSTICO E PARECER TÉCNICO INDIVIDUALIZADO (${inspection.individualEvaluations.size} ANIMAIS)"
-        } else {
-            "4. DIAGNÓSTICO GERAL & PARECER TÉCNICO (AMOSTRAGEM - ${inspection.effectiveSampledCount} DE ${inspection.horseCount} ANIMAIS)"
-        }
-        
+
 
         val relatorioGeral = cleanEccTerms(
             inspection.horseDescription.trim().ifBlank {

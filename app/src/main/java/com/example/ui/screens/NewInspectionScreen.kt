@@ -2459,6 +2459,7 @@ fun NewInspectionScreen(
             defaultSpecies = draft.species,
             availableTutors = draft.tutors,
             availablePhotoTags = viewModel.getGeoreferencedPhotoTags(),
+            availablePhotoPaths = draft.allPhotoPaths,
             onSaveAndClose = { updatedEvaluations ->
                 viewModel.updateIndividualEvaluations(updatedEvaluations)
                 showIndividualizedScreen = false

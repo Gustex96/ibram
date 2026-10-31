@@ -2419,6 +2419,7 @@ fun EditInspectionDialog(
             defaultSpecies = inspection.species,
             availableTutors = tutorsList,
             availablePhotoTags = availablePhotoTags,
+            availablePhotoPaths = photoPaths,
             onSaveAndClose = { updatedList: List<IndividualAnimalEvaluation> ->
                 individualEvaluations = updatedList
                 if (updatedList.isNotEmpty()) {
