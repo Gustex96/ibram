@@ -1476,114 +1476,11 @@ fun PhotoZoomDialog(
     initialIndex: Int = 0,
     onDismiss: () -> Unit
 ) {
-    var currentIndex by remember {
-        mutableIntStateOf(initialIndex.coerceIn(0, kotlin.math.max(0, photoPaths.lastIndex)))
-    }
-    val currentPath = photoPaths.getOrNull(currentIndex) ?: ""
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        ) {
-            val file = File(currentPath)
-            if (file.exists()) {
-                AsyncImage(
-                    model = file,
-                    contentDescription = "Foto ampliada com marca d'água da fiscalização",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-
-            // Top Bar with Counter and Close
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .background(Color.Black.copy(alpha = 0.55f))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (photoPaths.size > 1) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = "📸 Foto ${currentIndex + 1} de ${photoPaths.size}",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
-                }
-
-                Surface(
-                    color = Color.Black.copy(alpha = 0.6f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(38.dp)
-                ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Fechar visualização",
-                            tint = Color.White
-                        )
-                    }
-                }
-            }
-
-            // Navigation Arrows (Previous / Next)
-            if (photoPaths.size > 1) {
-                if (currentIndex > 0) {
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.6f),
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 16.dp)
-                            .size(44.dp)
-                    ) {
-                        IconButton(onClick = { currentIndex-- }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Foto anterior",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-
-                if (currentIndex < photoPaths.lastIndex) {
-                    Surface(
-                        color = Color.Black.copy(alpha = 0.6f),
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 16.dp)
-                            .size(44.dp)
-                    ) {
-                        IconButton(onClick = { currentIndex++ }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Próxima foto",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    com.example.ui.components.ZoomablePhotoDialog(
+        photoPaths = photoPaths,
+        initialIndex = initialIndex,
+        onDismiss = onDismiss
+    )
 }
 
 @Composable
@@ -1591,9 +1488,9 @@ fun PhotoZoomDialog(
     photoPath: String,
     onDismiss: () -> Unit
 ) {
-    PhotoZoomDialog(
-        photoPaths = listOf(photoPath),
-        initialIndex = 0,
+    com.example.ui.components.ZoomablePhotoDialog(
+        photoPath = photoPath,
         onDismiss = onDismiss
     )
 }
+

@@ -62,6 +62,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -621,7 +622,37 @@ fun NewInspectionScreen(
                                     }
                                 }
                             }
+
+                            // Bottom-left hint badge for finger zoom
+                            Surface(
+                                color = Color(0xCC000000),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(8.dp)
+                                    .clickable { previewPhotoPath = activePhotoPath }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ZoomIn,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD54F),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Toque para ampliar com os dedos",
+                                        color = Color.White,
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
                         }
+
 
                         // Thumbnail strip if there are multiple photos
                         if (photos.size > 1) {
@@ -2458,35 +2489,16 @@ fun NewInspectionScreen(
         )
     }
 
-    // Fullscreen Photo Preview Dialog
+    // Fullscreen Interactive Photo Zoom Dialog with pinch-to-zoom
     if (previewPhotoPath != null) {
-        Dialog(
-            onDismissRequest = { previewPhotoPath = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
-                AsyncImage(
-                    model = File(previewPhotoPath!!),
-                    contentDescription = "Visualização expandida",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-                IconButton(
-                    onClick = { previewPhotoPath = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .background(Color(0x88000000), CircleShape)
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
-                }
-            }
-        }
+        val activeIdx = draft.allPhotoPaths.indexOf(previewPhotoPath).coerceAtLeast(0)
+        com.example.ui.components.ZoomablePhotoDialog(
+            photoPaths = if (draft.allPhotoPaths.isNotEmpty()) draft.allPhotoPaths else listOf(previewPhotoPath!!),
+            initialIndex = activeIdx,
+            onDismiss = { previewPhotoPath = null }
+        )
     }
+
 
     // Live Camera Screen with real-time GPS & RA HUD overlay
     if (showLiveCamera) {

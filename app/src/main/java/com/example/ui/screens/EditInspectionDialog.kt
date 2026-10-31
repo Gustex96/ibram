@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -276,9 +277,7 @@ fun EditInspectionDialog(
         }
     }
 
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
+    val processSelectedUris: (List<Uri>) -> Unit = { uris ->
         if (uris.isNotEmpty()) {
             isProcessingPhoto = true
             coroutineScope.launch(Dispatchers.IO) {
@@ -303,11 +302,39 @@ fun EditInspectionDialog(
                     if (newlyAdded.isNotEmpty()) {
                         photoPaths = photoPaths + newlyAdded
                         selectedPhotoIndex = photoPaths.lastIndex
+                        val extracted = newlyAdded.mapNotNull { WatermarkUtils.extractTagFromPhotoPath(it) }
+                        if (extracted.isNotEmpty()) {
+                            capturedPhotoTags = (capturedPhotoTags + extracted).distinct()
+                        }
                         Toast.makeText(context, "${newlyAdded.size} foto(s) anexada(s) com sucesso!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Erro ao processar as fotos selecionadas.", Toast.LENGTH_SHORT).show()
                     }
                     isProcessingPhoto = false
                 }
             }
+        }
+    }
+
+    val visualMediaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris: List<Uri> ->
+        processSelectedUris(uris)
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        processSelectedUris(uris)
+    }
+
+    val launchGallery: () -> Unit = {
+        try {
+            visualMediaLauncher.launch(
+                androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        } catch (_: Exception) {
+            galleryLauncher.launch("image/*")
         }
     }
 
@@ -320,6 +347,7 @@ fun EditInspectionDialog(
             Toast.makeText(context, "Permissão de câmera necessária.", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     // Estados para o Protocolo de Perícia em Bem-Estar Animal (PPBEA)
     var individualEvaluations by remember(inspection.id, inspection.individualEvaluationsData) {
@@ -769,7 +797,37 @@ fun EditInspectionDialog(
                                         }
                                     }
                                 }
+
+                                // Bottom-left hint badge for finger zoom
+                                Surface(
+                                    color = Color(0xCC000000),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(8.dp)
+                                        .clickable { previewPhotoPath = activePhotoPath }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ZoomIn,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFFD54F),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Toque para ampliar com os dedos",
+                                            color = Color.White,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
                             }
+
 
                             // Thumbnail strip if there are multiple photos
                             if (photoPaths.size > 1) {
@@ -846,7 +904,7 @@ fun EditInspectionDialog(
                                 }
 
                                 OutlinedButton(
-                                    onClick = { galleryLauncher.launch("image/*") },
+                                    onClick = { launchGallery() },
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -918,13 +976,14 @@ fun EditInspectionDialog(
                                     }
 
                                     OutlinedButton(
-                                        onClick = { galleryLauncher.launch("image/*") },
+                                        onClick = { launchGallery() },
                                         modifier = Modifier.weight(1f).testTag("pick_gallery_button")
                                     ) {
                                         Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text("Anexar Fotos")
                                     }
+
                                 }
                             }
                         }
@@ -2469,82 +2528,74 @@ fun EditInspectionDialog(
     }
 
     if (previewPhotoPath != null) {
-        Dialog(
-            onDismissRequest = { previewPhotoPath = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
-                AsyncImage(
-                    model = File(previewPhotoPath!!),
-                    contentDescription = "Visualização expandida",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-                IconButton(
-                    onClick = { previewPhotoPath = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .background(Color(0x88000000), CircleShape)
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
-                }
-            }
-        }
+        val activeIdx = photoPaths.indexOf(previewPhotoPath).coerceAtLeast(0)
+        com.example.ui.components.ZoomablePhotoDialog(
+            photoPaths = if (photoPaths.isNotEmpty()) photoPaths else listOf(previewPhotoPath!!),
+            initialIndex = activeIdx,
+            onDismiss = { previewPhotoPath = null }
+        )
     }
 
     if (showLiveCamera) {
-        CameraCaptureScreen(
-            initialLatitude = inspection.latitude,
-            initialLongitude = inspection.longitude,
-            administrativeRegion = ra.ifBlank { inspection.administrativeRegion },
-            protocolNumber = inspection.protocolNumber,
-            capturedPhotosCount = photoPaths.size,
-            onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag, orientationDegrees ->
-                showLiveCamera = false
-                if (!photoTag.isNullOrBlank()) {
-                    val trimmed = photoTag.trim()
-                    if (!capturedPhotoTags.contains(trimmed)) {
-                        capturedPhotoTags = capturedPhotoTags + trimmed
-                    }
-                }
-                isProcessingPhoto = true
-                coroutineScope.launch(Dispatchers.IO) {
-                    val watermarked = WatermarkUtils.applyWatermarkAndSave(
-                        context = context,
-                        inputUri = uri,
-                        latitude = exactLat ?: inspection.latitude,
-                        longitude = exactLng ?: inspection.longitude,
-                        administrativeRegion = dynamicRa.ifBlank { ra.ifBlank { inspection.administrativeRegion } },
-                        protocol = inspection.protocolNumber,
-                        captureTimeMillis = exactTime ?: System.currentTimeMillis(),
-                        exemplarIndex = photoPaths.size + 1,
-                        photoTag = photoTag,
-                        deviceOrientationDegrees = orientationDegrees
-                    )
-                    withContext(Dispatchers.Main) {
-                        if (watermarked != null) {
-                            photoPaths = photoPaths + watermarked.absolutePath
-                            selectedPhotoIndex = photoPaths.lastIndex
-                            Toast.makeText(context, "Nova foto capturada e anexada!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Erro ao gravar marca d'água.", Toast.LENGTH_SHORT).show()
+        Dialog(
+            onDismissRequest = { showLiveCamera = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            CameraCaptureScreen(
+                initialLatitude = inspection.latitude,
+                initialLongitude = inspection.longitude,
+                administrativeRegion = ra.ifBlank { inspection.administrativeRegion },
+                protocolNumber = inspection.protocolNumber,
+                capturedPhotosCount = photoPaths.size,
+                onPhotoCaptured = { uri, exactLat, exactLng, exactTime, dynamicRa, photoTag, orientationDegrees ->
+                    showLiveCamera = false
+                    if (!photoTag.isNullOrBlank()) {
+                        val trimmed = photoTag.trim()
+                        if (!capturedPhotoTags.contains(trimmed)) {
+                            capturedPhotoTags = capturedPhotoTags + trimmed
                         }
-                        isProcessingPhoto = false
                     }
+                    isProcessingPhoto = true
+                    coroutineScope.launch(Dispatchers.IO) {
+                        val watermarked = WatermarkUtils.applyWatermarkAndSave(
+                            context = context,
+                            inputUri = uri,
+                            latitude = exactLat ?: inspection.latitude,
+                            longitude = exactLng ?: inspection.longitude,
+                            administrativeRegion = dynamicRa.ifBlank { ra.ifBlank { inspection.administrativeRegion } },
+                            protocol = inspection.protocolNumber,
+                            captureTimeMillis = exactTime ?: System.currentTimeMillis(),
+                            exemplarIndex = photoPaths.size + 1,
+                            photoTag = photoTag,
+                            deviceOrientationDegrees = orientationDegrees
+                        )
+                        withContext(Dispatchers.Main) {
+                            if (watermarked != null) {
+                                photoPaths = photoPaths + watermarked.absolutePath
+                                selectedPhotoIndex = photoPaths.lastIndex
+                                val extracted = WatermarkUtils.extractTagFromPhotoPath(watermarked.absolutePath)
+                                if (extracted != null && !capturedPhotoTags.contains(extracted)) {
+                                    capturedPhotoTags = capturedPhotoTags + extracted
+                                }
+                                Toast.makeText(context, "Nova foto capturada e anexada!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Erro ao gravar marca d'água.", Toast.LENGTH_SHORT).show()
+                            }
+                            isProcessingPhoto = false
+                        }
+                    }
+                },
+                onPickFromGallery = {
+                    showLiveCamera = false
+                    launchGallery()
+                },
+                onClose = {
+                    showLiveCamera = false
                 }
-            },
-            onPickFromGallery = {
-                galleryLauncher.launch("image/*")
-                showLiveCamera = false
-            },
-            onClose = {
-                showLiveCamera = false
-            }
-        )
+            )
+        }
     }
 }

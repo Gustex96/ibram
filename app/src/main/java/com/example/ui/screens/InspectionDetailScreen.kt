@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -290,8 +291,25 @@ fun InspectionDetailScreen(
                             Text("Ampliar Foto", color = Color.White, fontSize = 11.sp)
                         }
                     }
+
+                    // Bottom Left: Finger Zoom Hint
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.65f),
+                        shape = RoundedCornerShape(topEnd = 8.dp),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.ZoomIn, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Toque para ampliar com os dedos", color = Color.White, fontSize = 10.5.sp)
+                        }
+                    }
                 }
             }
+
 
             // Thumbnail strip if multiple photos
             if (allPhotos.size > 1) {
