@@ -1656,63 +1656,6 @@ fun NewInspectionScreen(
                         }
                     }
                 }
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Descrição e Parecer do Relatório Geral",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Surface(
-                            onClick = { showAnatomyDialog = true },
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.testTag("button_open_horse_atlas")
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_owl),
-                                    contentDescription = "Consultar Conhecimento (5 Domínios e Atlas)",
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "Conhecimento",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    AppOutlinedTextField(
-                        value = draft.horseDescription,
-                        onValueChange = { viewModel.updateHorseDescription(it) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("horse_description_field"),
-                        placeholder = {
-                            Text("Descreva a situação física dos animais, parecer técnico geral e constatações periciais da fiscalização...")
-                        },
-                        minLines = 3,
-                        maxLines = 6,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                }
             }
 
             // 4. SECTION: ENDEREÇO DA AÇÃO FISCAL & LOCALIZAÇÃO
