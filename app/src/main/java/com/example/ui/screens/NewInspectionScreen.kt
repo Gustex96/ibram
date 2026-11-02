@@ -161,6 +161,64 @@ fun NewInspectionScreen(
     var showPpbeaSelectionModal by rememberSaveable { mutableStateOf(false) }
     var showIndividualizedScreen by rememberSaveable { mutableStateOf(false) }
 
+    // Alertas de formulários vazios e confirmação antes de prosseguir
+    var showEmptyFormWarningDialog by rememberSaveable { mutableStateOf(false) }
+    var showConfirmSaveDialog by rememberSaveable { mutableStateOf(false) }
+    var emptyFormItems by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isExportPdfAction by rememberSaveable { mutableStateOf(false) }
+
+    fun proceedWithSave() {
+        if (isExportPdfAction) {
+            viewModel.saveDraft(
+                onSuccess = { saved ->
+                    Toast.makeText(context, "Fiscalização salva! Gerando PDF...", Toast.LENGTH_SHORT).show()
+                    viewModel.exportSinglePdf(saved)
+                    onSavedSuccessfully(saved.id)
+                },
+                onError = { err ->
+                    Toast.makeText(context, err, Toast.LENGTH_LONG).show()
+                }
+            )
+        } else {
+            viewModel.saveDraft(
+                onSuccess = { saved ->
+                    Toast.makeText(context, "Fiscalização registrada com sucesso!", Toast.LENGTH_SHORT).show()
+                    onSavedSuccessfully(saved.id)
+                },
+                onError = { err ->
+                    Toast.makeText(context, err, Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
+    fun triggerSaveAction(exportPdf: Boolean) {
+        val missing = mutableListOf<String>()
+        if (draft.administrativeRegion.isBlank()) missing.add("• Região Administrativa (RA / Localização) não informada")
+        if (draft.allPhotoPaths.isEmpty()) missing.add("• Nenhuma fotografia anexada à fiscalização")
+        if (draft.tutors.none { it.name.isNotBlank() }) missing.add("• Nenhum tutor ou responsável cadastrado")
+        if (draft.individualEvaluations.isEmpty()) {
+            missing.add("• Nenhuma avaliação de bem-estar animal (PPBEA) realizada")
+        } else {
+            val pendingPpbea = draft.individualEvaluations.count { !it.isEvaluated }
+            if (pendingPpbea > 0) {
+                missing.add("• Avaliação PPBEA pendente em $pendingPpbea exemplar(es)")
+            }
+            val withoutTag = draft.individualEvaluations.count { it.tagOrCpf.isBlank() }
+            if (withoutTag > 0) {
+                missing.add("• Fiscal não colocou TAG em $withoutTag exemplar(es)")
+            }
+        }
+
+        isExportPdfAction = exportPdf
+        if (missing.isNotEmpty()) {
+            emptyFormItems = missing
+            showEmptyFormWarningDialog = true
+        } else {
+            showConfirmSaveDialog = true
+        }
+    }
+
     BackHandler {
         onNavigateBack()
     }
@@ -1419,138 +1477,7 @@ fun NewInspectionScreen(
                                 }
                             }
 
-                            // 2. Card de Diagnóstico Geral Realizado Conforme image.png
-                            if (draft.ppbeaDiagnosis != null) {
-                                val diag = draft.ppbeaDiagnosis!!
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Surface(
-                                    color = when (diag.grauBemEstar) {
-                                        com.example.data.model.GrauBemEstar.MUITO_BAIXO, com.example.data.model.GrauBemEstar.BAIXO -> Color(0xFFFFEBEE)
-                                        com.example.data.model.GrauBemEstar.REGULAR -> Color(0xFFFFF8E1)
-                                        com.example.data.model.GrauBemEstar.ALTO, com.example.data.model.GrauBemEstar.MUITO_ALTO -> Color(0xFFE8F5E9)
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.2.dp, Color(diag.grauBemEstar.colorHex)),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("card_ppbea_diagnosis_summary")
-                                ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(text = "⚖️", fontSize = 14.sp)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = "Diagnóstico: ${diag.grauBemEstar.label.uppercase()}",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = Color(diag.grauBemEstar.colorHex)
-                                                )
-                                            }
-                                        }
 
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = diag.ocorrenciaMausTratos.label,
-                                            fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color(diag.ocorrenciaMausTratos.colorHex)
-                                        )
-
-                                        if (draft.individualEvaluations.isEmpty()) {
-                                            val sampleSize = if (draft.sampledAnimalCount > 0) draft.sampledAnimalCount else 1
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Surface(
-                                                color = Color(0xFF1B5E20).copy(alpha = 0.08f),
-                                                shape = RoundedCornerShape(6.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                                                    Text(
-                                                        text = "Metodologia: Amostragem Geral",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF1B5E20)
-                                                    )
-                                                    Text(
-                                                        text = "• Total no local: ${draft.horseCount} | Amostra periciada: $sampleSize | Sinais de maus-tratos apurados: ${draft.mistreatedHorseCount}",
-                                                        fontSize = 10.5.sp,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "Pareceres: Nutrição [${diag.nutricionalParecer.label}] • Conforto [${diag.confortoParecer.label}] • Saúde [${diag.saudeParecer.label}] • Comportamento [${diag.comportamentalParecer.label}]",
-                                            fontSize = 10.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        // Botão "✓ Aplicar Resultado ao Relatório Geral"
-                                        Button(
-                                            onClick = {
-                                                val inadequacoes = mutableListOf<String>()
-                                                if (diag.nutricionalParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Nutrição")
-                                                if (diag.confortoParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Conforto")
-                                                if (diag.saudeParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Saúde")
-                                                if (diag.comportamentalParecer != com.example.data.model.ParecerDomain.ADEQUADO) inadequacoes.add("Comportamento")
-
-                                                val textoSintese = buildString {
-                                                    append("Protocolo PPBEA (Res. CFMV nº 1.236/2018). ")
-                                                    append("Constatado Grau de Bem-Estar ${diag.grauBemEstar.label.uppercase()}. ")
-                                                    if (diag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
-                                                        append("Restam configurados indícios técnicos de MAUS-TRATOS")
-                                                        if (inadequacoes.isNotEmpty()) {
-                                                            append(" (inadequações em: ${inadequacoes.distinct().joinToString(", ")}).")
-                                                        } else {
-                                                            append(".")
-                                                        }
-                                                    } else if (diag.ocorrenciaMausTratos == com.example.data.model.EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO) {
-                                                        append("Não configura crime imediato de maus-tratos, mas exige termo de orientação com retorno obrigatório.")
-                                                    } else {
-                                                        append("NÃO CONFIGURA MAUS-TRATOS. Condições adequadas de bem-estar constatadas.")
-                                                    }
-                                                }
-                                                viewModel.updateHorseDescription(textoSintese)
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(8.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF14532D)),
-                                            contentPadding = PaddingValues(vertical = 8.dp)
-                                        ) {
-                                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "✓ Aplicar Resultado ao Relatório Geral",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                                color = Color.White
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            TextButton(
-                                                onClick = { viewModel.clearPpbeaDiagnosis() },
-                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                            ) {
-                                                Text("Limpar Diagnóstico", fontSize = 11.sp, color = Color(0xFFC62828))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
 
                             // Preview dos Indicadores Selecionados
                             if (draft.mistreatmentIndicators.isNotEmpty() || draft.adequateIndicators.isNotEmpty()) {
@@ -2254,16 +2181,7 @@ fun NewInspectionScreen(
                 // Button 1: Save and generate PDF directly
                 Button(
                     onClick = {
-                        viewModel.saveDraft(
-                            onSuccess = { saved ->
-                                Toast.makeText(context, "Fiscalização salva! Gerando PDF...", Toast.LENGTH_SHORT).show()
-                                viewModel.exportSinglePdf(saved)
-                                onSavedSuccessfully(saved.id)
-                            },
-                            onError = { err ->
-                                Toast.makeText(context, err, Toast.LENGTH_LONG).show()
-                            }
-                        )
+                        triggerSaveAction(exportPdf = true)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2286,15 +2204,7 @@ fun NewInspectionScreen(
                 // Button 2: Save only
                 OutlinedButton(
                     onClick = {
-                        viewModel.saveDraft(
-                            onSuccess = { saved ->
-                                Toast.makeText(context, "Fiscalização registrada com sucesso!", Toast.LENGTH_SHORT).show()
-                                onSavedSuccessfully(saved.id)
-                            },
-                            onError = { err ->
-                                Toast.makeText(context, err, Toast.LENGTH_LONG).show()
-                            }
-                        )
+                        triggerSaveAction(exportPdf = false)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2473,6 +2383,120 @@ fun NewInspectionScreen(
             },
             onClose = {
                 showLiveCamera = false
+            }
+        )
+    }
+
+    // ALERTA: Formulários da Fiscalização Vazios ou Incompletos
+    if (showEmptyFormWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyFormWarningDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFD32F2F),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Formulário com Campos Vazios",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Os seguintes campos da fiscalização ainda estão vazios ou pendentes:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            emptyFormItems.forEach { item ->
+                                Text(
+                                    text = item,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFC62828),
+                                    modifier = Modifier.padding(vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = "Por favor, confirme as informações antes de prosseguir. Deseja salvar a fiscalização assim mesmo?",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showEmptyFormWarningDialog = false
+                        proceedWithSave()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Prosseguir e Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyFormWarningDialog = false }) {
+                    Text("Revisar Formulário")
+                }
+            }
+        )
+    }
+
+    // DIÁLOGO: Confirmação de informações antes de salvar
+    if (showConfirmSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmSaveDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF2E7D32),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Confirmar Fiscalização",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Todos os campos e avaliações foram preenchidos. Deseja confirmar as informações e ${if (isExportPdfAction) "salvar gerando o Relatório PDF" else "salvar a fiscalização no aplicativo"}?",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmSaveDialog = false
+                        proceedWithSave()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmSaveDialog = false }) {
+                    Text("Voltar")
+                }
             }
         )
     }

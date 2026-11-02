@@ -408,9 +408,18 @@ object PdfReportGenerator {
                 val extractedTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(photoPath)
                 val matchesAny = subTags.any { st ->
                     val cleanSt = st.take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")
-                    (extractedTag != null && (extractedTag.equals(st, ignoreCase = true) || extractedTag.contains(st, ignoreCase = true) || st.contains(extractedTag, ignoreCase = true))) ||
-                    photoPath.contains("_TAG_${cleanSt}_", ignoreCase = true) || photoPath.contains("_TAG_${st}_", ignoreCase = true) ||
-                    photoPath.contains("Foto${st}_", ignoreCase = true) || photoPath.contains("Foto${st}.", ignoreCase = true)
+                    val isTagMatch = (extractedTag != null && (extractedTag.equals(st, ignoreCase = true) || extractedTag.contains(st, ignoreCase = true) || st.contains(extractedTag, ignoreCase = true))) ||
+                            photoPath.contains("_TAG_${cleanSt}_", ignoreCase = true) || photoPath.contains("_TAG_${st}_", ignoreCase = true) ||
+                            photoPath.contains("Foto${st}_", ignoreCase = true) || photoPath.contains("Foto${st}.", ignoreCase = true)
+
+                    // Correspondência por índice da foto sem TAG (ex: "Foto #1" ou "[Resp: João] Foto #1")
+                    val photoNumberMatch = Regex("Foto\\s*#?\\s*(\\d+)", RegexOption.IGNORE_CASE).find(st)
+                    val isNumberMatch = if (photoNumberMatch != null) {
+                        val num = photoNumberMatch.groupValues[1].toIntOrNull()
+                        num != null && num in 1..allPhotos.size && allPhotos[num - 1] == photoPath
+                    } else false
+
+                    isTagMatch || isNumberMatch
                 }
                 if (matchesAny && !matched.contains(photoPath)) {
                     matched.add(photoPath)

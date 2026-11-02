@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fullscreen
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -405,6 +407,56 @@ fun EditInspectionDialog(
     var showRaSelector by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
+    var showEmptyFormWarningDialog by remember { mutableStateOf(false) }
+    var showConfirmSaveDialog by remember { mutableStateOf(false) }
+    var emptyFormItems by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    fun executeSave() {
+        val alertIndicatorsToSave = if (mistreatedHorseCount == 0) "" else mistreatmentIndicators.joinToString(";;")
+        val adequateIndicatorsToSave = adequateIndicators.joinToString(";;")
+        val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+        val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
+        val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
+        val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(answersMap)
+        val indivToSave = IndividualAnimalSerializer.serializeList(individualEvaluations)
+        val notesToSave = ppbeaDiagnosis?.observacoes?.ifBlank { notes } ?: notes
+        onSave(
+            notesToSave, ra, quadra, conjunto, numero, horseDescription,
+            horseCount, mistreatedHorseCount, alertIndicatorsToSave,
+            adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
+            requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
+            otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
+            prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
+            photoPaths, indivToSave, sampledAnimalCount
+        )
+    }
+
+    fun triggerSave() {
+        val missing = mutableListOf<String>()
+        if (ra.isBlank()) missing.add("• Região Administrativa (RA / Localização) não informada")
+        if (photoPaths.isEmpty()) missing.add("• Nenhuma fotografia anexada")
+        if (tutorsList.none { it.name.isNotBlank() }) missing.add("• Nenhum tutor ou responsável cadastrado")
+        if (individualEvaluations.isEmpty()) {
+            missing.add("• Nenhuma avaliação de bem-estar animal (PPBEA) realizada")
+        } else {
+            val pendingPpbea = individualEvaluations.count { !it.isEvaluated }
+            if (pendingPpbea > 0) {
+                missing.add("• Avaliação PPBEA pendente em $pendingPpbea exemplar(es)")
+            }
+            val withoutTag = individualEvaluations.count { it.tagOrCpf.isBlank() }
+            if (withoutTag > 0) {
+                missing.add("• Fiscal não colocou TAG em $withoutTag exemplar(es)")
+            }
+        }
+
+        if (missing.isNotEmpty()) {
+            emptyFormItems = missing
+            showEmptyFormWarningDialog = true
+        } else {
+            showConfirmSaveDialog = true
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -469,23 +521,7 @@ fun EditInspectionDialog(
 
                         Button(
                             onClick = {
-                                val alertIndicatorsToSave = if (mistreatedHorseCount == 0) "" else mistreatmentIndicators.joinToString(";;")
-                                val adequateIndicatorsToSave = adequateIndicators.joinToString(";;")
-                                val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
-                                val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
-                                val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
-                                val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(answersMap)
-                                val indivToSave = IndividualAnimalSerializer.serializeList(individualEvaluations)
-                                val notesToSave = ppbeaDiagnosis?.observacoes?.ifBlank { notes } ?: notes
-                                onSave(
-                                    notesToSave, ra, quadra, conjunto, numero, horseDescription,
-                                    horseCount, mistreatedHorseCount, alertIndicatorsToSave,
-                                    adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
-                                    requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
-                                    otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
-                                    prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
-                                    photoPaths, indivToSave, sampledAnimalCount
-                                )
+                                triggerSave()
                             },
                             modifier = Modifier
                                 .weight(1.3f)
@@ -1631,144 +1667,7 @@ fun EditInspectionDialog(
                                     }
                                 }
 
-                                // Card de Diagnóstico Geral Realizado
-                                if (ppbeaDiagnosis != null && ppbeaDiagnosis?.isEvaluated == true) {
-                                    val diag = ppbeaDiagnosis!!
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Surface(
-                                        color = when (diag.grauBemEstar) {
-                                            GrauBemEstar.MUITO_BAIXO, GrauBemEstar.BAIXO -> Color(0xFFFFEBEE)
-                                            GrauBemEstar.REGULAR -> Color(0xFFFFF8E1)
-                                            GrauBemEstar.ALTO, GrauBemEstar.MUITO_ALTO -> Color(0xFFE8F5E9)
-                                        },
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.2.dp, Color(diag.grauBemEstar.colorHex)),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("card_ppbea_diagnosis_summary")
-                                    ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(text = "⚖️", fontSize = 14.sp)
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(
-                                                        text = "Diagnóstico: ${diag.grauBemEstar.label.uppercase()}",
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 13.sp,
-                                                        color = Color(diag.grauBemEstar.colorHex)
-                                                    )
-                                                }
-                                            }
 
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = diag.ocorrenciaMausTratos.label,
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = Color(diag.ocorrenciaMausTratos.colorHex)
-                                            )
-
-                                            if (individualEvaluations.isEmpty()) {
-                                                val sampleSize = if (sampledAnimalCount > 0) sampledAnimalCount else 1
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Surface(
-                                                    color = Color(0xFF1B5E20).copy(alpha = 0.08f),
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
-                                                        Text(
-                                                            text = "Metodologia: Amostragem Geral",
-                                                            fontSize = 11.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = Color(0xFF1B5E20)
-                                                        )
-                                                        Text(
-                                                            text = "• Total no local: $horseCount | Amostra periciada: $sampleSize | Sinais de maus-tratos apurados: $mistreatedHorseCount",
-                                                            fontSize = 10.5.sp,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Pareceres: Nutrição [${diag.nutricionalParecer.label}] • Conforto [${diag.confortoParecer.label}] • Saúde [${diag.saudeParecer.label}] • Comportamento [${diag.comportamentalParecer.label}]",
-                                                fontSize = 10.5.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-
-                                            Spacer(modifier = Modifier.height(8.dp))
-
-                                            // Botão "✓ Aplicar Resultado ao Relatório Geral"
-                                            Button(
-                                                onClick = {
-                                                    val inadequacoes = mutableListOf<String>()
-                                                    if (diag.nutricionalParecer != ParecerDomain.ADEQUADO) inadequacoes.add("Nutrição")
-                                                    if (diag.confortoParecer != ParecerDomain.ADEQUADO) inadequacoes.add("Conforto")
-                                                    if (diag.saudeParecer != ParecerDomain.ADEQUADO) inadequacoes.add("Saúde")
-                                                    if (diag.comportamentalParecer != ParecerDomain.ADEQUADO) inadequacoes.add("Comportamento")
-
-                                                    val textoSintese = buildString {
-                                                        append("Protocolo PPBEA (Res. CFMV nº 1.236/2018). ")
-                                                        append("Constatado Grau de Bem-Estar ${diag.grauBemEstar.label.uppercase()}. ")
-                                                        if (diag.ocorrenciaMausTratos == EnquadramentoMausTratos.CONFIGURA_MAUS_TRATOS) {
-                                                            append("Restam configurados indícios técnicos de MAUS-TRATOS")
-                                                            if (inadequacoes.isNotEmpty()) {
-                                                                append(" (inadequações em: ${inadequacoes.distinct().joinToString(", ")}).")
-                                                            } else {
-                                                                append(".")
-                                                            }
-                                                        } else if (diag.ocorrenciaMausTratos == EnquadramentoMausTratos.PRECISA_RECOMENDACOES_RETORNO) {
-                                                            append("Não configura crime imediato de maus-tratos, mas exige termo de orientação com retorno obrigatório.")
-                                                        } else {
-                                                            append("NÃO CONFIGURA MAUS-TRATOS. Condições adequadas de bem-estar constatadas.")
-                                                        }
-                                                    }
-                                                    horseDescription = textoSintese
-                                                },
-                                                modifier = Modifier.fillMaxWidth(),
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF14532D)),
-                                                contentPadding = PaddingValues(vertical = 8.dp)
-                                            ) {
-                                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = "✓ Aplicar Resultado ao Relatório Geral",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 12.sp,
-                                                    color = Color.White
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.End
-                                            ) {
-                                                TextButton(
-                                                    onClick = {
-                                                        ppbeaDiagnosis = null
-                                                        answersMap.clear()
-                                                        mistreatmentIndicators = emptyList()
-                                                        adequateIndicators = emptyList()
-                                                        mistreatedHorseCount = 0
-                                                    },
-                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                                ) {
-                                                    Text("Limpar Diagnóstico", fontSize = 11.sp, color = Color(0xFFC62828))
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
@@ -2546,5 +2445,119 @@ fun EditInspectionDialog(
                 }
             )
         }
+    }
+
+    // ALERTA: Formulários da Fiscalização Vazios ou Incompletos
+    if (showEmptyFormWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmptyFormWarningDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFD32F2F),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Formulário com Campos Vazios",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Os seguintes campos da fiscalização ainda estão vazios ou pendentes:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            emptyFormItems.forEach { item ->
+                                Text(
+                                    text = item,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFC62828),
+                                    modifier = Modifier.padding(vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = "Por favor, confirme as informações antes de prosseguir. Deseja salvar as alterações assim mesmo?",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showEmptyFormWarningDialog = false
+                        executeSave()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20))
+                ) {
+                    Text("Prosseguir e Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyFormWarningDialog = false }) {
+                    Text("Revisar Formulário")
+                }
+            }
+        )
+    }
+
+    // DIÁLOGO: Confirmação de informações antes de salvar
+    if (showConfirmSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmSaveDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF1B5E20),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Confirmar Alterações",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Todos os campos e avaliações foram preenchidos. Deseja confirmar as alterações e salvar a fiscalização?",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmSaveDialog = false
+                        executeSave()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20))
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmSaveDialog = false }) {
+                    Text("Voltar")
+                }
+            }
+        )
     }
 }

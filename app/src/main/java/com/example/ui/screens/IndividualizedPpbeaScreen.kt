@@ -141,6 +141,24 @@ fun IndividualizedPpbeaScreen(
     var activePhotoTagDialogIndex by remember { mutableStateOf<Int?>(null) }
     var showAddSpeciesDialog by remember { mutableStateOf(false) }
 
+    // Alertas de validação e confirmação
+    var showIncompleteFormsAlert by remember { mutableStateOf(false) }
+    var showMissingTagAlert by remember { mutableStateOf(false) }
+    var showConfirmCloseDialog by remember { mutableStateOf(false) }
+
+    fun handleAttemptClose() {
+        val emptyPpbeaIndices = evaluationsList.mapIndexedNotNull { idx, it -> if (!it.isEvaluated) idx + 1 else null }
+        val emptyTagIndices = evaluationsList.mapIndexedNotNull { idx, it -> if (it.tagOrCpf.isBlank()) idx + 1 else null }
+
+        if (emptyPpbeaIndices.isNotEmpty()) {
+            showIncompleteFormsAlert = true
+        } else if (emptyTagIndices.isNotEmpty()) {
+            showMissingTagAlert = true
+        } else {
+            showConfirmCloseDialog = true
+        }
+    }
+
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(
@@ -150,7 +168,7 @@ fun IndividualizedPpbeaScreen(
         )
     ) {
         BackHandler {
-            onSaveAndClose(evaluationsList.toList())
+            handleAttemptClose()
         }
 
         Scaffold(
@@ -174,7 +192,7 @@ fun IndividualizedPpbeaScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = { onSaveAndClose(evaluationsList.toList()) },
+                        onClick = { handleAttemptClose() },
                         modifier = Modifier.testTag("btn_back_individualized_ppbea")
                     ) {
                         Icon(
@@ -245,7 +263,7 @@ fun IndividualizedPpbeaScreen(
                     }
 
                     Button(
-                        onClick = { onSaveAndClose(evaluationsList.toList()) },
+                        onClick = { handleAttemptClose() },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF65558F),
@@ -333,7 +351,7 @@ fun IndividualizedPpbeaScreen(
         )
     }
 
-    // Diálogo Pop-up para seleção de Fotos e múltiplas Tags com switches
+    // Diálogo Pop-up para seleção de Fotos e múltiplas Tags com switches (mesmo sem TAG relaciona ao responsável)
     if (activePhotoTagDialogIndex != null && activePhotoTagDialogIndex in evaluationsList.indices) {
         val animalIdx = activePhotoTagDialogIndex!!
         val targetAnimal = evaluationsList[animalIdx]
@@ -343,9 +361,13 @@ fun IndividualizedPpbeaScreen(
             animal = targetAnimal,
             availablePhotoPaths = availablePhotoPaths,
             availablePhotoTags = availablePhotoTags,
+            availableTutors = availableTutors,
             onDismiss = { activePhotoTagDialogIndex = null },
-            onConfirmTags = { newTagOrCpf ->
-                evaluationsList[animalIdx] = targetAnimal.copy(tagOrCpf = newTagOrCpf)
+            onConfirm = { newTagOrCpf, newTutor ->
+                evaluationsList[animalIdx] = targetAnimal.copy(
+                    tagOrCpf = newTagOrCpf,
+                    tutorQualification = newTutor
+                )
                 activePhotoTagDialogIndex = null
             }
         )
@@ -363,6 +385,184 @@ fun IndividualizedPpbeaScreen(
                     )
                 )
                 showAddSpeciesDialog = false
+            }
+        )
+    }
+
+    // ALERTA 1: Formulários da Fiscalização Vazios ou Incompletos
+    if (showIncompleteFormsAlert) {
+        val emptyPpbeaIndices = evaluationsList.mapIndexedNotNull { idx, it -> if (!it.isEvaluated) idx + 1 else null }
+        val emptyTagIndices = evaluationsList.mapIndexedNotNull { idx, it -> if (it.tagOrCpf.isBlank()) idx + 1 else null }
+
+        AlertDialog(
+            onDismissRequest = { showIncompleteFormsAlert = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFD32F2F),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Formulários de Avaliação Pendentes",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Os seguintes formulários da avaliação ainda estão vazios ou pendentes de preenchimento:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "• Checklist PPBEA pendente no(s) exemplar(es): #${emptyPpbeaIndices.joinToString(", #")}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFC62828)
+                            )
+                            if (emptyTagIndices.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "• Fiscal não colocou TAG no(s) exemplar(es): #${emptyTagIndices.joinToString(", #")}",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE65100),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = "Por favor, confirme as informações antes de prosseguir. Deseja concluir a avaliação assim mesmo ou revisar os formulários?",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showIncompleteFormsAlert = false
+                        onSaveAndClose(evaluationsList.toList())
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF65558F))
+                ) {
+                    Text("Prosseguir Mesmo Assim")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showIncompleteFormsAlert = false }) {
+                    Text("Revisar Formulários")
+                }
+            }
+        )
+    }
+
+    // ALERTA 2: Fiscal não colocou a TAG no exemplar
+    if (showMissingTagAlert) {
+        val emptyTagIndices = evaluationsList.mapIndexedNotNull { idx, it -> if (it.tagOrCpf.isBlank()) idx + 1 else null }
+
+        AlertDialog(
+            onDismissRequest = { showMissingTagAlert = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFE65100),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Alerta: Exemplar(es) sem TAG",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "O fiscal não colocou TAG identificadora no(s) exemplar(es): #${emptyTagIndices.joinToString(", #")}.",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Estes animais e suas fotos ficarão associados diretamente ao responsável cadastrado. Por favor, confirme as informações antes de prosseguir.",
+                        fontSize = 12.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showMissingTagAlert = false
+                        onSaveAndClose(evaluationsList.toList())
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF65558F))
+                ) {
+                    Text("Confirmar e Prosseguir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMissingTagAlert = false }) {
+                    Text("Inserir TAG")
+                }
+            }
+        )
+    }
+
+    // ALERTA 3: Confirmação geral de dados preenchidos antes de prosseguir
+    if (showConfirmCloseDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmCloseDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF2E7D32),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Confirmar Avaliação Individualizada",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Deseja confirmar as avaliações individualizadas de ${evaluationsList.size} exemplar(es) periciado(s) e salvar os dados na fiscalização?",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmCloseDialog = false
+                        onSaveAndClose(evaluationsList.toList())
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("Confirmar e Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmCloseDialog = false }) {
+                    Text("Voltar")
+                }
             }
         )
     }
@@ -870,7 +1070,8 @@ private data class SelectablePhotoTagItem(
 
 /**
  * Pop-up com miniaturas das fotos georreferenciadas e suas respectivas TAGs,
- * permitindo ao fiscal selecionar múltiplas TAGs por exemplar através de botões switch.
+ * permitindo ao fiscal relacionar a foto ao responsável pelo animal mesmo sem TAG,
+ * além de selecionar múltiplas TAGs por exemplar através de botões switch.
  */
 @Composable
 private fun PhotoTagSelectionDialog(
@@ -878,9 +1079,15 @@ private fun PhotoTagSelectionDialog(
     animal: IndividualAnimalEvaluation,
     availablePhotoPaths: List<String>,
     availablePhotoTags: List<String>,
+    availableTutors: List<TutorEntry> = emptyList(),
     onDismiss: () -> Unit,
-    onConfirmTags: (String) -> Unit
+    onConfirm: (newTagOrCpf: String, newTutor: String) -> Unit
 ) {
+    var selectedTutor by remember { mutableStateOf(animal.tutorQualification) }
+    var showTutorMenuInDialog by remember { mutableStateOf(false) }
+    var showNoTagAlertInDialog by remember { mutableStateOf(false) }
+    var customTagInput by remember { mutableStateOf("") }
+
     val photoItems = remember(availablePhotoPaths, availablePhotoTags) {
         if (availablePhotoPaths.isNotEmpty()) {
             availablePhotoPaths.mapIndexed { idx, path ->
@@ -918,7 +1125,7 @@ private fun PhotoTagSelectionDialog(
             val photoKeyNorm = "foto #${item.photoIndex}"
             val isMatch = currentTags.any { cur ->
                 (tagNorm.isNotBlank() && (tagNorm == cur || tagNorm.contains(cur) || cur.contains(tagNorm))) ||
-                photoKeyNorm == cur
+                cur.contains(photoKeyNorm) || photoKeyNorm == cur
             }
             if (isMatch) {
                 initialSelected[item.itemKey] = true
@@ -927,7 +1134,29 @@ private fun PhotoTagSelectionDialog(
         initialSelected
     }
 
-    var customTagInput by remember { mutableStateOf("") }
+    fun executeConfirmation() {
+        val activeTags = mutableListOf<String>()
+        val checkedItems = photoItems.filter { selectedTagsMap[it.itemKey] == true }
+        checkedItems.forEach { item ->
+            if (item.tag.isNotBlank()) {
+                activeTags.add(item.tag)
+            } else {
+                // Foto sem TAG: relaciona com o responsável pelo animal
+                val respShort = selectedTutor.split("(").firstOrNull()?.trim() ?: selectedTutor
+                val tagAssoc = if (respShort.isNotBlank()) {
+                    "Foto #${item.photoIndex} (Resp: $respShort)"
+                } else {
+                    "Foto #${item.photoIndex}"
+                }
+                activeTags.add(tagAssoc)
+            }
+        }
+        if (customTagInput.isNotBlank()) {
+            activeTags.add(customTagInput.trim())
+        }
+        val result = activeTags.distinct().joinToString(", ")
+        onConfirm(result, selectedTutor)
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -940,7 +1169,7 @@ private fun PhotoTagSelectionDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .heightIn(max = 640.dp)
+                .heightIn(max = 660.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .testTag("dialog_photo_tag_selection"),
             color = MaterialTheme.colorScheme.surface,
@@ -982,7 +1211,7 @@ private fun PhotoTagSelectionDialog(
 
                         Column {
                             Text(
-                                text = "Fotos & Tags Georreferenciadas",
+                                text = "Fotos & Identificação do Exemplar",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1013,14 +1242,127 @@ private fun PhotoTagSelectionDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Campo para relacionar as fotos com o Responsável pelo animal (mesmo sem TAG)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF3EDF7),
+                        border = BorderStroke(1.dp, Color(0xFFD0BCFF)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showTutorMenuInDialog = true }
+                            .testTag("btn_select_dialog_tutor")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color(0xFF65558F),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Responsável Relacionado ao Animal / Fotos:",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF49454F)
+                                    )
+                                    Text(
+                                        text = selectedTutor.ifBlank { "Nenhum responsável selecionado (toque para escolher)" },
+                                        fontSize = 12.5.sp,
+                                        fontWeight = if (selectedTutor.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (selectedTutor.isNotBlank()) Color(0xFF4F378B) else Color(0xFF79747E),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = Color(0xFF65558F)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showTutorMenuInDialog,
+                        onDismissRequest = { showTutorMenuInDialog = false },
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .testTag("dropdown_dialog_tutors")
+                    ) {
+                        val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+                        if (validTutors.isNotEmpty()) {
+                            validTutors.forEach { tutor ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = tutor.name.ifBlank { "Tutor sem nome" },
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            if (tutor.cpf.isNotBlank()) {
+                                                Text(
+                                                    text = "CPF: ${tutor.cpf}",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF65558F)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = null,
+                                            tint = Color(0xFF65558F),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    onClick = {
+                                        val qual = if (tutor.cpf.isNotBlank()) "${tutor.name} (${tutor.cpf})" else tutor.name
+                                        selectedTutor = qual
+                                        showTutorMenuInDialog = false
+                                    }
+                                )
+                            }
+                        } else {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Nenhum responsável cadastrado no levantamento",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                },
+                                onClick = { showTutorMenuInDialog = false }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 Text(
-                    text = "Selecione as fotos e tags pertencentes a este exemplar utilizando os botões switch. É possível vincular mais de uma tag:",
-                    fontSize = 12.sp,
+                    text = "Selecione as fotos tiradas para este exemplar. Mesmo que a foto não tenha TAG, ela será relacionada ao responsável acima indicado:",
+                    fontSize = 11.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 16.sp
+                    lineHeight = 15.sp
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Lista com os thumbnails das fotos, respectivas tags e botões switchs
                 LazyColumn(
@@ -1160,11 +1502,46 @@ private fun PhotoTagSelectionDialog(
                                                     }
                                                 }
                                             } else {
+                                                // Fotografia sem TAG informada na captura
+                                                Surface(
+                                                    color = Color(0xFFFFF3E0),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    border = BorderStroke(0.6.dp, Color(0xFFFFB74D))
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Warning,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFFE65100),
+                                                            modifier = Modifier.size(11.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(3.dp))
+                                                        Text(
+                                                            text = "Sem TAG na foto",
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFFE65100)
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(2.dp))
+
                                                 Text(
-                                                    text = "Sem TAG informada na captura",
-                                                    fontSize = 10.5.sp,
-                                                    color = Color(0xFF888888),
-                                                    fontStyle = FontStyle.Italic
+                                                    text = if (isChecked) {
+                                                        if (selectedTutor.isNotBlank()) "✓ Relacionada ao resp: ${selectedTutor.split("(").firstOrNull()?.trim() ?: selectedTutor}"
+                                                        else "✓ Relacionada a este animal"
+                                                    } else {
+                                                        "Toque no switch para relacionar ao responsável"
+                                                    },
+                                                    fontSize = 9.5.sp,
+                                                    color = if (isChecked) Color(0xFF1B5E20) else Color(0xFF757575),
+                                                    fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                         }
@@ -1223,12 +1600,13 @@ private fun PhotoTagSelectionDialog(
 
                     Button(
                         onClick = {
-                            val activeTags = selectedTagsMap.filter { it.value }.keys.toMutableList()
-                            if (customTagInput.isNotBlank()) {
-                                activeTags.add(customTagInput.trim())
+                            val checkedItems = photoItems.filter { selectedTagsMap[it.itemKey] == true }
+                            val hasUntaggedChecked = checkedItems.any { it.tag.isBlank() }
+                            if (hasUntaggedChecked && customTagInput.isBlank()) {
+                                showNoTagAlertInDialog = true
+                            } else {
+                                executeConfirmation()
                             }
-                            val result = activeTags.distinct().joinToString(", ")
-                            onConfirmTags(result)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF65558F),
@@ -1239,10 +1617,79 @@ private fun PhotoTagSelectionDialog(
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Confirmar Tags", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Confirmar Tags & Fotos", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
         }
     }
+
+    // ALERTA POP-UP: Fiscal não colocou TAG na foto
+    if (showNoTagAlertInDialog) {
+        val checkedUntaggedCount = photoItems.count { selectedTagsMap[it.itemKey] == true && it.tag.isBlank() }
+        AlertDialog(
+            onDismissRequest = { showNoTagAlertInDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFE65100),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Atenção: Fotografia(s) sem TAG",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Você selecionou $checkedUntaggedCount foto(s) sem TAG identificadora.",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        color = Color(0xFFFFF3E0),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "A(s) foto(s) será(ão) relacionada(s) diretamente ao responsável pelo exemplar: ${selectedTutor.ifBlank { "Sem responsável selecionado" }}.",
+                                fontSize = 12.sp,
+                                color = Color(0xFFBF360C),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Deseja confirmar a vinculação sem TAG ou prefere digitar uma TAG no campo adicional?",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNoTagAlertInDialog = false
+                        executeConfirmation()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF65558F))
+                ) {
+                    Text("Confirmar sem TAG")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNoTagAlertInDialog = false }) {
+                    Text("Digitar TAG")
+                }
+            }
+        )
+    }
 }
+
