@@ -363,13 +363,7 @@ fun MainAppNavHost(viewModel: InspectionViewModel) {
                                         viewModel.customSpeciesName!!
                                     else
                                         viewModel.selectedSpecies.displayName
-                                    val speciesEmoji = when (viewModel.selectedSpecies) {
-                                        AnimalSpecies.HORSE -> "🐎"
-                                        AnimalSpecies.DOG -> "🐕"
-                                        AnimalSpecies.CAT -> "🐈"
-                                        AnimalSpecies.POULTRY -> "🐔"
-                                        AnimalSpecies.OUTROS -> "🐾"
-                                    }
+                                    val speciesEmoji = viewModel.selectedSpecies.emoji
                                     Surface(
                                         shape = CircleShape,
                                         color = Color(0xFFA7F3D0).copy(alpha = 0.85f),

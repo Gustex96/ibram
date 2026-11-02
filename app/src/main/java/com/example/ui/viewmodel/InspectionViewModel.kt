@@ -79,10 +79,29 @@ data class InspectionDraftState(
         get() = DfConstants.isDogSpecies(species)
 
     val speciesDisplay: String
-        get() = if (isDog) "Cachorro (Canino)" else "Cavalo"
+        get() = when {
+            species.isBlank() -> "Cavalo"
+            isDog -> "Cachorro (Canino)"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "Suíno (Porco)"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "Bovino (Gado)"
+            species.contains("Caprino", true) || species.contains("Ovino", true) || species.contains("Cabra", true) || species.contains("Bode", true) -> "Caprino / Ovino"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "Gato (Felino)"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "Galináceos (Aves)"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "Cavalo"
+            else -> species
+        }
 
     val speciesEmoji: String
-        get() = if (isDog) "🐕" else "🐎"
+        get() = when {
+            isDog -> "🐕"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "🐖"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "🐂"
+            species.contains("Caprino", true) || species.contains("Ovino", true) || species.contains("Cabra", true) || species.contains("Bode", true) -> "🐐"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "🐱"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "🐓"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "🐎"
+            else -> "🐾"
+        }
     val tutorName: String
         get() = tutors.firstOrNull()?.name ?: ""
 
@@ -294,6 +313,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
     val reportStartDate = MutableStateFlow<Long?>(null)
     val reportEndDate = MutableStateFlow<Long?>(null)
     val reportSelectedRa = MutableStateFlow<String?>(null)
+    val reportSelectedSpecies = MutableStateFlow<String?>("Todos")
 
     val filteredInspections: StateFlow<List<HorseInspection>> = combine(
         allInspections,
@@ -314,14 +334,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 item.auditorName.contains(query, ignoreCase = true)
 
             val matchesRa = ra == null || item.administrativeRegion == ra
-
-            val matchesSpecies = if (speciesFilter == null || speciesFilter == "Todos") {
-                true
-            } else if (DfConstants.isDogSpecies(speciesFilter)) {
-                item.isDog
-            } else {
-                !item.isDog
-            }
+            val matchesSpecies = matchesSpeciesFilter(item.species, speciesFilter)
 
             matchesQuery && matchesRa && matchesSpecies
         }
@@ -336,14 +349,16 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         allInspections,
         reportStartDate,
         reportEndDate,
-        reportSelectedRa
-    ) { list, start, end, ra ->
+        reportSelectedRa,
+        reportSelectedSpecies
+    ) { list, start, end, ra, specFilter ->
         list.filter { item ->
             val matchesStart = start == null || item.captureTimestamp >= start
             // end date should include full day up to 23:59:59
             val matchesEnd = end == null || item.captureTimestamp <= (end + 86400000L - 1L)
             val matchesRa = ra == null || ra == "Todas as RAs" || item.administrativeRegion == ra
-            matchesStart && matchesEnd && matchesRa
+            val matchesSpecies = matchesSpeciesFilter(item.species, specFilter)
+            matchesStart && matchesEnd && matchesRa && matchesSpecies
         }
     }.stateIn(
         scope = viewModelScope,
@@ -1231,6 +1246,43 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         val ra = reportSelectedRa.value
         pendingPdfAction = {
             PdfReportGenerator.generateAndShareConsolidatedPdf(getApplication(), inspections, start, end, ra)
+        }
+    }
+
+    companion object {
+        fun matchesSpeciesFilter(itemSpecies: String, filter: String?): Boolean {
+            if (filter == null || filter == "Todos" || filter.isBlank()) return true
+            val fNorm = filter.trim().lowercase()
+            val sNorm = itemSpecies.trim().lowercase()
+            return when {
+                fNorm.contains("suíno") || fNorm.contains("suino") || fNorm.contains("porco") -> {
+                    sNorm.contains("suíno") || sNorm.contains("suino") || sNorm.contains("porco")
+                }
+                fNorm.contains("cavalo") || fNorm.contains("equin") || fNorm.contains("horse") -> {
+                    sNorm.contains("cavalo") || sNorm.contains("equin") || sNorm.contains("horse")
+                }
+                fNorm.contains("bovin") || fNorm.contains("gado") || fNorm.contains("boi") || fNorm.contains("vaca") -> {
+                    sNorm.contains("bovin") || sNorm.contains("gado") || sNorm.contains("boi") || sNorm.contains("vaca")
+                }
+                fNorm.contains("caprin") || fNorm.contains("ovin") || fNorm.contains("cabra") || fNorm.contains("bode") -> {
+                    sNorm.contains("caprin") || sNorm.contains("ovin") || sNorm.contains("cabra") || sNorm.contains("bode")
+                }
+                fNorm.contains("cão") || fNorm.contains("cao") || fNorm.contains("cachorro") || fNorm.contains("canin") || fNorm.contains("dog") -> {
+                    sNorm.contains("cão") || sNorm.contains("cao") || sNorm.contains("cachorro") || sNorm.contains("canin") || sNorm.contains("dog")
+                }
+                fNorm.contains("gato") || fNorm.contains("felin") || fNorm.contains("cat") -> {
+                    sNorm.contains("gato") || sNorm.contains("felin") || sNorm.contains("cat")
+                }
+                fNorm.contains("galin") || fNorm.contains("ave") || fNorm.contains("frango") || fNorm.contains("poultry") -> {
+                    sNorm.contains("galin") || sNorm.contains("ave") || sNorm.contains("frango") || sNorm.contains("poultry")
+                }
+                fNorm.contains("outro") -> {
+                    !sNorm.contains("cavalo") && !sNorm.contains("suíno") && !sNorm.contains("suino") && !sNorm.contains("porco") &&
+                    !sNorm.contains("cão") && !sNorm.contains("cachorro") && !sNorm.contains("gato") && !sNorm.contains("bovin") &&
+                    !sNorm.contains("caprin") && !sNorm.contains("galin") && !sNorm.contains("ave")
+                }
+                else -> sNorm == fNorm || sNorm.contains(fNorm) || fNorm.contains(sNorm)
+            }
         }
     }
 }

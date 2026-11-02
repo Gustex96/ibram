@@ -79,11 +79,25 @@ object PdfReportGenerator {
             .trim()
     }
 
-    fun formatAnimalCount(count: Int, isDog: Boolean = false): String {
-        return if (isDog) {
-            if (count == 1) "1 cão" else "$count cães"
-        } else {
-            if (count == 1) "1 animal" else "$count animais"
+    fun formatAnimalCount(count: Int, isDog: Boolean = false, species: String = ""): String {
+        val s = species.lowercase()
+        return when {
+            isDog || s.contains("cão") || s.contains("cao") || s.contains("cachorro") || s.contains("canin") || s.contains("dog") ->
+                if (count == 1) "1 cão" else "$count cães"
+            s.contains("suíno") || s.contains("suino") || s.contains("porco") ->
+                if (count == 1) "1 suíno" else "$count suínos"
+            s.contains("cavalo") || s.contains("equin") || s.contains("horse") ->
+                if (count == 1) "1 cavalo" else "$count cavalos"
+            s.contains("bovin") || s.contains("gado") || s.contains("boi") || s.contains("vaca") ->
+                if (count == 1) "1 bovino" else "$count bovinos"
+            s.contains("caprin") || s.contains("ovin") || s.contains("cabra") || s.contains("bode") ->
+                if (count == 1) "1 caprino/ovino" else "$count caprinos/ovinos"
+            s.contains("gato") || s.contains("felin") || s.contains("cat") ->
+                if (count == 1) "1 gato" else "$count gatos"
+            s.contains("ave") || s.contains("galin") || s.contains("poultry") ->
+                if (count == 1) "1 ave" else "$count aves"
+            else ->
+                if (count == 1) "1 animal" else "$count animais"
         }
     }
 
@@ -399,12 +413,36 @@ object PdfReportGenerator {
         allAnimals: List<IndividualAnimalEvaluation>
     ): List<String> {
         val matched = mutableListOf<String>()
+
+        // 1. Prioridade máxima: caminhos ou chaves de fotos explicitamente vinculadas a este exemplar
+        if (animal.photoPaths.isNotBlank()) {
+            val paths = animal.photoPathsList
+            for (p in paths) {
+                if (allPhotos.contains(p) && !matched.contains(p)) {
+                    matched.add(p)
+                } else if (p.startsWith("foto_idx_")) {
+                    val idx = p.removePrefix("foto_idx_").toIntOrNull()
+                    if (idx != null && idx in 1..allPhotos.size) {
+                        val pathAt = allPhotos[idx - 1]
+                        if (!matched.contains(pathAt)) matched.add(pathAt)
+                    }
+                }
+            }
+            if (matched.isNotEmpty()) return matched
+        }
+
+        // Conjunto de fotos explicitamente reivindicadas por outros animais
+        val otherAnimalsExplicitPhotos = allAnimals.filter { it.id != animal.id }
+            .flatMap { it.photoPathsList }
+            .toSet()
+
         val tag = animal.tagOrCpf.trim()
 
-        // 1. Busca por correspondência exata ou parcial da TAG (suporta múltiplas TAGs separadas por vírgula ou ponto)
+        // 2. Busca por correspondência exata ou parcial da TAG (suporta múltiplas fotos com a mesma TAG)
         if (tag.isNotBlank()) {
             val subTags = tag.split(Regex("[,;•]")).map { it.trim() }.filter { it.isNotBlank() }
             for (photoPath in allPhotos) {
+                if (otherAnimalsExplicitPhotos.contains(photoPath)) continue
                 val extractedTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(photoPath)
                 val matchesAny = subTags.any { st ->
                     val cleanSt = st.take(20).replace(Regex("[^a-zA-Z0-9_-]"), "_")
@@ -427,27 +465,30 @@ object PdfReportGenerator {
             }
         }
 
-        // 2. Busca pelo padrão de exemplar Foto{index+1}_ ou Foto{index+1}.
+        // 3. Busca pelo padrão de exemplar Foto{index+1}_ ou Foto{index+1}.
         if (matched.isEmpty()) {
             val exemplarStr = "Foto${index + 1}_"
             val exemplarStrAlt = "Foto${index + 1}."
             for (photoPath in allPhotos) {
+                if (otherAnimalsExplicitPhotos.contains(photoPath)) continue
                 if (photoPath.contains(exemplarStr, ignoreCase = true) || photoPath.contains(exemplarStrAlt, ignoreCase = true)) {
                     if (!matched.contains(photoPath)) matched.add(photoPath)
                 }
             }
         }
 
-        // 3. Se ainda não associou e o índice existe na lista de fotos,
+        // 4. Se ainda não associou e o índice existe na lista de fotos,
         // verifica se a foto correspondente não tem TAG exclusiva de outro exemplar
         if (matched.isEmpty() && index < allPhotos.size) {
             val candidate = allPhotos[index]
-            val candidateTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(candidate)
-            val isOtherTag = candidateTag != null && allAnimals.any {
-                it.id != animal.id && it.tagOrCpf.isNotBlank() && it.tagOrCpf.equals(candidateTag, ignoreCase = true)
-            }
-            if (!isOtherTag) {
-                matched.add(candidate)
+            if (!otherAnimalsExplicitPhotos.contains(candidate)) {
+                val candidateTag = com.example.util.WatermarkUtils.extractTagFromPhotoPath(candidate)
+                val isOtherTag = candidateTag != null && allAnimals.any {
+                    it.id != animal.id && it.tagOrCpf.isNotBlank() && it.tagOrCpf.equals(candidateTag, ignoreCase = true)
+                }
+                if (!isOtherTag) {
+                    matched.add(candidate)
+                }
             }
         }
 
@@ -857,13 +898,9 @@ object PdfReportGenerator {
             }
         }
         val allAssignedPhotos = animalPhotosMap.values.flatten().toSet()
-        val remainingPhotos = if (inspection.individualEvaluations.isNotEmpty()) {
-            allPhotos.filter { it !in allAssignedPhotos }
-        } else {
-            allPhotos
-        }
+        val annexPhotos = allPhotos
 
-        val photoPagesCount = if (remainingPhotos.isEmpty()) 0 else ((remainingPhotos.size + 1) / 2)
+        val photoPagesCount = if (annexPhotos.isEmpty()) 0 else ((annexPhotos.size + 1) / 2)
         val estimatedTextPages = calculateEstimatedTextPages(inspection)
         val totalDocumentPages = estimatedTextPages + photoPagesCount
 
@@ -999,10 +1036,8 @@ object PdfReportGenerator {
         val speciesInfoText = if (inspection.individualEvaluations.isNotEmpty()) {
             val speciesList = inspection.individualEvaluations.map { it.species }.distinct()
             "Individualizada (${speciesList.joinToString(", ")})"
-        } else if (inspection.isDog) {
-            "Amostragem (${inspection.speciesEmoji} Cachorro)"
         } else {
-            "Amostragem (${inspection.speciesEmoji} Cavalo)"
+            "Amostragem (${inspection.speciesEmoji} ${inspection.speciesDisplay})"
         }
         val specLines = splitTextIntoLines(speciesInfoText, maxSec1Col1W, audValPaint)
         val finalidadeLines = splitTextIntoLines("Apoio em Fiscalização / Bem-Estar Animal", maxSec1Col2W, valuePaint)
@@ -1067,7 +1102,7 @@ object PdfReportGenerator {
 
         // Linha 1: Total de Animais no Local & Metodologia
         val totalOnSiteLabel = if (isDog) "TOTAL DE CÃES NO LOCAL:" else "TOTAL DE ANIMAIS NO LOCAL:"
-        val totalOnSiteValue = formatAnimalCount(inspection.horseCount, isDog)
+        val totalOnSiteValue = formatAnimalCount(inspection.horseCount, isDog, inspection.species)
 
         val methodLabel = "METODOLOGIA DE AVALIAÇÃO PPBEA:"
         val methodValue = if (inspection.individualEvaluations.isNotEmpty()) {
@@ -1110,7 +1145,7 @@ object PdfReportGenerator {
         }
 
         val countText = if (inspection.mistreatedHorseCount > 0) {
-            "${formatAnimalCount(inspection.mistreatedHorseCount, isDog)} com sinais observados"
+            "${formatAnimalCount(inspection.mistreatedHorseCount, isDog, inspection.species)} com sinais observados"
         } else {
             "Nenhum sinal aparente identificado"
         }
@@ -1377,8 +1412,8 @@ object PdfReportGenerator {
             isAntiAlias = true
         }
 
-        if (remainingPhotos.isNotEmpty()) {
-            val photoChunks = remainingPhotos.chunked(2)
+        if (annexPhotos.isNotEmpty()) {
+            val photoChunks = annexPhotos.chunked(2)
             val startPhotoPageNumber = pageManager.currentPageNumber + 1
 
             photoChunks.forEachIndexed { pageChunkIndex, chunk ->
@@ -1765,7 +1800,7 @@ object PdfReportGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 isAntiAlias = true
             }
-            dCanvas.drawText("Auditor Fiscal: $itemAuditor • Espécie: ${item.speciesDisplay}", margin, dy, dAuditorPaint)
+            dCanvas.drawText("Auditor Fiscal: $itemAuditor • Espécie: ${item.speciesEmoji} ${item.speciesDisplay}", margin, dy, dAuditorPaint)
             dy += 16f
 
             dy = drawSectionHeader(dCanvas, "DADOS DE GEORREFERENCIAMENTO & LOCALIZAÇÃO", margin, dy, contentWidth)
@@ -1845,9 +1880,9 @@ object PdfReportGenerator {
             dCanvas.drawText(String.format(Locale.US, "%.6f°, %.6f° (SIRGAS 2000)", item.latitude, item.longitude), margin + 8f, dy + 13f, dGpsPaint)
 
             val cText = if (item.mistreatedHorseCount > 0) {
-                "${formatAnimalCount(item.horseCount, item.isDog)} (${formatAnimalCount(item.mistreatedHorseCount, item.isDog)} com sinais de maus-tratos)"
+                "${formatAnimalCount(item.horseCount, item.isDog, item.species)} (${formatAnimalCount(item.mistreatedHorseCount, item.isDog, item.species)} com sinais de maus-tratos)"
             } else {
-                "${formatAnimalCount(item.horseCount, item.isDog)} (Sem sinais aparentes)"
+                "${formatAnimalCount(item.horseCount, item.isDog, item.species)} (Sem sinais aparentes)"
             }
             dCanvas.drawText(cText, margin + (contentWidth / 2f), dy + 13f, valPaint)
             dy += 30f

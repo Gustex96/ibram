@@ -88,22 +88,59 @@ data class HorseInspection(
         }
 
     val isDog: Boolean
-        get() = species.equals("Cachorro", ignoreCase = true) || species.equals("dog", ignoreCase = true)
+        get() = species.equals("Cachorro", ignoreCase = true) || species.equals("dog", ignoreCase = true) || species.equals("cão", ignoreCase = true) || species.equals("canino", ignoreCase = true)
 
     val speciesDisplay: String
-        get() = if (isDog) "Cachorro (Canino)" else "Cavalo"
+        get() = when {
+            species.isBlank() -> "Cavalo"
+            isDog -> "Cachorro (Canino)"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "Suíno (Porco)"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "Bovino (Gado)"
+            species.contains("Caprino", true) || species.contains("Ovino", true) || species.contains("Cabra", true) || species.contains("Bode", true) -> "Caprino / Ovino"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "Gato (Felino)"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "Galináceos (Aves)"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "Cavalo"
+            else -> species
+        }
 
     val speciesEmoji: String
-        get() = if (isDog) "🐕" else "🐎"
+        get() = when {
+            isDog -> "🐕"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "🐖"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "🐂"
+            species.contains("Caprino", true) || species.contains("Ovino", true) || species.contains("Cabra", true) || species.contains("Bode", true) -> "🐐"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "🐱"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "🐓"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "🐎"
+            else -> "🐾"
+        }
 
     val auditorDisplay: String
         get() = auditorName.ifBlank { "Equipe de Apoio em Fiscalização" }
 
     val animalSingularLabel: String
-        get() = if (isDog) "cão" else "cavalo"
+        get() = when {
+            isDog -> "cão"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "suíno"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "bovino"
+            species.contains("Caprino", true) || species.contains("Ovino", true) -> "caprino/ovino"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "gato"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "ave"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "cavalo"
+            else -> "animal"
+        }
 
     val animalPluralLabel: String
-        get() = if (isDog) "cães" else "cavalos"
+        get() = when {
+            isDog -> "cães"
+            species.contains("Suíno", true) || species.contains("Suino", true) || species.contains("Porco", true) -> "suínos"
+            species.contains("Bovino", true) || species.contains("Gado", true) || species.contains("Boi", true) || species.contains("Vaca", true) -> "bovinos"
+            species.contains("Caprino", true) || species.contains("Ovino", true) -> "caprinos/ovinos"
+            species.contains("Gato", true) || species.contains("Felin", true) -> "gatos"
+            species.contains("Galin", true) || species.contains("Ave", true) -> "aves"
+            species.contains("Cavalo", true) || species.contains("Equin", true) -> "cavalos"
+            else -> "animais"
+        }
     val teamDisplay: String
         get() = inspectionTeam.ifBlank { "Equipe de Apoio em Fiscalização" }
 

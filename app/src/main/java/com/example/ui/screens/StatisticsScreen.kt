@@ -97,12 +97,16 @@ fun StatisticsScreen(
 
     val filteredInspections = remember(allInspections, species, selectedPeriodFilter) {
         val speciesFiltered = when (species) {
-            AnimalSpecies.HORSE -> allInspections.filter { !it.isDog && (it.species.isBlank() || it.species.equals("Cavalo", ignoreCase = true) || it.species.equals("horse", ignoreCase = true)) }
+            AnimalSpecies.HORSE -> allInspections.filter { !it.isDog && (it.species.isBlank() || it.species.contains("Cavalo", ignoreCase = true) || it.species.contains("horse", ignoreCase = true) || it.species.contains("Equin", ignoreCase = true)) }
             AnimalSpecies.DOG -> allInspections.filter { it.isDog }
-            AnimalSpecies.CAT -> allInspections.filter { it.species.equals("Gato", ignoreCase = true) || it.species.equals("cat", ignoreCase = true) }
-            AnimalSpecies.POULTRY -> allInspections.filter { it.species.equals("Galináceos", ignoreCase = true) || it.species.equals("poultry", ignoreCase = true) }
+            AnimalSpecies.SWINE -> allInspections.filter { it.species.contains("Suíno", ignoreCase = true) || it.species.contains("Suino", ignoreCase = true) || it.species.contains("Porco", ignoreCase = true) || it.species.contains("swine", ignoreCase = true) }
+            AnimalSpecies.BOVINE -> allInspections.filter { it.species.contains("Bovin", ignoreCase = true) || it.species.contains("Gado", ignoreCase = true) || it.species.contains("Boi", ignoreCase = true) || it.species.contains("Vaca", ignoreCase = true) }
+            AnimalSpecies.CAPRINE_OVINE -> allInspections.filter { it.species.contains("Caprin", ignoreCase = true) || it.species.contains("Ovin", ignoreCase = true) || it.species.contains("Cabra", ignoreCase = true) || it.species.contains("Bode", ignoreCase = true) || it.species.contains("Ovelha", ignoreCase = true) }
+            AnimalSpecies.CAT -> allInspections.filter { it.species.contains("Gato", ignoreCase = true) || it.species.contains("cat", ignoreCase = true) || it.species.contains("Felin", ignoreCase = true) }
+            AnimalSpecies.POULTRY -> allInspections.filter { it.species.contains("Galin", ignoreCase = true) || it.species.contains("poultry", ignoreCase = true) || it.species.contains("Ave", ignoreCase = true) }
             AnimalSpecies.OUTROS -> allInspections.filter {
-                !it.isDog && !it.species.equals("Cavalo", ignoreCase = true) && !it.species.equals("Gato", ignoreCase = true) && !it.species.equals("Galináceos", ignoreCase = true)
+                val n = it.species.lowercase()
+                !it.isDog && !n.contains("cavalo") && !n.contains("suíno") && !n.contains("suino") && !n.contains("porco") && !n.contains("bovin") && !n.contains("caprin") && !n.contains("gato") && !n.contains("galin") && !n.contains("ave")
             }
         }
 

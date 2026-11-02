@@ -71,8 +71,11 @@ fun AppSplashScreen(
     // Ordem das espécies conforme o exemplo de LEVO.png (Cachorro primeiro, Cavalo, Gato, Galináceos, Outros)
     val speciesList = remember {
         listOf(
-            AnimalSpecies.DOG,
             AnimalSpecies.HORSE,
+            AnimalSpecies.DOG,
+            AnimalSpecies.SWINE,
+            AnimalSpecies.BOVINE,
+            AnimalSpecies.CAPRINE_OVINE,
             AnimalSpecies.CAT,
             AnimalSpecies.POULTRY,
             AnimalSpecies.OUTROS
@@ -297,8 +300,11 @@ private fun M3CarouselCard(
 
                 Text(
                     text = when (species) {
-                        AnimalSpecies.DOG -> "Cães e caninos"
                         AnimalSpecies.HORSE -> "Equinos e carroças"
+                        AnimalSpecies.DOG -> "Cães e caninos"
+                        AnimalSpecies.SWINE -> "Suínos e porcos"
+                        AnimalSpecies.BOVINE -> "Bovinos e gado"
+                        AnimalSpecies.CAPRINE_OVINE -> "Caprinos e ovinos"
                         AnimalSpecies.CAT -> "Felinos e felídeos"
                         AnimalSpecies.POULTRY -> "Aves e galináceos"
                         AnimalSpecies.OUTROS -> "Personalizar espécie"

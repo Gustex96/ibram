@@ -594,8 +594,10 @@ class ExampleRobolectricTest {
         assertEquals(com.example.ui.components.AnimalSpecies.HORSE, com.example.ui.components.resolveAnimalSpecies("Cavalo", isDog = false))
         assertEquals(com.example.ui.components.AnimalSpecies.HORSE, com.example.ui.components.resolveAnimalSpecies("Equino", isDog = false))
         assertEquals(com.example.ui.components.AnimalSpecies.CAT, com.example.ui.components.resolveAnimalSpecies("Gato", isDog = false))
-        assertEquals(com.example.ui.components.AnimalSpecies.POULTRY, com.example.ui.components.resolveAnimalSpecies("Galináceos", isDog = false))
-        assertEquals(com.example.ui.components.AnimalSpecies.OUTROS, com.example.ui.components.resolveAnimalSpecies("Suíno", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.SWINE, com.example.ui.components.resolveAnimalSpecies("Suíno", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.BOVINE, com.example.ui.components.resolveAnimalSpecies("Bovino", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.CAPRINE_OVINE, com.example.ui.components.resolveAnimalSpecies("Caprino", isDog = false))
+        assertEquals(com.example.ui.components.AnimalSpecies.OUTROS, com.example.ui.components.resolveAnimalSpecies("Réptil", isDog = false))
     }
 
     @Test
@@ -619,6 +621,25 @@ class ExampleRobolectricTest {
         assertEquals(1, deserialized.size)
         assertEquals("Animal com claudicação moderada no membro anterior direito.", deserialized[0].notes)
         assertEquals("Animal com claudicação moderada no membro anterior direito.", deserialized[0].ppbeaDiagnosis?.observacoes)
+    }
+
+    @Test
+    fun testIndividualAnimalPhotoPathsPreservationAndSerialization() {
+        val animal = com.example.data.model.IndividualAnimalEvaluation(
+            tagOrCpf = "TAG-002",
+            species = "Suíno",
+            photoPaths = "/data/photo_1.jpg;;/data/photo_2.jpg",
+            notes = "Porco reprodutor"
+        )
+        assertEquals(2, animal.photoPathsList.size)
+        assertEquals("/data/photo_1.jpg", animal.photoPathsList[0])
+        assertEquals("/data/photo_2.jpg", animal.photoPathsList[1])
+
+        val serialized = com.example.data.model.IndividualAnimalSerializer.serializeList(listOf(animal))
+        val deserialized = com.example.data.model.IndividualAnimalSerializer.deserializeList(serialized)
+        assertEquals(1, deserialized.size)
+        assertEquals("/data/photo_1.jpg;;/data/photo_2.jpg", deserialized[0].photoPaths)
+        assertEquals(2, deserialized[0].photoPathsList.size)
     }
 }
 

@@ -450,7 +450,8 @@ data class IndividualAnimalEvaluation(
     val species: String = "Cavalo",
     val ppbeaAnswersData: String = "",
     val notes: String = "",
-    val tutorQualification: String = ""
+    val tutorQualification: String = "",
+    val photoPaths: String = ""
 ) {
     val ppbeaAnswersMap: Map<String, Boolean>
         get() = PpbeaCriteriaRepository.reconstructAnswers(ppbeaAnswersData, emptyList(), emptyList())
@@ -463,6 +464,9 @@ data class IndividualAnimalEvaluation(
 
     val isEvaluated: Boolean
         get() = ppbeaDiagnosis != null
+
+    val photoPathsList: List<String>
+        get() = if (photoPaths.isBlank()) emptyList() else photoPaths.split(";;").map { it.trim() }.filter { it.isNotBlank() }
 }
 
 object IndividualAnimalSerializer {
@@ -474,7 +478,8 @@ object IndividualAnimalSerializer {
             val cleanAnswers = item.ppbeaAnswersData.replace(":::", "_").replace(";;;", "_")
             val cleanNotes = item.notes.replace(":::", "_").replace(";;;", "_")
             val cleanTutor = item.tutorQualification.replace(":::", "_").replace(";;;", "_")
-            "$cleanId:::$cleanTag:::$cleanSpecies:::$cleanAnswers:::$cleanNotes:::$cleanTutor"
+            val cleanPhotos = item.photoPaths.replace(":::", "_").replace(";;;", "_")
+            "$cleanId:::$cleanTag:::$cleanSpecies:::$cleanAnswers:::$cleanNotes:::$cleanTutor:::$cleanPhotos"
         }
     }
 
@@ -489,7 +494,8 @@ object IndividualAnimalSerializer {
                     species = parts.getOrNull(2) ?: "Cavalo",
                     ppbeaAnswersData = parts.getOrNull(3) ?: "",
                     notes = parts.getOrNull(4) ?: "",
-                    tutorQualification = parts.getOrNull(5) ?: ""
+                    tutorQualification = parts.getOrNull(5) ?: "",
+                    photoPaths = parts.getOrNull(6) ?: ""
                 )
             } else null
         }

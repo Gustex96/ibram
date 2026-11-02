@@ -17,13 +17,13 @@ enum class AnimalSpecies(
     val isCurrentlyActive: Boolean,
     val badgeText: String?
 ) {
-    CAT(
-        id = "cat",
-        displayName = "Gato",
-        subtitle = "Felinos e felídeos",
-        iconRes = R.drawable.ic_species_cat,
-        realImageRes = R.drawable.real_species_cat,
-        emoji = "🐱",
+    HORSE(
+        id = "horse",
+        displayName = "Cavalo",
+        subtitle = "Equinos & Carroças",
+        iconRes = R.drawable.ic_species_horse,
+        realImageRes = R.drawable.real_species_horse,
+        emoji = "🐎",
         isCurrentlyActive = true,
         badgeText = "Ativo"
     ),
@@ -37,13 +37,43 @@ enum class AnimalSpecies(
         isCurrentlyActive = true,
         badgeText = "Ativo"
     ),
-    HORSE(
-        id = "horse",
-        displayName = "Cavalo",
-        subtitle = "Equinos & Carroças",
-        iconRes = R.drawable.ic_species_horse,
-        realImageRes = R.drawable.real_species_horse,
-        emoji = "🐎",
+    SWINE(
+        id = "swine",
+        displayName = "Suíno",
+        subtitle = "Suínos e Porcos",
+        iconRes = R.drawable.ic_species_swine,
+        realImageRes = R.drawable.real_species_others,
+        emoji = "🐖",
+        isCurrentlyActive = true,
+        badgeText = "Ativo"
+    ),
+    BOVINE(
+        id = "bovine",
+        displayName = "Bovino",
+        subtitle = "Bovinos e Gado",
+        iconRes = R.drawable.ic_species_bovine,
+        realImageRes = R.drawable.real_species_others,
+        emoji = "🐂",
+        isCurrentlyActive = true,
+        badgeText = "Ativo"
+    ),
+    CAPRINE_OVINE(
+        id = "caprine",
+        displayName = "Caprino / Ovino",
+        subtitle = "Caprinos e Ovinos",
+        iconRes = R.drawable.ic_species_caprine,
+        realImageRes = R.drawable.real_species_others,
+        emoji = "🐐",
+        isCurrentlyActive = true,
+        badgeText = "Ativo"
+    ),
+    CAT(
+        id = "cat",
+        displayName = "Gato",
+        subtitle = "Felinos e felídeos",
+        iconRes = R.drawable.ic_species_cat,
+        realImageRes = R.drawable.real_species_cat,
+        emoji = "🐱",
         isCurrentlyActive = true,
         badgeText = "Ativo"
     ),
@@ -76,11 +106,14 @@ enum class AnimalSpecies(
 fun resolveAnimalSpecies(species: String?, isDog: Boolean = false): AnimalSpecies {
     val norm = species?.trim()?.lowercase() ?: ""
     return when {
+        norm.contains("suíno") || norm.contains("suino") || norm.contains("porco") || norm.contains("swine") || norm == "pig" -> AnimalSpecies.SWINE
+        norm.contains("bovin") || norm.contains("gado") || norm.contains("boi") || norm.contains("vaca") || norm == "cattle" -> AnimalSpecies.BOVINE
+        norm.contains("caprin") || norm.contains("ovin") || norm.contains("bode") || norm.contains("cabra") || norm.contains("carneiro") -> AnimalSpecies.CAPRINE_OVINE
         norm.contains("gato") || norm.contains("felin") || norm == "cat" -> AnimalSpecies.CAT
         isDog || norm.contains("cão") || norm.contains("cao") || norm.contains("cachorro") || norm.contains("canin") || norm == "dog" -> AnimalSpecies.DOG
-        norm.contains("gal") || norm.contains("ave") || norm.contains("poultry") -> AnimalSpecies.POULTRY
+        norm.contains("gal") || norm.contains("ave") || norm.contains("poultry") || norm.contains("frango") -> AnimalSpecies.POULTRY
         norm.contains("cavalo") || norm.contains("equin") || norm.contains("equid") || norm == "horse" -> AnimalSpecies.HORSE
-        norm.isNotBlank() && !norm.contains("cavalo") && !norm.contains("horse") -> AnimalSpecies.OUTROS
+        norm.isNotBlank() -> AnimalSpecies.OUTROS
         else -> if (isDog) AnimalSpecies.DOG else AnimalSpecies.HORSE
     }
 }

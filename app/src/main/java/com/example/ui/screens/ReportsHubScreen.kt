@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -79,6 +80,7 @@ fun ReportsHubScreen(
     val startDate by viewModel.reportStartDate.collectAsStateWithLifecycle()
     val endDate by viewModel.reportEndDate.collectAsStateWithLifecycle()
     val selectedRa by viewModel.reportSelectedRa.collectAsStateWithLifecycle()
+    val selectedSpeciesFilter by viewModel.reportSelectedSpecies.collectAsStateWithLifecycle()
 
     var showRaPicker by remember { mutableStateOf(false) }
 
@@ -458,6 +460,96 @@ fun ReportsHubScreen(
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Filtro por Espécie Avaliada (Individualização de Relatórios)
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Pets,
+                                contentDescription = null,
+                                tint = Color(0xFF14532D),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "3. Espécie Avaliada (Individualizar Relatório)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+
+                        if (selectedSpeciesFilter != null && selectedSpeciesFilter != "Todos") {
+                            TextButton(
+                                onClick = { viewModel.reportSelectedSpecies.value = "Todos" },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    text = "Todas as Espécies",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF14532D)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val speciesFilterOptions = listOf(
+                        "Todos" to "Todas as Espécies",
+                        "Cavalo" to "🐎 Cavalo",
+                        "Suíno" to "🐖 Suíno",
+                        "Cachorro" to "🐕 Cachorro",
+                        "Bovino" to "🐂 Bovino",
+                        "Caprino" to "🐐 Caprino/Ovino",
+                        "Gato" to "🐱 Gato",
+                        "Galináceos" to "🐓 Aves",
+                        "Outros" to "🐾 Outros"
+                    )
+
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(speciesFilterOptions) { (key, label) ->
+                            val isSelected = (selectedSpeciesFilter == key) || (key == "Todos" && (selectedSpeciesFilter == null || selectedSpeciesFilter == "Todos"))
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    viewModel.reportSelectedSpecies.value = key
+                                },
+                                label = { Text(label, fontSize = 11.5.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFA7F3D0).copy(alpha = 0.85f),
+                                    selectedLabelColor = Color(0xFF022C22),
+                                    containerColor = Color.White,
+                                    labelColor = Color(0xFF475569)
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    borderColor = if (isSelected) Color(0xFF14532D).copy(alpha = 0.3f) else Color(0xFFE2E8F0),
+                                    enabled = true,
+                                    selected = isSelected
+                                )
+                            )
                         }
                     }
                 }

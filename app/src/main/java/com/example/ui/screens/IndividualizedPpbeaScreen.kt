@@ -363,10 +363,11 @@ fun IndividualizedPpbeaScreen(
             availablePhotoTags = availablePhotoTags,
             availableTutors = availableTutors,
             onDismiss = { activePhotoTagDialogIndex = null },
-            onConfirm = { newTagOrCpf, newTutor ->
+            onConfirm = { newTagOrCpf, newTutor, newPhotoPaths ->
                 evaluationsList[animalIdx] = targetAnimal.copy(
                     tagOrCpf = newTagOrCpf,
-                    tutorQualification = newTutor
+                    tutorQualification = newTutor,
+                    photoPaths = newPhotoPaths
                 )
                 activePhotoTagDialogIndex = null
             }
@@ -988,12 +989,13 @@ private fun AddSpeciesSelectionDialog(
     onSpeciesSelected: (String) -> Unit
 ) {
     val speciesOptions = listOf(
-        "Cavalo" to "🐎 Equino",
-        "Cachorro" to "🐕 Canino",
-        "Gato" to "🐈 Felino",
-        "Galináceos" to "🐓 Aves",
-        "Bovinos" to "🐂 Bovino",
-        "Caprinos / Ovinos" to "🐐 Caprino/Ovino",
+        "Cavalo" to "🐎 Cavalo (Equino)",
+        "Cachorro" to "🐕 Cachorro (Canino)",
+        "Suíno" to "🐖 Suíno (Porco)",
+        "Bovinos" to "🐂 Bovino (Gado)",
+        "Caprinos / Ovinos" to "🐐 Caprino / Ovino",
+        "Gato" to "🐈 Gato (Felino)",
+        "Galináceos" to "🐓 Galináceos (Aves)",
         "Outros" to "🐾 Outros"
     )
 
@@ -1058,6 +1060,8 @@ private fun AddSpeciesSelectionDialog(
 
 /**
  * Item selecionável de foto georreferenciada e sua respectiva TAG.
+ * Cada foto possui identidade própria (itemKey única) para que fotos com a mesma TAG
+ * não sejam tratadas como a mesma foto nem desmarcadas em conjunto.
  */
 private data class SelectablePhotoTagItem(
     val photoPath: String,
@@ -1065,13 +1069,13 @@ private data class SelectablePhotoTagItem(
     val tag: String
 ) {
     val itemKey: String
-        get() = if (tag.isNotBlank()) tag else "Foto #$photoIndex"
+        get() = if (photoPath.isNotBlank()) photoPath else "foto_idx_$photoIndex"
 }
 
 /**
  * Pop-up com miniaturas das fotos georreferenciadas e suas respectivas TAGs,
  * permitindo ao fiscal relacionar a foto ao responsável pelo animal mesmo sem TAG,
- * além de selecionar múltiplas TAGs por exemplar através de botões switch.
+ * além de selecionar múltiplas fotos e TAGs por exemplar através de botões switch independentes.
  */
 @Composable
 private fun PhotoTagSelectionDialog(
@@ -1081,7 +1085,7 @@ private fun PhotoTagSelectionDialog(
     availablePhotoTags: List<String>,
     availableTutors: List<TutorEntry> = emptyList(),
     onDismiss: () -> Unit,
-    onConfirm: (newTagOrCpf: String, newTutor: String) -> Unit
+    onConfirm: (newTagOrCpf: String, newTutor: String, newPhotoPaths: String) -> Unit
 ) {
     var selectedTutor by remember { mutableStateOf(animal.tutorQualification) }
     var showTutorMenuInDialog by remember { mutableStateOf(false) }
@@ -1113,21 +1117,30 @@ private fun PhotoTagSelectionDialog(
         }
     }
 
-    // Inicializa o estado dos switches com base nas tags já vinculadas ao exemplar
-    val selectedTagsMap = remember(animal.tagOrCpf, photoItems) {
+    // Inicializa o estado dos switches com base nas fotos já vinculadas ao exemplar (ou tags)
+    val selectedTagsMap = remember(animal.photoPaths, animal.tagOrCpf, photoItems) {
         val initialSelected = mutableStateMapOf<String, Boolean>()
+        val currentPhotoPaths = animal.photoPathsList
         val currentTags = animal.tagOrCpf.split(Regex("[,;•]"))
             .map { it.trim().lowercase() }
             .filter { it.isNotBlank() }
 
         photoItems.forEach { item ->
+            // 1. Vínculo prioritário e exato por caminho de arquivo ou chave única
+            val hasExactPath = currentPhotoPaths.isNotEmpty() && (
+                currentPhotoPaths.contains(item.itemKey) ||
+                (item.photoPath.isNotBlank() && currentPhotoPaths.contains(item.photoPath))
+            )
+
+            // 2. Vínculo por número de foto ou TAG textual se ainda não houver caminhos explícitos
             val tagNorm = item.tag.lowercase()
             val photoKeyNorm = "foto #${item.photoIndex}"
-            val isMatch = currentTags.any { cur ->
-                (tagNorm.isNotBlank() && (tagNorm == cur || tagNorm.contains(cur) || cur.contains(tagNorm))) ||
-                cur.contains(photoKeyNorm) || photoKeyNorm == cur
+            val hasTagMatch = currentPhotoPaths.isEmpty() && currentTags.any { cur ->
+                cur == photoKeyNorm || cur.contains(photoKeyNorm) ||
+                (tagNorm.isNotBlank() && (tagNorm == cur || cur.contains(tagNorm) || tagNorm.contains(cur)))
             }
-            if (isMatch) {
+
+            if (hasExactPath || hasTagMatch) {
                 initialSelected[item.itemKey] = true
             }
         }
@@ -1135,27 +1148,33 @@ private fun PhotoTagSelectionDialog(
     }
 
     fun executeConfirmation() {
-        val activeTags = mutableListOf<String>()
         val checkedItems = photoItems.filter { selectedTagsMap[it.itemKey] == true }
+        val activePhotoPaths = checkedItems.map { it.itemKey }
+
+        val activeTags = mutableListOf<String>()
         checkedItems.forEach { item ->
-            if (item.tag.isNotBlank()) {
-                activeTags.add(item.tag)
+            val baseTag = if (item.tag.isNotBlank()) {
+                item.tag
             } else {
                 // Foto sem TAG: relaciona com o responsável pelo animal
                 val respShort = selectedTutor.split("(").firstOrNull()?.trim() ?: selectedTutor
-                val tagAssoc = if (respShort.isNotBlank()) {
-                    "Foto #${item.photoIndex} (Resp: $respShort)"
-                } else {
-                    "Foto #${item.photoIndex}"
-                }
-                activeTags.add(tagAssoc)
+                if (respShort.isNotBlank()) "Foto #${item.photoIndex} (Resp: $respShort)" else "Foto #${item.photoIndex}"
             }
+            // Se houver mais de uma foto selecionada com a MESMA tag, adiciona o número da foto para desvinculá-las no relatório
+            val sameTagCount = checkedItems.count { it.tag.isNotBlank() && it.tag.equals(item.tag, ignoreCase = true) }
+            val tagEntry = if (sameTagCount > 1 && item.tag.isNotBlank()) {
+                "$baseTag [Foto #${item.photoIndex}]"
+            } else {
+                baseTag
+            }
+            activeTags.add(tagEntry)
         }
         if (customTagInput.isNotBlank()) {
             activeTags.add(customTagInput.trim())
         }
-        val result = activeTags.distinct().joinToString(", ")
-        onConfirm(result, selectedTutor)
+        val resultTags = activeTags.joinToString(", ")
+        val joinedPaths = activePhotoPaths.joinToString(";;")
+        onConfirm(resultTags, selectedTutor, joinedPaths)
     }
 
     Dialog(
