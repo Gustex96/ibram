@@ -63,6 +63,99 @@ class ExampleRobolectricTest {
         assertEquals("11.222.333/0001-81", formattedCnpj)
         assertTrue(CpfValidator.isCnpj(rawCnpj))
         assertFalse(CpfValidator.isCnpj("12345678909"))
+
+        // Real-time progressive formatting & backspace deletion without getting locked
+        val step1 = CpfValidator.formatInput("123", "")
+        assertEquals("123", step1)
+        val step2 = CpfValidator.formatInput("1234", "123")
+        assertEquals("123.4", step2)
+        val step3 = CpfValidator.formatInput("1234567", "123.456")
+        assertEquals("123.456.7", step3)
+        val step4 = CpfValidator.formatInput("12345678909", "123.456.789-0")
+        assertEquals("123.456.789-09", step4)
+
+        // Deleting when delimiter is backspaced
+        val delWhenTrailingDot = CpfValidator.formatInput("123.", "123.4")
+        assertEquals("123", delWhenTrailingDot)
+        val delDigitDirectly = CpfValidator.formatInput("123", "123.")
+        assertEquals("12", delDigitDirectly)
+    }
+
+    @Test
+    fun testPhoneFormattingAndValidation() {
+        val rawMobile = "61987654321"
+        val formattedMobile = com.example.util.PhoneValidator.format(rawMobile)
+        assertEquals("(61) 98765-4321", formattedMobile)
+        assertTrue(com.example.util.PhoneValidator.isValid(formattedMobile))
+
+        val rawLandline = "6133214567"
+        val formattedLandline = com.example.util.PhoneValidator.format(rawLandline)
+        assertEquals("(61) 3321-4567", formattedLandline)
+        assertTrue(com.example.util.PhoneValidator.isValid(formattedLandline))
+
+        assertFalse(com.example.util.PhoneValidator.isValid("12345"))
+        assertFalse(com.example.util.PhoneValidator.isValid(""))
+
+        // Real-time progressive typing
+        val p1 = com.example.util.PhoneValidator.formatInput("619", "")
+        assertEquals("(61) 9", p1)
+        val p2 = com.example.util.PhoneValidator.formatInput("(61) 98765", "")
+        assertEquals("(61) 98765", p2)
+        val p3 = com.example.util.PhoneValidator.formatInput("(61) 987654", "(61) 98765")
+        assertEquals("(61) 98765-4", p3)
+
+        // Deleting delimiter handled cleanly
+        val delParen = com.example.util.PhoneValidator.formatInput("(61", "(61) ")
+        assertEquals("(6", delParen)
+    }
+
+    @Test
+    fun testTutorEntryWithPhoneAndBackwardCompatibility() {
+        // Test parsing 3-part format Name|CPF|Phone
+        val inspection = HorseInspection(
+            protocolNumber = "DF-RESP-2026-001",
+            photoPath = "/mock/path.jpg",
+            latitude = -15.79,
+            longitude = -47.88,
+            administrativeRegion = "Plano Piloto (RA I)",
+            tutorName = "Carlos Lima",
+            tutorCpf = "123.456.789-00",
+            tutorPhone = "(61) 99999-1111",
+            additionalTutors = "Maria Souza|987.654.321-99|(61) 98888-2222;;Agropecuária DF|11.222.333/0001-81|"
+        )
+
+        val resp = inspection.allResponsibles
+        assertEquals(3, resp.size)
+        assertEquals("Carlos Lima", resp[0].name)
+        assertEquals("123.456.789-00", resp[0].cpf)
+        assertEquals("(61) 99999-1111", resp[0].phone)
+
+        assertEquals("Maria Souza", resp[1].name)
+        assertEquals("987.654.321-99", resp[1].cpf)
+        assertEquals("(61) 98888-2222", resp[1].phone)
+
+        assertEquals("Agropecuária DF", resp[2].name)
+        assertEquals("11.222.333/0001-81", resp[2].cpf)
+        assertEquals("", resp[2].phone)
+
+        // Test backward compatibility with legacy 2-part format Name|CPF
+        val legacy = HorseInspection(
+            protocolNumber = "DF-RESP-LEGACY",
+            photoPath = "/mock/legacy.jpg",
+            latitude = -15.79,
+            longitude = -47.88,
+            administrativeRegion = "Gama (RA II)",
+            tutorName = "João Antigo",
+            tutorCpf = "111.222.333-44",
+            additionalTutors = "Antônio Legado|555.666.777-88"
+        )
+        val legResp = legacy.allResponsibles
+        assertEquals(2, legResp.size)
+        assertEquals("João Antigo", legResp[0].name)
+        assertEquals("", legResp[0].phone)
+        assertEquals("Antônio Legado", legResp[1].name)
+        assertEquals("555.666.777-88", legResp[1].cpf)
+        assertEquals("", legResp[1].phone)
     }
 
     @Test
@@ -640,6 +733,24 @@ class ExampleRobolectricTest {
         assertEquals(1, deserialized.size)
         assertEquals("/data/photo_1.jpg;;/data/photo_2.jpg", deserialized[0].photoPaths)
         assertEquals(2, deserialized[0].photoPathsList.size)
+    }
+
+    @Test
+    fun testPdfReportGeneratorWithMultiplePhotosGrid() {
+        // Valida que o formato grid emparelhado (2 colunas) reduz substancialmente as páginas geradas
+        // 0 fotos -> 0 páginas
+        assertEquals(0, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(0))
+        // 1 a 4 fotos -> exatamente 1 página (em grade 2x2 emparelhada em vez de 2 páginas)
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(1))
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(2))
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(3))
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(4))
+        // 5 a 6 fotos -> exatamente 1 página (em grade 2x3 emparelhada em vez de 3 páginas)
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(5))
+        assertEquals(1, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(6))
+        // 7 a 8 fotos -> 2 páginas (em vez de 4 páginas)
+        assertEquals(2, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(7))
+        assertEquals(2, com.example.util.PdfReportGenerator.calculatePhotoPagesCount(8))
     }
 }
 

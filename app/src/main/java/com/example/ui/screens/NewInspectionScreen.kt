@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Refresh
@@ -196,7 +197,7 @@ fun NewInspectionScreen(
         val missing = mutableListOf<String>()
         if (draft.administrativeRegion.isBlank()) missing.add("• Região Administrativa (RA / Localização) não informada")
         if (draft.allPhotoPaths.isEmpty()) missing.add("• Nenhuma fotografia anexada à fiscalização")
-        if (draft.tutors.none { it.name.isNotBlank() }) missing.add("• Nenhum tutor ou responsável cadastrado")
+        if (draft.tutors.none { it.name.isNotBlank() }) missing.add("• Nenhum responsável cadastrado")
         if (draft.individualEvaluations.isEmpty()) {
             missing.add("• Nenhuma avaliação de bem-estar animal (PPBEA) realizada")
         } else {
@@ -872,10 +873,10 @@ fun NewInspectionScreen(
                 }
             }
 
-            // 2. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
+            // 2. SECTION: IDENTIFICAÇÃO DOS RESPONSÁVEIS
             SectionHeader(
-                title = "2. Identificação dos Tutores & CPFs",
-                description = "Cadastre um ou múltiplos tutores e CPFs dos responsáveis identificados na ação fiscal."
+                title = "2. Identificação dos Responsáveis",
+                description = "Cadastre um ou múltiplos responsáveis com CPF/CNPJ e telefone de contato identificados na ação fiscal."
             )
 
             Card(
@@ -906,7 +907,7 @@ fun NewInspectionScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = if (index == 0) "Tutor 1 (Principal)" else "Tutor ${index + 1}",
+                                        text = if (index == 0) "Responsável 1 (Principal)" else "Responsável ${index + 1}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
                                         color = MaterialTheme.colorScheme.primary
@@ -919,7 +920,7 @@ fun NewInspectionScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
-                                                contentDescription = "Remover tutor",
+                                                contentDescription = "Remover responsável",
                                                 tint = MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -931,11 +932,11 @@ fun NewInspectionScreen(
 
                                 AppOutlinedTextField(
                                     value = tutor.name,
-                                    onValueChange = { viewModel.updateTutor(index, it, tutor.cpf) },
+                                    onValueChange = { viewModel.updateTutor(index, it, tutor.cpf, tutor.phone) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("tutor_name_field_$index"),
-                                    label = { Text("Nome do Tutor / Empresa ${index + 1}") },
+                                    label = { Text("Nome do Responsável / Empresa ${index + 1}") },
                                     placeholder = { Text("Ex: João da Silva ou Agropecuária Ltda") },
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp)
@@ -949,11 +950,11 @@ fun NewInspectionScreen(
                                 ) {
                                     AppOutlinedTextField(
                                         value = tutor.cpf,
-                                        onValueChange = { viewModel.updateTutor(index, tutor.name, it) },
+                                        onValueChange = { viewModel.updateTutor(index, tutor.name, it, tutor.phone) },
                                         modifier = Modifier
                                             .weight(1f)
                                             .testTag("tutor_cpf_field_$index"),
-                                        label = { Text("CPF / CNPJ do Tutor ${index + 1}") },
+                                        label = { Text("CPF / CNPJ do Responsável ${index + 1}") },
                                         placeholder = { Text("000.000.000-00 ou CNPJ") },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         singleLine = true,
@@ -1018,6 +1019,29 @@ fun NewInspectionScreen(
                                         }
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                AppOutlinedTextField(
+                                    value = tutor.phone,
+                                    onValueChange = { viewModel.updateTutor(index, tutor.name, tutor.cpf, it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("tutor_phone_field_$index"),
+                                    label = { Text("Telefone / Contato do Responsável ${index + 1}") },
+                                    placeholder = { Text("(61) 90000-0000 ou fixo") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Phone,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                )
                             }
                         }
                     }
@@ -1029,7 +1053,7 @@ fun NewInspectionScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("+ Adicionar Outro Tutor")
+                        Text("+ Adicionar Outro Responsável")
                     }
                 }
             }

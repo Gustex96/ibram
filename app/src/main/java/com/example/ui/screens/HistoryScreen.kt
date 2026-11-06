@@ -196,7 +196,7 @@ fun HistoryScreen(
                     decorationBox = { innerTextField ->
                         if (searchQuery.isEmpty()) {
                             Text(
-                                text = "Filtrar por RA, levantamento, tutor, notas...",
+                                text = "Filtrar por RA, levantamento, responsável, notas...",
                                 fontSize = 13.sp,
                                 color = Color(0xFF94A3B8),
                                 maxLines = 1
@@ -899,7 +899,7 @@ fun HistoryScreen(
         EditInspectionDialog(
             inspection = inspectionToEdit!!,
             onDismiss = { inspectionToEdit = null },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment, tutorName, tutorCpf, tutorPhone, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
                 viewModel.updateInspection(
                     original = inspectionToEdit!!,
                     newNotes = notes,
@@ -924,6 +924,7 @@ fun HistoryScreen(
                     newSafetyRiskAssessment = safetyRiskAssessment,
                     newTutorName = tutorName,
                     newTutorCpf = tutorCpf,
+                    newTutorPhone = tutorPhone,
                     newAdditionalTutors = additionalTutors,
                     newAuditorName = auditorName,
                     newPpbeaAnswersData = ppbeaAnswersData,
@@ -1386,7 +1387,7 @@ fun HistoryItemCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Tutores / Resp.: ${inspection.tutorsSummary}",
+                            text = "Responsáveis: ${inspection.responsiblesSummary}",
                             fontSize = 11.5.sp,
                             color = Color(0xFF334155),
                             maxLines = 1,

@@ -947,7 +947,7 @@ fun InspectionDetailScreen(
                 Column(modifier = Modifier.padding(14.dp)) {
                     val tutors = inspection.allTutors
                     Text(
-                        text = if (tutors.size > 1) "Tutores / Responsáveis (${tutors.size})" else "Tutor / Responsável",
+                        text = if (tutors.size > 1) "Responsáveis (${tutors.size})" else "Responsável",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -956,7 +956,7 @@ fun InspectionDetailScreen(
 
                     if (tutors.isEmpty()) {
                         Text(
-                            text = "Não identificado no momento da vistoria",
+                            text = "Nenhum responsável identificado no momento da vistoria",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -968,7 +968,7 @@ fun InspectionDetailScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                             Text(
-                                text = if (tutors.size > 1) "Tutor #${index + 1}" else "Identificação:",
+                                text = if (tutors.size > 1) "Responsável #${index + 1}" else "Identificação:",
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.primary
@@ -998,6 +998,14 @@ fun InspectionDetailScreen(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text("Consultar CNPJ", fontSize = 10.sp)
                                 }
+                            }
+                            if (tutor.phone.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Telefone: ${tutor.phone}",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -1100,7 +1108,7 @@ fun InspectionDetailScreen(
         EditInspectionDialog(
             inspection = inspection,
             onDismiss = { showEditDialog = false },
-            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
+            onSave = { notes, ra, quadra, conjunto, numero, horseDescription, horseCount, mistreatedHorseCount, mistreatmentIndicators, adequateIndicators, requiresSeagriApprehension, seagriNotes, requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport, otherAgencyName, otherAgencyNotes, risk, safetyRiskAssessment, tutor, cpf, tutorPhone, additionalTutors, auditorName, ppbeaAnswersData, updatedPhotos, indivEvaluationsData, newSampledCount ->
                 viewModel.updateInspection(
                     original = inspection,
                     newNotes = notes,
@@ -1126,6 +1134,7 @@ fun InspectionDetailScreen(
                     newSafetyRiskAssessment = safetyRiskAssessment,
                     newTutorName = tutor,
                     newTutorCpf = cpf,
+                    newTutorPhone = tutorPhone,
                     newAdditionalTutors = additionalTutors,
                     newPpbeaAnswersData = ppbeaAnswersData,
                     newIndividualEvaluationsData = indivEvaluationsData,

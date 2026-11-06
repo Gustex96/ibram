@@ -51,7 +51,8 @@ data class HorseInspection(
     val imageNotes: String = "",
     val tutorName: String = "",
     val tutorCpf: String = "",
-    // Tutores e CPFs adicionais no formato Nome|CPF separados por ;;
+    val tutorPhone: String = "",
+    // Responsáveis e CPFs adicionais no formato Nome|CPF|Telefone separados por ;;
     val additionalTutors: String = "",
     // Espécie avaliada ("Cavalo" ou "Cachorro")
     val species: String = "Cavalo",
@@ -222,33 +223,47 @@ data class HorseInspection(
     val allTutors: List<TutorEntry>
         get() {
             val list = mutableListOf<TutorEntry>()
-            if (tutorName.isNotBlank() || tutorCpf.isNotBlank()) {
-                list.add(TutorEntry(tutorName.trim(), tutorCpf.trim()))
+            if (tutorName.isNotBlank() || tutorCpf.isNotBlank() || tutorPhone.isNotBlank()) {
+                list.add(TutorEntry(tutorName.trim(), tutorCpf.trim(), tutorPhone.trim()))
             }
             if (additionalTutors.isNotBlank()) {
                 additionalTutors.split(";;").forEach { item ->
                     val parts = item.split("|")
                     val n = parts.getOrNull(0)?.trim() ?: ""
                     val c = parts.getOrNull(1)?.trim() ?: ""
-                    if (n.isNotEmpty() || c.isNotEmpty()) {
-                        list.add(TutorEntry(n, c))
+                    val p = parts.getOrNull(2)?.trim() ?: ""
+                    if (n.isNotEmpty() || c.isNotEmpty() || p.isNotEmpty()) {
+                        list.add(TutorEntry(n, c, p))
                     }
                 }
             }
             return list
         }
 
+    val allResponsibles: List<TutorEntry>
+        get() = allTutors
+
     val tutorsSummary: String
         get() {
-            val tutors = allTutors
-            if (tutors.isEmpty()) return "Não informado"
-            return tutors.joinToString(" • ") { tutor ->
-                if (tutor.cpf.isNotBlank()) "${tutor.name} (${tutor.cpf})" else tutor.name
+            val resps = allTutors
+            if (resps.isEmpty()) return "Não informado"
+            return resps.joinToString(" • ") { resp ->
+                buildString {
+                    append(resp.name.ifBlank { "Sem identificação" })
+                    if (resp.cpf.isNotBlank()) append(" (${resp.cpf})")
+                    if (resp.phone.isNotBlank()) append(" • Tel: ${resp.phone}")
+                }
             }
         }
+
+    val responsiblesSummary: String
+        get() = tutorsSummary
 }
 
 data class TutorEntry(
     val name: String = "",
-    val cpf: String = ""
+    val cpf: String = "",
+    val phone: String = ""
 )
+
+typealias ResponsibleEntry = TutorEntry

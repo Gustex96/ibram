@@ -23,6 +23,7 @@ import com.example.util.AppVersionInfo
 import com.example.util.CpfValidator
 import com.example.util.LocationHelper
 import com.example.util.PdfReportGenerator
+import com.example.util.PhoneValidator
 import com.example.util.UpdateCheckResult
 import com.example.util.UpdateChecker
 import com.example.util.WatermarkUtils
@@ -67,7 +68,7 @@ data class InspectionDraftState(
     val riskLevel: Int = 3,
     val safetyRiskAssessment: String = "",
     val imageNotes: String = "",
-    val tutors: List<TutorEntry> = listOf(TutorEntry("", "")),
+    val tutors: List<TutorEntry> = listOf(TutorEntry("", "", "")),
     val isWatermarking: Boolean = false,
     val isSaving: Boolean = false,
     val protocolNumber: String = generateProtocol(),
@@ -107,6 +108,9 @@ data class InspectionDraftState(
 
     val tutorCpf: String
         get() = tutors.firstOrNull()?.cpf ?: ""
+
+    val tutorPhone: String
+        get() = tutors.firstOrNull()?.phone ?: ""
     val allPhotoPaths: List<String>
         get() {
             val list = mutableListOf<String>()
@@ -330,6 +334,12 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 item.horseDescription.contains(query, ignoreCase = true) ||
                 item.safetyRiskAssessment.contains(query, ignoreCase = true) ||
                 item.tutorCpf.contains(query, ignoreCase = true) ||
+                item.tutorPhone.contains(query, ignoreCase = true) ||
+                item.allResponsibles.any { r ->
+                    r.name.contains(query, ignoreCase = true) ||
+                    r.cpf.contains(query, ignoreCase = true) ||
+                    r.phone.contains(query, ignoreCase = true)
+                } ||
                 item.species.contains(query, ignoreCase = true) ||
                 item.auditorName.contains(query, ignoreCase = true)
 
@@ -781,7 +791,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun addTutor() {
         val list = draft.value.tutors.toMutableList()
-        list.add(TutorEntry("", ""))
+        list.add(TutorEntry("", "", ""))
         draft.value = draft.value.copy(tutors = list)
     }
 
@@ -791,25 +801,41 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
             list.removeAt(index)
             draft.value = draft.value.copy(tutors = list)
         } else if (list.size == 1 && index == 0) {
-            draft.value = draft.value.copy(tutors = listOf(TutorEntry("", "")))
+            draft.value = draft.value.copy(tutors = listOf(TutorEntry("", "", "")))
         }
     }
 
-    fun updateTutor(index: Int, name: String, rawCpf: String) {
+    fun updateTutor(index: Int, name: String, rawCpf: String, rawPhone: String? = null) {
         val list = draft.value.tutors.toMutableList()
         if (index in list.indices) {
-            val formatted = CpfValidator.format(rawCpf)
-            list[index] = TutorEntry(name, formatted)
+            val currentEntry = list[index]
+            val prevCpf = currentEntry.cpf
+            val formattedCpf = CpfValidator.formatInput(rawCpf, prevCpf)
+            val prevPhone = currentEntry.phone
+            val phoneVal = rawPhone ?: prevPhone
+            val formattedPhone = PhoneValidator.formatInput(phoneVal, prevPhone)
+            list[index] = TutorEntry(name = name, cpf = formattedCpf, phone = formattedPhone)
             draft.value = draft.value.copy(tutors = list)
         }
     }
 
+    fun addResponsible() = addTutor()
+    fun removeResponsible(index: Int) = removeTutor(index)
+    fun updateResponsible(index: Int, name: String, rawCpf: String, rawPhone: String? = null) =
+        updateTutor(index, name, rawCpf, rawPhone)
+
     fun updateTutorName(name: String) {
-        updateTutor(0, name, draft.value.tutors.firstOrNull()?.cpf ?: "")
+        updateTutor(0, name, draft.value.tutors.firstOrNull()?.cpf ?: "", draft.value.tutors.firstOrNull()?.phone ?: "")
     }
 
     fun updateTutorCpf(rawCpf: String) {
-        updateTutor(0, draft.value.tutors.firstOrNull()?.name ?: "", rawCpf)
+        val first = draft.value.tutors.firstOrNull()
+        updateTutor(0, first?.name ?: "", rawCpf, first?.phone ?: "")
+    }
+
+    fun updateTutorPhone(rawPhone: String) {
+        val first = draft.value.tutors.firstOrNull()
+        updateTutor(0, first?.name ?: "", first?.cpf ?: "", rawPhone)
     }
 
     fun updateDraftSpecies(speciesName: String) {
@@ -871,10 +897,10 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 val primaryPhoto = allPhotos.firstOrNull() ?: current.watermarkedPhotoPath ?: ""
                 val additionalPhotos = if (allPhotos.size > 1) allPhotos.drop(1).joinToString(";;") else ""
 
-                val validTutors = current.tutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
-                val primTutor = validTutors.firstOrNull() ?: current.tutors.firstOrNull() ?: TutorEntry("", "")
+                val validTutors = current.tutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() || it.phone.isNotBlank() }
+                val primTutor = validTutors.firstOrNull() ?: current.tutors.firstOrNull() ?: TutorEntry("", "", "")
                 val addTutors = if (validTutors.size > 1) {
-                    validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" }
+                    validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}|${it.phone}" }
                 } else ""
 
                 val savedSpecies = current.species.ifBlank { selectedSpecies.displayName }
@@ -913,6 +939,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                     individualEvaluationsData = com.example.data.model.IndividualAnimalSerializer.serializeList(current.individualEvaluations),
                     tutorName = primTutor.name,
                     tutorCpf = primTutor.cpf,
+                    tutorPhone = primTutor.phone,
                     additionalTutors = addTutors
                 )
 
@@ -971,10 +998,10 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 if (watermarked != null) {
                     val safetyAssessment = current.safetyRiskAssessment
 
-                    val validTutors = current.tutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
-                    val primTutor = validTutors.firstOrNull() ?: current.tutors.firstOrNull() ?: TutorEntry("", "")
+                    val validTutors = current.tutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() || it.phone.isNotBlank() }
+                    val primTutor = validTutors.firstOrNull() ?: current.tutors.firstOrNull() ?: TutorEntry("", "", "")
                     val addTutors = if (validTutors.size > 1) {
-                        validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" }
+                        validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}|${it.phone}" }
                     } else ""
 
                     val savedSpecies = current.species.ifBlank { selectedSpecies.displayName }
@@ -1012,6 +1039,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                         individualEvaluationsData = com.example.data.model.IndividualAnimalSerializer.serializeList(current.individualEvaluations),
                         tutorName = primTutor.name,
                         tutorCpf = primTutor.cpf,
+                        tutorPhone = primTutor.phone,
                         additionalTutors = addTutors
                     )
 
@@ -1054,6 +1082,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
         newSafetyRiskAssessment: String = original.safetyRiskAssessment,
         newTutorName: String,
         newTutorCpf: String,
+        newTutorPhone: String = original.tutorPhone,
         newAdditionalTutors: String = original.additionalTutors,
         newPpbeaAnswersData: String = original.ppbeaAnswersData,
         newIndividualEvaluationsData: String = original.individualEvaluationsData,
@@ -1097,6 +1126,7 @@ class InspectionViewModel(application: Application) : AndroidViewModel(applicati
                 safetyRiskAssessment = safetyAssessment,
                 tutorName = newTutorName,
                 tutorCpf = CpfValidator.format(newTutorCpf),
+                tutorPhone = PhoneValidator.format(newTutorPhone),
                 additionalTutors = newAdditionalTutors,
                 ppbeaAnswersData = newPpbeaAnswersData,
                 individualEvaluationsData = newIndividualEvaluationsData

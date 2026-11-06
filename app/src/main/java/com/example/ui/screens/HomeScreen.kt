@@ -156,7 +156,7 @@ fun HomeScreen(
                         decorationBox = { innerTextField ->
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    text = "Buscar RA, tutor ou ID...",
+                                    text = "Buscar RA, responsável ou ID...",
                                     fontSize = 13.sp,
                                     color = Color(0xFF94A3B8),
                                     maxLines = 1
@@ -541,7 +541,7 @@ fun InspectionItemCard(
                         )
                     }
 
-                    // Linha 3 (Tutor): ícone User + Tutor
+                    // Linha 3 (Responsável): ícone User + Responsável
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -553,8 +553,9 @@ fun InspectionItemCard(
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
+                        val phoneSuffix = if (inspection.tutorPhone.isNotBlank()) " • Tel: ${inspection.tutorPhone}" else ""
                         Text(
-                            text = "Tutor: ${inspection.tutorName.ifBlank { "Não informado" }}",
+                            text = "Responsável: ${inspection.tutorName.ifBlank { "Não informado" }}$phoneSuffix",
                             fontSize = 11.5.sp,
                             color = Color(0xFF334155),
                             maxLines = 1,

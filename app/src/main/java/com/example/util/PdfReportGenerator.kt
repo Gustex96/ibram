@@ -101,6 +101,11 @@ object PdfReportGenerator {
         }
     }
 
+    fun calculatePhotoPagesCount(totalPhotos: Int): Int {
+        if (totalPhotos <= 0) return 0
+        val photosPerPage = if (totalPhotos in 5..6 || totalPhotos > 8) 6 else 4
+        return (totalPhotos + (photosPerPage - 1)) / photosPerPage
+    }
 
     private fun calculateEstimatedTextPages(inspection: HorseInspection): Int {
         var estimatedH = 0f
@@ -900,7 +905,7 @@ object PdfReportGenerator {
         val allAssignedPhotos = animalPhotosMap.values.flatten().toSet()
         val annexPhotos = allPhotos
 
-        val photoPagesCount = if (annexPhotos.isEmpty()) 0 else ((annexPhotos.size + 1) / 2)
+        val photoPagesCount = calculatePhotoPagesCount(annexPhotos.size)
         val estimatedTextPages = calculateEstimatedTextPages(inspection)
         val totalDocumentPages = estimatedTextPages + photoPagesCount
 
@@ -1060,13 +1065,13 @@ object PdfReportGenerator {
         }
         pageManager.y += sec14H
 
-        // SECTION 2: 2. IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
+        // SECTION 2: 2. IDENTIFICAÇÃO DOS RESPONSÁVEIS
         val tutors = inspection.allTutors
         pageManager.ensureSpace(30f)
-        pageManager.y = drawSectionHeader(pageManager.canvas, "2. IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS (${tutors.size})", margin, pageManager.y, contentWidth)
+        pageManager.y = drawSectionHeader(pageManager.canvas, "2. IDENTIFICAÇÃO DOS RESPONSÁVEIS (${tutors.size})", margin, pageManager.y, contentWidth)
         if (tutors.isEmpty()) {
             pageManager.ensureSpace(16f)
-            pageManager.canvas.drawText("Nenhum tutor ou responsável identificado no local da vistoria.", col1X, pageManager.y, valuePaint)
+            pageManager.canvas.drawText("Nenhum responsável identificado no local da vistoria.", col1X, pageManager.y, valuePaint)
             pageManager.y += 16f
         } else {
             val tutorCol1W = col2X - col1X - 10f
@@ -1075,8 +1080,9 @@ object PdfReportGenerator {
                 val tName = tutor.name.ifBlank { "Não informado" }
                 val tCpf = if (tutor.cpf.isNotBlank()) tutor.cpf else "Não informado"
                 val docLabel = if (CpfValidator.isCnpj(tutor.cpf)) "CNPJ" else "CPF"
-                val nameLines = splitTextIntoLines("TUTOR / RESPONSÁVEL #${tIdx + 1}: $tName", tutorCol1W, valuePaint)
-                val cpfLines = splitTextIntoLines("$docLabel: $tCpf", tutorCol2W, valuePaint)
+                val phoneSuffix = if (tutor.phone.isNotBlank()) " • Tel: ${tutor.phone}" else ""
+                val nameLines = splitTextIntoLines("RESPONSÁVEL #${tIdx + 1}: $tName", tutorCol1W, valuePaint)
+                val cpfLines = splitTextIntoLines("$docLabel: $tCpf$phoneSuffix", tutorCol2W, valuePaint)
                 val rowLines = maxOf(1, maxOf(nameLines.size, cpfLines.size))
                 val rowHeight = (rowLines * 12f) + 2f
 
@@ -1407,13 +1413,14 @@ object PdfReportGenerator {
         }
         val captionTitlePaint = Paint().apply {
             color = Color.rgb(15, 23, 42)
-            textSize = 9.5f
+            textSize = 8f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
 
         if (annexPhotos.isNotEmpty()) {
-            val photoChunks = annexPhotos.chunked(2)
+            val photosPerPage = if (annexPhotos.size in 5..6 || annexPhotos.size > 8) 6 else 4
+            val photoChunks = annexPhotos.chunked(photosPerPage)
             val startPhotoPageNumber = pageManager.currentPageNumber + 1
 
             photoChunks.forEachIndexed { pageChunkIndex, chunk ->
@@ -1450,19 +1457,19 @@ object PdfReportGenerator {
                 pCanvas.drawText("Levantamento: ${inspection.protocolNumber} • RA: ${inspection.administrativeRegion} • ${inspection.formattedCaptureDate}", margin, py, headerSmallPaint)
                 py += 20f
 
-                py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM ALTA RESOLUÇÃO", margin, py, contentWidth)
+                py = drawSectionHeader(pCanvas, "REGISTRO FOTOGRÁFICO FISCAL EM GRADE EMPARELHADA", margin, py, contentWidth)
 
-                if (chunk.size == 1) {
-                    val globalPhotoIdx = pageChunkIndex * 2
+                if (chunk.size == 1 && annexPhotos.size == 1) {
+                    val globalPhotoIdx = 0
                     val photoPath = chunk[0]
-                    val maxW = 500f
-                    val maxH = 430f
+                    val maxW = 460f
+                    val maxH = 340f
                     val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 1200)
 
                     val photoX = (pageWidth - maxW) / 2f
                     val photoRect = RectF(photoX, py, photoX + maxW, py + maxH)
                     val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
-                    pCanvas.drawRect(photoRect, bgFramePaint)
+                    pCanvas.drawRoundRect(photoRect, 4f, 4f, bgFramePaint)
 
                     if (optBitmap != null) {
                         val bRatio = optBitmap.width.toFloat() / optBitmap.height.toFloat()
@@ -1476,13 +1483,13 @@ object PdfReportGenerator {
                         val drawY = py + ((maxH - dh) / 2f)
                         val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
                         pCanvas.drawBitmap(optBitmap, null, drawRect, null)
-                        pCanvas.drawRect(photoRect, borderPaint)
+                        pCanvas.drawRoundRect(photoRect, 4f, 4f, borderPaint)
                     } else {
-                        pCanvas.drawRect(photoRect, borderPaint)
+                        pCanvas.drawRoundRect(photoRect, 4f, 4f, borderPaint)
                         pCanvas.drawText("[Arquivo de fotografia não disponível no armazenamento]", photoX + 20f, py + (maxH / 2f), valuePaint)
                     }
 
-                    py += maxH + 14f
+                    py += maxH + 12f
                     val matchedAnimal = if (inspection.individualEvaluations.isNotEmpty()) {
                         inspection.individualEvaluations.firstOrNull { animal ->
                             animalPhotosMap[animal.id]?.contains(photoPath) == true
@@ -1510,67 +1517,83 @@ object PdfReportGenerator {
                         pCanvas.drawText("Observações Periciais: $displayNotes", photoX, py, notePaint)
                     }
                 } else {
-                    // 2 photos on the page: stacked vertically
-                    val slotMaxH = 265f
-                    val slotMaxW = 490f
-                    val photoX = (pageWidth - slotMaxW) / 2f
+                    // Formato Grid: fotos emparelhadas 2 a 2 por linha para reduzir páginas
+                    val isDense = chunk.size > 4
+                    val slotH = if (isDense) 148f else 192f
+                    val colGap = 12f
+                    val colWidth = (contentWidth - colGap) / 2f
+                    val pairs = chunk.chunked(2)
 
-                    for ((subIdx, photoPath) in chunk.withIndex()) {
-                        val globalPhotoIdx = (pageChunkIndex * 2) + subIdx
-                        val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 1000)
+                    for ((pairIdx, pair) in pairs.withIndex()) {
+                        val rowTopY = py
+                        var maxRowCaptionH = 0f
 
-                        val photoRect = RectF(photoX, py, photoX + slotMaxW, py + slotMaxH)
-                        val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
-                        pCanvas.drawRect(photoRect, bgFramePaint)
+                        for ((colIdx, photoPath) in pair.withIndex()) {
+                            val photoX = margin + (colIdx * (colWidth + colGap))
+                            val globalPhotoIdx = (pageChunkIndex * photosPerPage) + (pairIdx * 2) + colIdx
+                            val optBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 900)
 
-                        if (optBitmap != null) {
-                            val bRatio = optBitmap.width.toFloat() / optBitmap.height.toFloat()
-                            var dw = slotMaxW
-                            var dh = dw / bRatio
-                            if (dh > slotMaxH) {
-                                dh = slotMaxH
-                                dw = dh * bRatio
+                            val photoRect = RectF(photoX, rowTopY, photoX + colWidth, rowTopY + slotH)
+                            val bgFramePaint = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
+                            pCanvas.drawRoundRect(photoRect, 4f, 4f, bgFramePaint)
+
+                            if (optBitmap != null) {
+                                val bRatio = optBitmap.width.toFloat() / optBitmap.height.toFloat()
+                                var dw = colWidth
+                                var dh = dw / bRatio
+                                if (dh > slotH) {
+                                    dh = slotH
+                                    dw = dh * bRatio
+                                }
+                                val drawX = photoX + ((colWidth - dw) / 2f)
+                                val drawY = rowTopY + ((slotH - dh) / 2f)
+                                val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+                                pCanvas.drawBitmap(optBitmap, null, drawRect, null)
+                                pCanvas.drawRoundRect(photoRect, 4f, 4f, borderPaint)
+                            } else {
+                                pCanvas.drawRoundRect(photoRect, 4f, 4f, borderPaint)
+                                val missingP = Paint().apply { color = Color.rgb(100, 116, 139); textSize = 7.5f; isAntiAlias = true }
+                                pCanvas.drawText("[Foto não disponível]", photoX + 10f, rowTopY + (slotH / 2f), missingP)
                             }
-                            val drawX = photoX + ((slotMaxW - dw) / 2f)
-                            val drawY = py + ((slotMaxH - dh) / 2f)
-                            val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
-                            pCanvas.drawBitmap(optBitmap, null, drawRect, null)
-                            pCanvas.drawRect(photoRect, borderPaint)
-                        } else {
-                            pCanvas.drawRect(photoRect, borderPaint)
-                            pCanvas.drawText("[Arquivo de fotografia não disponível]", photoX + 20f, py + (slotMaxH / 2f), valuePaint)
+
+                            val matchedAnimal = if (inspection.individualEvaluations.isNotEmpty()) {
+                                inspection.individualEvaluations.firstOrNull { animal ->
+                                    animalPhotosMap[animal.id]?.contains(photoPath) == true
+                                }
+                            } else null
+                            val matchedNotes = matchedAnimal?.notes?.ifBlank { matchedAnimal.ppbeaDiagnosis?.observacoes ?: "" }?.trim()
+                                ?: if (inspection.individualEvaluations.isEmpty()) inspection.ppbeaDiagnosis?.observacoes?.trim() ?: "" else ""
+
+                            val exemplarPrefix = if (matchedAnimal != null) {
+                                val animalIdx = inspection.individualEvaluations.indexOf(matchedAnimal)
+                                "Ex. #${animalIdx + 1} (${matchedAnimal.species}) • "
+                            } else ""
+                            val caption = "Evidência #${globalPhotoIdx + 1} — ${exemplarPrefix}Prot. ${inspection.protocolNumber}"
+
+                            var textY = rowTopY + slotH + 10f
+                            pCanvas.drawText(caption, photoX, textY, captionTitlePaint)
+                            var photoCaptionH = 12f
+
+                            if (matchedNotes.isNotBlank()) {
+                                textY += 9f
+                                val notePaint = Paint().apply {
+                                    color = Color.rgb(71, 85, 105)
+                                    textSize = 7f
+                                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                                    isAntiAlias = true
+                                }
+                                val maxNoteChars = if (isDense) 55 else 75
+                                val displayNotes = if (matchedNotes.length > maxNoteChars) matchedNotes.take(maxNoteChars - 3) + "..." else matchedNotes
+                                pCanvas.drawText("Obs: $displayNotes", photoX, textY, notePaint)
+                                photoCaptionH += 10f
+                            }
+
+                            if (photoCaptionH > maxRowCaptionH) {
+                                maxRowCaptionH = photoCaptionH
+                            }
                         }
 
-                        py += slotMaxH + 11f
-                        val matchedAnimal = if (inspection.individualEvaluations.isNotEmpty()) {
-                            inspection.individualEvaluations.firstOrNull { animal ->
-                                animalPhotosMap[animal.id]?.contains(photoPath) == true
-                            }
-                        } else null
-                        val matchedNotes = matchedAnimal?.notes?.ifBlank { matchedAnimal.ppbeaDiagnosis?.observacoes ?: "" }?.trim()
-                            ?: if (inspection.individualEvaluations.isEmpty()) inspection.ppbeaDiagnosis?.observacoes?.trim() ?: "" else ""
-
-                        val exemplarPrefix = if (matchedAnimal != null) {
-                            val animalIdx = inspection.individualEvaluations.indexOf(matchedAnimal)
-                            "Exemplar #${animalIdx + 1} (${matchedAnimal.species}) • "
-                        } else ""
-                        val caption = "Evidência Fotográfica #${globalPhotoIdx + 1} — ${exemplarPrefix}Protocolo ${inspection.protocolNumber}"
-                        pCanvas.drawText(caption, photoX, py, captionTitlePaint)
-
-                        if (matchedNotes.isNotBlank()) {
-                            py += 10f
-                            val notePaint = Paint().apply {
-                                color = Color.rgb(71, 85, 105)
-                                textSize = 7.5f
-                                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                                isAntiAlias = true
-                            }
-                            val displayNotes = if (matchedNotes.length > 130) matchedNotes.take(127) + "..." else matchedNotes
-                            pCanvas.drawText("Observações Periciais: $displayNotes", photoX, py, notePaint)
-                            py += 14f
-                        } else {
-                            py += 22f
-                        }
+                        py = rowTopY + slotH + maxRowCaptionH + 12f
                     }
                 }
 
@@ -1578,7 +1601,7 @@ object PdfReportGenerator {
                 val linePaint = Paint().apply { color = Color.rgb(203, 213, 225); strokeWidth = 1f }
                 pCanvas.drawLine(margin, footerY, margin + contentWidth, footerY, linePaint)
                 val footerTextPaint = Paint().apply { color = Color.rgb(148, 163, 184); textSize = 7.5f; isAntiAlias = true }
-                val pGenText = "Folha $currentPhotoPageNumber de $totalDocumentPages • Anexo Fotográfico • Relatório de Apoio"
+                val pGenText = "Folha $currentPhotoPageNumber de $totalDocumentPages • Anexo Fotográfico em Grade • Relatório de Apoio"
                 pCanvas.drawText(pGenText, margin, footerY + 12f, footerTextPaint)
 
                 document.finishPage(photoPage)
@@ -1897,29 +1920,67 @@ object PdfReportGenerator {
                 dy += 6f
             }
 
-            // Section: Registro Fotográfico Otimizado
+            // Section: Registro Fotográfico Otimizado em Grade
             dy = drawSectionHeader(dCanvas, "REGISTRO FOTOGRÁFICO GEORREFERENCIADO", margin, dy, contentWidth)
 
-            val photoBitmap = decodeOptimizedBitmap(item.photoPath, targetMaxDimension = 900)
-            if (photoBitmap != null) {
-                val maxH = 260f
-                val maxW = contentWidth - 16f
-                val ratio = photoBitmap.width.toFloat() / photoBitmap.height.toFloat()
-                var dw = maxW
-                var dh = dw / ratio
-                if (dh > maxH) {
-                    dh = maxH
-                    dw = dh * ratio
+            val detailPhotos = item.allPhotoPaths.filter { it.isNotBlank() }
+            if (detailPhotos.size <= 1) {
+                val photoPath = detailPhotos.firstOrNull() ?: item.photoPath
+                val photoBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 900)
+                if (photoBitmap != null) {
+                    val maxH = 220f
+                    val maxW = contentWidth - 16f
+                    val ratio = photoBitmap.width.toFloat() / photoBitmap.height.toFloat()
+                    var dw = maxW
+                    var dh = dw / ratio
+                    if (dh > maxH) {
+                        dh = maxH
+                        dw = dh * ratio
+                    }
+                    val px = margin + ((contentWidth - dw) / 2f)
+                    val pRect = RectF(px, dy, px + dw, dy + dh)
+                    val bp = Paint().apply { color = Color.rgb(203, 213, 225); style = Paint.Style.STROKE; strokeWidth = 1f }
+                    dCanvas.drawRoundRect(pRect, 4f, 4f, bp)
+                    dCanvas.drawBitmap(photoBitmap, null, pRect, null)
+                    dy += dh + 6f
+                } else {
+                    dCanvas.drawText("[Foto arquivada não encontrada]", margin + 8f, dy, valPaint)
+                    dy += 20f
                 }
-                val px = margin + ((contentWidth - dw) / 2f)
-                val pRect = RectF(px, dy, px + dw, dy + dh)
-                val bp = Paint().apply { color = Color.rgb(203, 213, 225); style = Paint.Style.STROKE; strokeWidth = 1f }
-                dCanvas.drawRect(pRect, bp)
-                dCanvas.drawBitmap(photoBitmap, null, pRect, null)
-                dy += dh + 6f
             } else {
-                dCanvas.drawText("[Foto arquivada não encontrada]", margin + 8f, dy, valPaint)
-                dy += 20f
+                // Fotos emparelhadas em formato grid (2 colunas)
+                val cColGap = 10f
+                val cSlotW = (contentWidth - 16f - cColGap) / 2f
+                val cSlotH = 135f
+                val cPairs = detailPhotos.take(4).chunked(2)
+                for (pair in cPairs) {
+                    for ((subIdx, photoPath) in pair.withIndex()) {
+                        val px = margin + 8f + (subIdx * (cSlotW + cColGap))
+                        val pRect = RectF(px, dy, px + cSlotW, dy + cSlotH)
+                        val bp = Paint().apply { color = Color.rgb(203, 213, 225); style = Paint.Style.STROKE; strokeWidth = 1f }
+                        val bg = Paint().apply { color = Color.rgb(248, 250, 252); style = Paint.Style.FILL }
+                        dCanvas.drawRoundRect(pRect, 4f, 4f, bg)
+
+                        val photoBitmap = decodeOptimizedBitmap(photoPath, targetMaxDimension = 800)
+                        if (photoBitmap != null) {
+                            val ratio = photoBitmap.width.toFloat() / photoBitmap.height.toFloat()
+                            var dw = cSlotW
+                            var dh = dw / ratio
+                            if (dh > cSlotH) {
+                                dh = cSlotH
+                                dw = dh * ratio
+                            }
+                            val drawX = px + ((cSlotW - dw) / 2f)
+                            val drawY = dy + ((cSlotH - dh) / 2f)
+                            val drawRect = RectF(drawX, drawY, drawX + dw, drawY + dh)
+                            dCanvas.drawBitmap(photoBitmap, null, drawRect, null)
+                            dCanvas.drawRoundRect(pRect, 4f, 4f, bp)
+                        } else {
+                            dCanvas.drawRoundRect(pRect, 4f, 4f, bp)
+                        }
+                    }
+                    dy += cSlotH + 6f
+                }
             }
 
             // Footer

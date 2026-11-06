@@ -68,14 +68,11 @@ fun AppSplashScreen(
 
     val carouselListState = rememberLazyListState()
 
-    // Ordem das espécies conforme o exemplo de LEVO.png (Cachorro primeiro, Cavalo, Gato, Galináceos, Outros)
+    // Ordem do menu carrossel: Cavalo, Cachorro, Gato, Galináceos e Outros (contendo Suíno, Bovino, Caprino/Ovino e personalização)
     val speciesList = remember {
         listOf(
             AnimalSpecies.HORSE,
             AnimalSpecies.DOG,
-            AnimalSpecies.SWINE,
-            AnimalSpecies.BOVINE,
-            AnimalSpecies.CAPRINE_OVINE,
             AnimalSpecies.CAT,
             AnimalSpecies.POULTRY,
             AnimalSpecies.OUTROS
@@ -84,7 +81,11 @@ fun AppSplashScreen(
 
     LaunchedEffect(Unit) {
         isVisible = true
-        val targetIndex = speciesList.indexOf(initialSpecies).coerceAtLeast(0)
+        val targetIndex = when {
+            speciesList.contains(initialSpecies) -> speciesList.indexOf(initialSpecies)
+            initialSpecies == AnimalSpecies.SWINE || initialSpecies == AnimalSpecies.BOVINE || initialSpecies == AnimalSpecies.CAPRINE_OVINE -> speciesList.indexOf(AnimalSpecies.OUTROS)
+            else -> 0
+        }.coerceAtLeast(0)
         carouselListState.scrollToItem(targetIndex)
     }
 
@@ -221,13 +222,14 @@ fun AppSplashScreen(
             }
         }
 
-        // 3. Campo de Digitação Flutuante quando "Outros" é escolhido
+        // 3. Caixa de Diálogo Flutuante quando "Outros" é escolhido no carrossel
         if (showOtherSpeciesDialog) {
             FloatingOtherSpeciesDialog(
                 onDismiss = { showOtherSpeciesDialog = false },
                 onConfirm = { typedSpecies ->
                     showOtherSpeciesDialog = false
-                    onStart(AnimalSpecies.OUTROS, typedSpecies)
+                    val resolved = resolveAnimalSpecies(typedSpecies)
+                    onStart(resolved, typedSpecies)
                 }
             )
         }
@@ -302,12 +304,12 @@ private fun M3CarouselCard(
                     text = when (species) {
                         AnimalSpecies.HORSE -> "Equinos e carroças"
                         AnimalSpecies.DOG -> "Cães e caninos"
+                        AnimalSpecies.CAT -> "Felinos e felídeos"
+                        AnimalSpecies.POULTRY -> "Aves e galináceos"
                         AnimalSpecies.SWINE -> "Suínos e porcos"
                         AnimalSpecies.BOVINE -> "Bovinos e gado"
                         AnimalSpecies.CAPRINE_OVINE -> "Caprinos e ovinos"
-                        AnimalSpecies.CAT -> "Felinos e felídeos"
-                        AnimalSpecies.POULTRY -> "Aves e galináceos"
-                        AnimalSpecies.OUTROS -> "Personalizar espécie"
+                        AnimalSpecies.OUTROS -> "Suíno, bovino, caprino e outros"
                     },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,

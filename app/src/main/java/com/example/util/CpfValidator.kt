@@ -27,32 +27,48 @@ object CpfValidator {
         }
     }
 
+    /**
+     * Formatação progressiva de CPF com preenchimento automático de '.', '-'
+     */
     fun formatCpf(digits: String): String {
-        val sb = StringBuilder()
-        for (i in digits.indices) {
-            sb.append(digits[i])
-            if (i == 2 || i == 5) {
-                sb.append(".")
-            } else if (i == 8) {
-                sb.append("-")
-            }
+        val len = digits.length
+        return when {
+            len <= 3 -> digits
+            len <= 6 -> "${digits.substring(0, 3)}.${digits.substring(3)}"
+            len <= 9 -> "${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6)}"
+            else -> "${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6, 9)}-${digits.substring(9)}"
         }
-        return sb.toString()
     }
 
+    /**
+     * Formatação progressiva de CNPJ com preenchimento automático de '.', '/', '-'
+     */
     fun formatCnpj(digits: String): String {
-        val sb = StringBuilder()
-        for (i in digits.indices) {
-            sb.append(digits[i])
-            if (i == 1 || i == 4) {
-                sb.append(".")
-            } else if (i == 7) {
-                sb.append("/")
-            } else if (i == 11) {
-                sb.append("-")
-            }
+        val len = digits.length
+        return when {
+            len <= 2 -> digits
+            len <= 5 -> "${digits.substring(0, 2)}.${digits.substring(2)}"
+            len <= 8 -> "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5)}"
+            len <= 12 -> "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5, 8)}/${digits.substring(8)}"
+            else -> "${digits.substring(0, 2)}.${digits.substring(2, 5)}.${digits.substring(5, 8)}/${digits.substring(8, 12)}-${digits.substring(12)}"
         }
-        return sb.toString()
+    }
+
+    /**
+     * Formata entrada de CPF/CNPJ em tempo real durante a digitação no Compose,
+     * tratando a tecla backspace para permitir apagar sem travar em pontos/traços.
+     */
+    fun formatInput(input: String, previousText: String = ""): String {
+        val cleanInput = clean(input).take(14)
+        val cleanPrev = clean(previousText)
+
+        val effective = if (input.length < previousText.length && cleanInput == cleanPrev && cleanInput.isNotEmpty()) {
+            cleanInput.dropLast(1)
+        } else {
+            cleanInput
+        }
+
+        return format(effective)
     }
 
     /**

@@ -745,21 +745,25 @@ private fun IndividualAnimalCard(
                         .background(Color(0xFF282828))
                         .testTag("dropdown_tutors_$index")
                 ) {
-                    val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+                    val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() || it.phone.isNotBlank() }
                     if (validTutors.isNotEmpty()) {
                         validTutors.forEach { tutor ->
                             DropdownMenuItem(
                                 text = {
                                     Column {
                                         Text(
-                                            text = tutor.name.ifBlank { "Tutor sem nome" },
+                                            text = tutor.name.ifBlank { "Responsável sem nome" },
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White,
                                             fontSize = 13.5.sp
                                         )
-                                        if (tutor.cpf.isNotBlank()) {
+                                        val details = buildList {
+                                            if (tutor.cpf.isNotBlank()) add("Doc: ${tutor.cpf}")
+                                            if (tutor.phone.isNotBlank()) add("Tel: ${tutor.phone}")
+                                        }.joinToString(" • ")
+                                        if (details.isNotBlank()) {
                                             Text(
-                                                text = "CPF: ${tutor.cpf}",
+                                                text = details,
                                                 fontSize = 11.5.sp,
                                                 color = Color(0xFFD0BCFF)
                                             )
@@ -804,7 +808,7 @@ private fun IndividualAnimalCard(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    text = "Nenhum tutor cadastrado no início do levantamento",
+                                    text = "Nenhum responsável cadastrado no início do levantamento",
                                     color = Color(0xFFCCCCCC),
                                     fontSize = 12.sp
                                 )
@@ -1322,20 +1326,24 @@ private fun PhotoTagSelectionDialog(
                             .background(MaterialTheme.colorScheme.surface)
                             .testTag("dropdown_dialog_tutors")
                     ) {
-                        val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
+                        val validTutors = availableTutors.filter { it.name.isNotBlank() || it.cpf.isNotBlank() || it.phone.isNotBlank() }
                         if (validTutors.isNotEmpty()) {
                             validTutors.forEach { tutor ->
                                 DropdownMenuItem(
                                     text = {
                                         Column {
                                             Text(
-                                                text = tutor.name.ifBlank { "Tutor sem nome" },
+                                                text = tutor.name.ifBlank { "Responsável sem nome" },
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp
                                             )
-                                            if (tutor.cpf.isNotBlank()) {
+                                            val details = buildList {
+                                                if (tutor.cpf.isNotBlank()) add("Doc: ${tutor.cpf}")
+                                                if (tutor.phone.isNotBlank()) add("Tel: ${tutor.phone}")
+                                            }.joinToString(" • ")
+                                            if (details.isNotBlank()) {
                                                 Text(
-                                                    text = "CPF: ${tutor.cpf}",
+                                                    text = details,
                                                     fontSize = 11.sp,
                                                     color = Color(0xFF65558F)
                                                 )

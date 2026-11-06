@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
@@ -115,6 +116,7 @@ import com.example.ui.components.PpbeaOpenEvaluationButton
 import com.example.ui.components.PpbeaSelectionModalDialog
 import com.example.util.CnpjConsultationHelper
 import com.example.util.CpfValidator
+import com.example.util.PhoneValidator
 import com.example.util.WatermarkUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -197,6 +199,7 @@ fun EditInspectionDialog(
         safetyRiskAssessment: String,
         tutorName: String,
         tutorCpf: String,
+        tutorPhone: String,
         additionalTutors: String,
         auditorName: String,
         ppbeaAnswersData: String,
@@ -400,7 +403,7 @@ fun EditInspectionDialog(
     var tutorsList by remember {
         mutableStateOf(
             if (inspection.allTutors.isNotEmpty()) inspection.allTutors
-            else listOf(TutorEntry(inspection.tutorName, inspection.tutorCpf))
+            else listOf(TutorEntry(inspection.tutorName, inspection.tutorCpf, inspection.tutorPhone))
         )
     }
 
@@ -414,9 +417,9 @@ fun EditInspectionDialog(
     fun executeSave() {
         val alertIndicatorsToSave = if (mistreatedHorseCount == 0) "" else mistreatmentIndicators.joinToString(";;")
         val adequateIndicatorsToSave = adequateIndicators.joinToString(";;")
-        val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() }
-        val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "")
-        val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}" } else ""
+        val validTutors = tutorsList.filter { it.name.isNotBlank() || it.cpf.isNotBlank() || it.phone.isNotBlank() }
+        val prim = validTutors.firstOrNull() ?: tutorsList.firstOrNull() ?: TutorEntry("", "", "")
+        val add = if (validTutors.size > 1) validTutors.drop(1).joinToString(";;") { "${it.name}|${it.cpf}|${it.phone}" } else ""
         val ppbeaAnswersToSave = PpbeaCriteriaRepository.mapToAnswersString(answersMap)
         val indivToSave = IndividualAnimalSerializer.serializeList(individualEvaluations)
         val notesToSave = ppbeaDiagnosis?.observacoes?.ifBlank { notes } ?: notes
@@ -426,7 +429,7 @@ fun EditInspectionDialog(
             adequateIndicatorsToSave, requiresSeagriApprehension, seagriNotes,
             requiresPmdfSupport, pmdfNotes, requiresOtherAgencySupport,
             otherAgencyName, otherAgencyNotes, riskLevel, safetyRiskAssessment,
-            prim.name, prim.cpf, add, auditorName, ppbeaAnswersToSave,
+            prim.name, prim.cpf, prim.phone, add, auditorName, ppbeaAnswersToSave,
             photoPaths, indivToSave, sampledAnimalCount
         )
     }
@@ -435,7 +438,7 @@ fun EditInspectionDialog(
         val missing = mutableListOf<String>()
         if (ra.isBlank()) missing.add("• Região Administrativa (RA / Localização) não informada")
         if (photoPaths.isEmpty()) missing.add("• Nenhuma fotografia anexada")
-        if (tutorsList.none { it.name.isNotBlank() }) missing.add("• Nenhum tutor ou responsável cadastrado")
+        if (tutorsList.none { it.name.isNotBlank() }) missing.add("• Nenhum responsável cadastrado")
         if (individualEvaluations.isEmpty()) {
             missing.add("• Nenhuma avaliação de bem-estar animal (PPBEA) realizada")
         } else {
@@ -1027,10 +1030,10 @@ fun EditInspectionDialog(
                     }
                 }
 
-                // 2. SECTION: IDENTIFICAÇÃO DOS TUTORES / RESPONSÁVEIS
+                // 2. SECTION: IDENTIFICAÇÃO DOS RESPONSÁVEIS
                 SectionHeader(
-                    title = "2. Identificação dos Tutores & CPFs",
-                    description = "Cadastre um ou múltiplos tutores e CPFs dos responsáveis identificados na ação fiscal."
+                    title = "2. Identificação dos Responsáveis",
+                    description = "Cadastre um ou múltiplos responsáveis com CPF/CNPJ e telefone de contato identificados na ação fiscal."
                 )
 
                 Card(
@@ -1061,7 +1064,7 @@ fun EditInspectionDialog(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = if (index == 0) "Tutor 1 (Principal)" else "Tutor ${index + 1}",
+                                            text = if (index == 0) "Responsável 1 (Principal)" else "Responsável ${index + 1}",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp,
                                             color = MaterialTheme.colorScheme.primary
@@ -1076,7 +1079,7 @@ fun EditInspectionDialog(
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Delete,
-                                                    contentDescription = "Remover tutor",
+                                                    contentDescription = "Remover responsável",
                                                     tint = MaterialTheme.colorScheme.error,
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -1096,7 +1099,7 @@ fun EditInspectionDialog(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("tutor_name_field_$index"),
-                                        label = { Text("Nome do Tutor / Empresa ${index + 1}") },
+                                        label = { Text("Nome do Responsável / Empresa ${index + 1}") },
                                         placeholder = { Text("Ex: João da Silva ou Agropecuária Ltda") },
                                         singleLine = true,
                                         shape = RoundedCornerShape(10.dp)
@@ -1112,13 +1115,16 @@ fun EditInspectionDialog(
                                             value = tutor.cpf,
                                             onValueChange = { newCpf ->
                                                 tutorsList = tutorsList.mapIndexed { i, t ->
-                                                    if (i == index) t.copy(cpf = newCpf) else t
+                                                    if (i == index) {
+                                                        val formatted = CpfValidator.formatInput(newCpf, t.cpf)
+                                                        t.copy(cpf = formatted)
+                                                    } else t
                                                 }
                                             },
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .testTag("tutor_cpf_field_$index"),
-                                            label = { Text("CPF / CNPJ do Tutor ${index + 1}") },
+                                            label = { Text("CPF / CNPJ do Responsável ${index + 1}") },
                                             placeholder = { Text("000.000.000-00 ou CNPJ") },
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             singleLine = true,
@@ -1183,12 +1189,42 @@ fun EditInspectionDialog(
                                             }
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    AppOutlinedTextField(
+                                        value = tutor.phone,
+                                        onValueChange = { newPhone ->
+                                            tutorsList = tutorsList.mapIndexed { i, t ->
+                                                if (i == index) {
+                                                    val formatted = PhoneValidator.formatInput(newPhone, t.phone)
+                                                    t.copy(phone = formatted)
+                                                } else t
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("tutor_phone_field_$index"),
+                                        label = { Text("Telefone / Contato do Responsável ${index + 1}") },
+                                        placeholder = { Text("(61) 90000-0000 ou fixo") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Phone,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
                                 }
                             }
                         }
 
                         OutlinedButton(
-                            onClick = { tutorsList = tutorsList + TutorEntry("", "") },
+                            onClick = { tutorsList = tutorsList + TutorEntry("", "", "") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("add_tutor_button"),
@@ -1196,7 +1232,7 @@ fun EditInspectionDialog(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("+ Adicionar Outro Tutor")
+                            Text("+ Adicionar Outro Responsável")
                         }
                     }
                 }
